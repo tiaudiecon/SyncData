@@ -15,6 +15,8 @@ def test_numero_nf_remove_serie_e_zeros():
     assert normalizar_numero_nf("202069 / 7") == "202069"
     assert normalizar_numero_nf("1924136") == "1924136"
     assert normalizar_numero_nf(4291) == "4291"
+    assert normalizar_numero_nf(4291.0) == "4291"      # float do openpyxl
+    assert normalizar_numero_nf("4291.0") == "4291"    # float já stringificado pelo parser
     assert normalizar_numero_nf("0") == ""      # nota "sem número" (banco)
 
 

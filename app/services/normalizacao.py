@@ -11,8 +11,12 @@ def so_digitos(valor) -> str:
 
 def normalizar_numero_nf(valor) -> str:
     """Número da NF para comparação: parte antes de '/', só dígitos, sem zeros
-    à esquerda. '0'/'000' viram '' (lançamento sem nota fiscal)."""
-    texto = str(valor if valor is not None else "").split("/")[0]
+    à esquerda. '0'/'000' viram '' (lançamento sem nota fiscal).
+
+    Divide também no '.' porque um número inteiro pode chegar como float — do
+    openpyxl (4291.0) ou já stringificado pelo parser ('4291.0'); sem isto o
+    '.0' viraria '42910' e a nota nunca casaria. Nº de NFS-e é sempre inteiro."""
+    texto = str(valor if valor is not None else "").split("/")[0].split(".")[0]
     digitos = re.sub(r"\D", "", texto).lstrip("0")
     return digitos
 
