@@ -21,9 +21,17 @@ def indice(mapa, *rotulos):
 
 def abrir_planilha(arquivo):
     """Abre a 1ª aba em modo read-only/data-only. `arquivo` = caminho ou
-    file-like (BytesIO). Retorna (headers:list, linhas:iterador de tuplas)."""
+    file-like (BytesIO). Retorna (headers:list, linhas:iterador de tuplas).
+
+    Lê todas as linhas e FECHA o workbook antes de retornar: em read-only o
+    openpyxl mantém o .xlsx aberto (handle) enquanto o iterador vive, e no
+    Windows isso travaria mover/renomear/apagar o arquivo depois. Estes
+    relatórios têm poucos milhares de linhas, então materializar é barato."""
     wb = openpyxl.load_workbook(arquivo, read_only=True, data_only=True)
-    ws = wb[wb.sheetnames[0]]
-    linhas = ws.iter_rows(values_only=True)
-    headers = list(next(linhas, ()) or ())
-    return headers, linhas
+    try:
+        ws = wb[wb.sheetnames[0]]
+        todas = list(ws.iter_rows(values_only=True))
+    finally:
+        wb.close()
+    headers = list(todas[0]) if todas else []
+    return headers, iter(todas[1:])
