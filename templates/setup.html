@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h1>Bem-vindo ao SyncData</h1>
+<p class="sub">Antes de começar, informe o CNPJ do cliente. Você só faz isso uma vez.</p>
+<div class="card">
+  <form method="post" action="/setup">
+    <label for="cnpj">CNPJ do cliente</label>
+    <input type="text" id="cnpj" name="cnpj" placeholder="00.000.000/0000-00" required>
+    <label for="razao">Razão social (opcional)</label>
+    <input type="text" id="razao" name="razao_social" placeholder="Nome da empresa">
+    <div style="margin-top:20px"><button class="btn" type="submit">Salvar e começar</button></div>
+  </form>
+</div>
+{% endblock %}

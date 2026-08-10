@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SyncData</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="/static/css/syncdata.css" rel="stylesheet">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="sb-brand">SyncData</div>
+      <a class="sb-item {% if ativo == 'conciliar' %}active{% endif %}" href="/">Conciliar</a>
+      <a class="sb-item {% if ativo == 'historico' %}active{% endif %}" href="/historico">Histórico</a>
+      <a class="sb-item {% if ativo == 'config' %}active{% endif %}" href="/configuracoes">Configurações</a>
+    </aside>
+    <main class="content">
+      {% block conteudo %}{% endblock %}
+    </main>
+  </div>
+</body>
+</html>

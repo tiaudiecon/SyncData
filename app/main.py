@@ -1,15 +1,18 @@
+import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from app.database import Base, engine
-from app import models  # noqa: F401  (registra as tabelas no metadata)
+from app import models  # noqa: F401
+from app.routers import setup
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="SyncData")
 
-import os
 if os.path.isdir("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
+
+app.include_router(setup.router)
 
 
 @app.get("/health")
