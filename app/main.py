@@ -5,6 +5,7 @@ from app.database import Base, engine
 from app import models  # noqa: F401
 from app.routers import setup
 from app.routers import conciliar
+from app.routers import resultado
 
 Base.metadata.create_all(bind=engine)
 
@@ -15,6 +16,7 @@ if os.path.isdir("static"):
 
 app.include_router(setup.router)
 app.include_router(conciliar.router)
+app.include_router(resultado.router)
 
 
 @app.get("/health")
