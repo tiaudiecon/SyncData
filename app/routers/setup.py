@@ -11,7 +11,7 @@ templates = Jinja2Templates(directory="templates")
 
 @router.get("/setup")
 def setup_form(request: Request):
-    return templates.TemplateResponse("setup.html", {"request": request, "ativo": "config"})
+    return templates.TemplateResponse(request, "setup.html", {"ativo": "config"})
 
 
 @router.post("/setup")

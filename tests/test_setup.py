@@ -1,3 +1,9 @@
+def test_setup_get_renderiza_form(client):
+    resp = client.get("/setup")
+    assert resp.status_code == 200
+    assert 'name="cnpj"' in resp.text
+
+
 def test_setup_salva_cnpj(client):
     resp = client.post("/setup", data={"cnpj": "04.541.288/0001-62",
                                         "razao_social": "HOSPITAL SAO SEBASTIAO"},
