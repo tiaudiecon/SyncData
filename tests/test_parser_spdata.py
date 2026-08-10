@@ -1,4 +1,5 @@
 from datetime import date
+import pytest
 from app.services.parser_spdata import ler_spdata, LancamentoSpData
 
 CABECALHO = ("EMISSAO|ENTRADA|NOTA|CNPJ_CPF|FORNECEDOR|ORIGEM|VALOR_BRUTO|"
@@ -47,3 +48,15 @@ def test_ignora_linhas_vazias():
     itens = ler_spdata(conteudo)
     assert len(itens) == 1
     assert itens[0].numero_norm == ""   # NOTA=0 vira "" (sem nota)
+
+
+def test_coluna_obrigatoria_faltando_gera_erro_claro():
+    cabecalho_sem_nota = ("EMISSAO|ENTRADA|CNPJ_CPF|FORNECEDOR|ORIGEM|VALOR_BRUTO|"
+                          "VALOR_LIQUIDO|IR_COOP|IRPJ|IR_AUTON|CSRF|INSS_PJ|INSS_AUTON|"
+                          "ISSQN|GRUPO|DESC_GRUPO|SUBGRUPO|DESC_SUBGRUPO|ITEM|DESC_ITEM")
+    linha = ("2015-07-08|2015-07-08|07876749000146|GIROFARMA LTDA|FIN|2265.57|2265.57|"
+             "0.00|0.00|0.00|0.00|0.00|0.00|0.00|103|MAT|1|SUB|2|IT")
+    conteudo = (cabecalho_sem_nota + "\n" + linha + "\n").encode("cp1252")
+
+    with pytest.raises(ValueError, match="NOTA"):
+        ler_spdata(conteudo)

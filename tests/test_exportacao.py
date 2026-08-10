@@ -20,6 +20,10 @@ def _itens():
          "valor_bruto": 100.0, "valor_liquido": 100.0, "status_lancamento": "falta",
          "status_arquivo": "falta", "detalhe_lancamento": "", "detalhe_arquivo": "",
          "veredito": "pendente"},
+        {"numero": "102", "nome_fornecedor": "FORNEC C", "data_emissao": "05/07/2026",
+         "valor_bruto": 200.0, "valor_liquido": 190.0, "status_lancamento": "diverg",
+         "status_arquivo": "ok", "detalhe_lancamento": "valor diverge", "detalhe_arquivo": "",
+         "veredito": "ressalva"},
     ]
 
 
@@ -32,3 +36,22 @@ def test_gera_tres_abas_com_conteudo():
     valores = [c.value for c in aba["A"] if c.value is not None]
     assert "101" in [str(v) for v in valores]
     assert "100" not in [str(v) for v in valores]
+
+
+def test_faltou_arquivar_contem_so_notas_com_status_arquivo_falta():
+    conteudo = gerar_xlsx(_resumo(), _itens())
+    wb = openpyxl.load_workbook(io.BytesIO(conteudo))
+    # a aba "Faltou Arquivar" tem só a nota 101 (status_arquivo == "falta")
+    aba = wb["Faltou Arquivar"]
+    valores = [str(c.value) for c in aba["A"] if c.value is not None]
+    assert "101" in valores
+    assert "100" not in valores
+    assert "102" not in valores
+
+
+def test_item_com_divergencia_e_exportado_na_aba_conciliacao():
+    conteudo = gerar_xlsx(_resumo(), _itens())
+    wb = openpyxl.load_workbook(io.BytesIO(conteudo))
+    aba = wb["Conciliação"]
+    valores = [str(c.value) for c in aba["A"] if c.value is not None]
+    assert "102" in valores

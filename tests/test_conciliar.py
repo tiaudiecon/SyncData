@@ -43,3 +43,16 @@ def test_fluxo_conciliar_gerenciada(client):
     }, follow_redirects=False)
     assert resp.status_code == 303
     assert resp.headers["location"].startswith("/resultado/")
+
+
+def test_arquivo_trocado_no_campo_sieg_mostra_erro_claro(client):
+    client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
+    resp = client.post("/conciliar", files={
+        "spdata": ("SpData.txt", _spdata_txt(), "text/plain"),
+        "sieg": ("renew.xlsx", _renew_xlsx(),  # arquivo errado no campo do Sieg
+                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+        "renew": ("renew.xlsx", _renew_xlsx(),
+                  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+    }, follow_redirects=False)
+    assert resp.status_code == 200
+    assert "Não consegui ler" in resp.text

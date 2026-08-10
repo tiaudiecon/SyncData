@@ -27,6 +27,13 @@ def ler_spdata(conteudo: bytes) -> "list[LancamentoSpData]":
     cabecalho = [c.strip().upper() for c in linhas[0].split("|")]
     idx = {nome: i for i, nome in enumerate(cabecalho)}
 
+    for nome in ("NOTA", "CNPJ_CPF", "EMISSAO", "VALOR_BRUTO", "VALOR_LIQUIDO"):
+        if nome not in idx:
+            raise ValueError(
+                f"Arquivo do SpData inválido: não encontrei a coluna '{nome}'. "
+                "Confira se o arquivo do SpData foi enviado no campo correto."
+            )
+
     def celula(campos, nome):
         i = idx.get(nome)
         return campos[i].strip() if i is not None and i < len(campos) else ""

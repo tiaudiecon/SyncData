@@ -19,6 +19,15 @@ def indice(mapa, *rotulos):
     return None
 
 
+def exigir_colunas(indices: "dict[str, int | None]", mensagem):
+    """Confere que cada coluna obrigatória foi encontrada no cabeçalho.
+    `indices` mapeia nome-da-coluna -> índice (ou None se não encontrada).
+    Levanta ValueError com `mensagem(nome)` para a primeira coluna faltante."""
+    for nome, i in indices.items():
+        if i is None:
+            raise ValueError(mensagem(nome))
+
+
 def abrir_planilha(arquivo):
     """Abre a 1ª aba em modo read-only/data-only. `arquivo` = caminho ou
     file-like (BytesIO). Retorna (headers:list, linhas:iterador de tuplas).

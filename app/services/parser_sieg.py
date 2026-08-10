@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import date
 from app.services.normalizacao import so_digitos, normalizar_numero_nf, limpar_moeda, para_data
-from app.services.planilha import abrir_planilha, mapa_cabecalho, indice
+from app.services.planilha import abrir_planilha, mapa_cabecalho, indice, exigir_colunas
 
 
 @dataclass
@@ -38,6 +38,15 @@ def ler_sieg(arquivo, cnpj_cliente: str):
     i_liq = indice(mapa, "Valor_Liquido")
     i_cancel = indice(mapa, "Dt_Cancelamento")
     i_status = indice(mapa, "Status")
+
+    exigir_colunas(
+        {"Numero": i_num, "Dt_Emissao": i_emi, "Prestador": i_prest,
+         "Tomador": i_tom, "Valor_Servico": i_serv, "Valor_Liquido": i_liq},
+        lambda nome: (
+            f"Planilha do Sieg inválida: não encontrei a coluna '{nome}'. "
+            "Confira se o arquivo do Sieg (NFS-e) foi enviado no campo correto."
+        ),
+    )
 
     def val(row, i):
         return row[i] if (i is not None and i < len(row)) else None

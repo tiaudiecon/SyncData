@@ -1,6 +1,7 @@
 import io
 from datetime import date, datetime
 import openpyxl
+import pytest
 from app.services.parser_renew import ler_renew, RegistroRenew
 
 HEADERS = ["Status", "Tipo de Nota", "Nome Original", "Novo Nome",
@@ -35,3 +36,18 @@ def test_le_e_normaliza():
     assert it.fornecedor == "VITORIA HOSPITALAR LTDA"
     assert it.emissao == date(2026, 5, 11)
     assert it.valor_liquido == 1800.0
+
+
+def test_coluna_obrigatoria_faltando_gera_erro_claro():
+    headers_sem_valor = [h for h in HEADERS if h != "Valor da NF"]
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(headers_sem_valor)
+    ws.append(["OK", "PRODUTO", "x.pdf", "E_x.pdf", "VITORIA HOSPITALAR LTDA",
+               "39.362.611/0001-15", "202069 / 7", datetime(2026, 5, 11)])
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    with pytest.raises(ValueError, match="Valor da NF"):
+        ler_renew(buf)

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import date
 from app.services.normalizacao import so_digitos, normalizar_numero_nf, limpar_moeda, para_data
-from app.services.planilha import abrir_planilha, mapa_cabecalho, indice
+from app.services.planilha import abrir_planilha, mapa_cabecalho, indice, exigir_colunas
 
 
 @dataclass
@@ -24,6 +24,15 @@ def ler_renew(arquivo):
     i_forn = indice(mapa, "Fornecedor Emitente")
     i_emi = indice(mapa, "Data de Emissão")
     i_val = indice(mapa, "Valor da NF")
+
+    exigir_colunas(
+        {"Nº NF / Série": i_num, "CNPJ do Emissor": i_cnpj,
+         "Data de Emissão": i_emi, "Valor da NF": i_val},
+        lambda nome: (
+            f"Planilha do Renew inválida: não encontrei a coluna '{nome}'. "
+            "Confira se o arquivo do Renew foi enviado no campo correto."
+        ),
+    )
 
     def val(row, i):
         return row[i] if (i is not None and i < len(row)) else None

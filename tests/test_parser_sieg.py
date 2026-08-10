@@ -1,6 +1,7 @@
 import io
 from datetime import date, datetime
 import openpyxl
+import pytest
 from app.services.parser_sieg import ler_sieg, NotaSieg
 
 HEADERS = ["Numero", "Dt_Emissao", "Dt_Competencia", "Prestador", "RzPrestador",
@@ -54,3 +55,19 @@ def test_separa_canceladas():
     assert [n.numero for n in autorizadas] == ["500"]
     assert [n.numero for n in canceladas] == ["501"]
     assert canceladas[0].cancelada is True
+
+
+def test_coluna_obrigatoria_faltando_gera_erro_claro():
+    headers_sem_tomador = [h for h in HEADERS if h != "Tomador"]
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(headers_sem_tomador)
+    ws.append(["4291", datetime(2026, 7, 3), datetime(2026, 7, 3), "11111111000111",
+                "FORNEC A", "SP", "SP", "123", "Cliente", 150, 150, None,
+                "Autorizado o uso da NFS-e"])
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    with pytest.raises(ValueError, match="Tomador"):
+        ler_sieg(buf, CLIENTE)
