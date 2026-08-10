@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h1>Conciliar notas</h1>
+<p class="sub">Cliente: <strong>{{ cnpj_formatado }}</strong>
+  {% if razao %}— {{ razao }}{% endif %}
+  <a href="/configuracoes" style="font-size:12px;margin-left:8px">alterar</a></p>
+
+{% if erro %}<div class="card" style="border-color:var(--alert);color:var(--alert)">{{ erro }}</div>{% endif %}
+
+<div class="card">
+  <form method="post" action="/conciliar" enctype="multipart/form-data">
+    <label>1. SpData (.txt)</label>
+    <input type="file" name="spdata" accept=".txt" required>
+    <label>2. Sieg — Serviço (.xlsx)</label>
+    <input type="file" name="sieg" accept=".xlsx" required>
+    <label>3. Renew (.xlsx)</label>
+    <input type="file" name="renew" accept=".xlsx" required>
+    <div style="margin-top:22px"><button class="btn" type="submit">Conciliar</button></div>
+  </form>
+</div>
+{% endblock %}
