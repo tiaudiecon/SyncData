@@ -70,3 +70,35 @@ def test_canceladas_ficam_a_parte():
     assert r.total_universo == 1
     assert r.qt_canceladas == 1
     assert r.itens[0].veredito == "gerenciada"
+
+
+def test_falta_domina_diverg_vira_pendente():
+    # lançamento diverge (líquido), arquivo não encontrado → pendente (falta domina)
+    r = conciliar([nota(servico=150.0, liquido=150.0)],
+                  [], [lanc(bruto=150.0, liquido=140.0)], [])
+    item = r.itens[0]
+    assert item.lancamento.status == STATUS_DIVERG
+    assert item.arquivo.status == STATUS_FALTA
+    assert item.veredito == "pendente"
+
+
+def test_divergencia_na_frente_arquivo_renew():
+    # arquivo (Renew) diverge no líquido; lançamento ok → ressalva
+    r = conciliar([nota(liquido=150.0)], [], [lanc()], [reg(liquido=140.0)])
+    item = r.itens[0]
+    assert item.lancamento.status == STATUS_OK
+    assert item.arquivo.status == STATUS_DIVERG
+    assert "líquido" in item.arquivo.detalhe.lower()
+    assert item.veredito == "ressalva"
+
+
+def test_multiplos_candidatos_escolhe_o_que_casa():
+    # dois lançamentos com a mesma chave (nº+CNPJ): um diverge, o outro casa
+    # tudo → a frente deve varrer os candidatos e resultar OK, não parar no 1º.
+    r = conciliar(
+        [nota(emissao=date(2026, 7, 3), servico=150.0, liquido=150.0)], [],
+        [lanc(emissao=date(2026, 7, 1), bruto=999.0, liquido=999.0),
+         lanc(emissao=date(2026, 7, 3), bruto=150.0, liquido=150.0)],
+        [reg()])
+    assert r.itens[0].lancamento.status == STATUS_OK
+    assert r.itens[0].veredito == "gerenciada"
