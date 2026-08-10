@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -17,7 +17,7 @@ class Conciliacao(Base):
     """Uma execução da conciliação (cabeçalho + totais)."""
     __tablename__ = "conciliacao"
     id = Column(Integer, primary_key=True)
-    data_hora = Column(DateTime, default=datetime.utcnow, index=True)
+    data_hora = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
     cnpj = Column(String, nullable=False)
     arquivo_spdata_nome = Column(String, nullable=True)
     arquivo_sieg_nome = Column(String, nullable=True)

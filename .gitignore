@@ -14,8 +14,10 @@ build/
 dist/
 *.spec.bak
 
-# Banco local
+# Banco local (inclui os sidecars do modo WAL)
 *.db
+*.db-wal
+*.db-shm
 *.sqlite
 *.sqlite3
 
@@ -24,3 +26,6 @@ Thumbs.db
 .DS_Store
 .idea/
 .vscode/
+
+# Scratch do subagent-driven
+.superpowers/
