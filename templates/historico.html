@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h1>Histórico</h1>
+<p class="sub">Conciliações já executadas. Clique para reabrir e reexportar.</p>
+<div class="card" style="padding:0;overflow:auto">
+  <table>
+    <thead><tr><th>Quando</th><th>Notas</th><th>Gerenciadas</th>
+      <th>Faltou lançar</th><th>Faltou arquivar</th><th></th></tr></thead>
+    <tbody>
+    {% for l in linhas %}
+      <tr>
+        <td class="tnum">{{ l.quando }}</td><td class="tnum">{{ l.total }}</td>
+        <td class="tnum">{{ l.gerenciadas }}</td><td class="tnum">{{ l.falta_lancar }}</td>
+        <td class="tnum">{{ l.falta_arquivar }}</td>
+        <td><a href="/resultado/{{ l.id }}">abrir</a></td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" style="color:var(--ink-3)">Nenhuma conciliação ainda.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

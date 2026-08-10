@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h1>Configurações</h1>
+<p class="sub">CNPJ do cliente usado para filtrar o Sieg (onde ele é o Tomador).</p>
+<div class="card">
+  <form method="post" action="/configuracoes">
+    <label for="cnpj">CNPJ do cliente</label>
+    <input type="text" id="cnpj" name="cnpj" value="{{ cfg.cnpj_cliente }}" required>
+    <label for="razao">Razão social (opcional)</label>
+    <input type="text" id="razao" name="razao_social" value="{{ cfg.razao_social or '' }}">
+    <div style="margin-top:20px"><button class="btn" type="submit">Salvar</button></div>
+  </form>
+</div>
+{% endblock %}
