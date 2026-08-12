@@ -71,3 +71,28 @@ def test_coluna_obrigatoria_faltando_gera_erro_claro():
 
     with pytest.raises(ValueError, match="Tomador"):
         ler_sieg(buf, CLIENTE)
+
+
+def test_captura_impostos_e_derivados():
+    headers = ["Numero", "Dt_Emissao", "Prestador", "RzPrestador", "Tomador",
+               "Valor_Servico", "Valor_Liquido", "IR", "ISS", "ISS_Retido", "CSLL",
+               "PIS", "COFINS", "INSS", "Deducoes", "Desconto_Incondic",
+               "Desconto_Condic", "OutRetencoes", "Aliquota", "Base_Calculo",
+               "Dt_Cancelamento", "Status"]
+    wb = openpyxl.Workbook(); ws = wb.active; ws.append(headers)
+    # F&P: IR 308,70 / CSRF (PIS+COFINS+CSLL) 956,97 / base 20580 / aliq 2 / desc 0
+    ws.append(["18", datetime(2026, 7, 17), "30590469000199", "F E P", CLIENTE,
+               20580, 19314.33, 308.70, 0, "Não", 308.70, 133.77, 617.40, 0,
+               0, 0, 0, 0, 2.0, 20580, None, "Autorizado o uso da NFS-e"])
+    buf = io.BytesIO(); wb.save(buf); buf.seek(0)
+    aut, _ = ler_sieg(buf, CLIENTE)
+    n = aut[0]
+    assert n.ir == 308.70
+    assert round(n.csrf, 2) == round(308.70 + 133.77 + 617.40, 2)   # CSLL+PIS+COFINS
+    assert n.iss_retido is False
+    assert n.aliquota == 2.0
+    assert n.base_calculo == 20580
+    assert n.descontos == 0.0
+    assert n.bruto_ajustado == 20580.0
+    # total = INSS+IR+PIS+COFINS+CSLL+OutRet + (ISS se retido=False -> 0)
+    assert round(n.total_retencoes, 2) == round(308.70 + 308.70 + 133.77 + 617.40, 2)
