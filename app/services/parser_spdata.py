@@ -14,6 +14,25 @@ class LancamentoSpData:
     emissao: "date | None"
     valor_bruto: float
     valor_liquido: float
+    issqn: float = 0.0
+    inss_pj: float = 0.0
+    inss_auton: float = 0.0
+    irpj: float = 0.0
+    ir_auton: float = 0.0
+    ir_coop: float = 0.0
+    csrf: float = 0.0
+
+    @property
+    def inss(self) -> float:
+        return round(self.inss_pj + self.inss_auton, 2)
+
+    @property
+    def ir(self) -> float:
+        return round(self.irpj + self.ir_auton + self.ir_coop, 2)
+
+    @property
+    def total_retencoes(self) -> float:
+        return round(self.issqn + self.inss + self.ir + self.csrf, 2)
 
 
 def ler_spdata(conteudo: bytes) -> "list[LancamentoSpData]":
@@ -38,6 +57,9 @@ def ler_spdata(conteudo: bytes) -> "list[LancamentoSpData]":
         i = idx.get(nome)
         return campos[i].strip() if i is not None and i < len(campos) else ""
 
+    def moeda(campos, nome):
+        return limpar_moeda(celula(campos, nome))
+
     itens = []
     for linha in linhas[1:]:
         campos = linha.split("|")
@@ -48,7 +70,11 @@ def ler_spdata(conteudo: bytes) -> "list[LancamentoSpData]":
             cnpj=so_digitos(celula(campos, "CNPJ_CPF")),
             fornecedor=celula(campos, "FORNECEDOR"),
             emissao=para_data(celula(campos, "EMISSAO")),
-            valor_bruto=limpar_moeda(celula(campos, "VALOR_BRUTO")),
-            valor_liquido=limpar_moeda(celula(campos, "VALOR_LIQUIDO")),
+            valor_bruto=moeda(campos, "VALOR_BRUTO"),
+            valor_liquido=moeda(campos, "VALOR_LIQUIDO"),
+            issqn=moeda(campos, "ISSQN"),
+            inss_pj=moeda(campos, "INSS_PJ"), inss_auton=moeda(campos, "INSS_AUTON"),
+            irpj=moeda(campos, "IRPJ"), ir_auton=moeda(campos, "IR_AUTON"),
+            ir_coop=moeda(campos, "IR_COOP"), csrf=moeda(campos, "CSRF"),
         ))
     return itens

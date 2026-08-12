@@ -60,3 +60,19 @@ def test_coluna_obrigatoria_faltando_gera_erro_claro():
 
     with pytest.raises(ValueError, match="NOTA"):
         ler_spdata(conteudo)
+
+
+def test_captura_impostos_spdata():
+    # F&P: IRPJ 308,70 / CSRF 956,97 (a coluna CSRF do SPData)
+    cab = ("EMISSAO|ENTRADA|NOTA|CNPJ_CPF|FORNECEDOR|ORIGEM|VALOR_BRUTO|VALOR_LIQUIDO|"
+           "IR_COOP|IRPJ|IR_AUTON|CSRF|INSS_PJ|INSS_AUTON|ISSQN|GRUPO|DESC_GRUPO|"
+           "SUBGRUPO|DESC_SUBGRUPO|ITEM|DESC_ITEM")
+    linha = ("2026-07-17|2026-07-17|18|30590469000199|F E P|GRT|20580.00|19314.33|"
+             "0.00|308.70|0.00|956.97|0.00|0.00|0.00|1|G|1|S|1|I")
+    conteudo = (cab + "\n" + linha + "\n").encode("cp1252")
+    it = ler_spdata(conteudo)[0]
+    assert it.irpj == 308.70
+    assert it.csrf == 956.97
+    assert it.ir == 308.70               # IRPJ+IR_AUTON+IR_COOP
+    assert it.inss == 0.0
+    assert round(it.total_retencoes, 2) == round(308.70 + 956.97, 2)  # ISSQN+INSS+IR+CSRF
