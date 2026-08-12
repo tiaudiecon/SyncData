@@ -51,12 +51,26 @@ def test_divergencia_de_valor_vira_ressalva():
     assert r.qt_ressalva == 1
 
 
-def test_divergencia_de_data():
+def test_data_do_spdata_e_ignorada():
+    # A data do SpData é a de lançamento (não de emissão), então diferença de
+    # data NÃO gera divergência na frente de lançamento — se os valores batem,
+    # é 🟢. (A do Renew, essa sim, continua conferida — teste abaixo.)
     r = conciliar([nota(emissao=date(2026, 7, 3))],
-                  [], [lanc(emissao=date(2026, 7, 5))], [reg()])
+                  [], [lanc(emissao=date(2026, 7, 25))], [reg()])
     item = r.itens[0]
-    assert item.lancamento.status == STATUS_DIVERG
-    assert "data" in item.lancamento.detalhe.lower()
+    assert item.lancamento.status == STATUS_OK
+    assert item.veredito == "gerenciada"
+
+
+def test_data_do_renew_ainda_conta():
+    # No Renew a data é a de emissão de verdade → diferença vira divergência.
+    r = conciliar([nota(emissao=date(2026, 7, 3))],
+                  [], [lanc()], [reg(emissao=date(2026, 7, 25))])
+    item = r.itens[0]
+    assert item.lancamento.status == STATUS_OK
+    assert item.arquivo.status == STATUS_DIVERG
+    assert "data" in item.arquivo.detalhe.lower()
+    assert item.veredito == "ressalva"
 
 
 def test_tolerancia_5_centavos_conta_como_ok():
@@ -102,3 +116,39 @@ def test_multiplos_candidatos_escolhe_o_que_casa():
         [reg()])
     assert r.itens[0].lancamento.status == STATUS_OK
     assert r.itens[0].veredito == "gerenciada"
+
+
+def test_numero_composto_casa_por_sufixo():
+    # Sieg/Renew trazem o número composto '2600000002098'; o SpData guarda '2098'.
+    # Com o mesmo CNPJ e o valor batendo, é a mesma nota → 🟢.
+    r = conciliar([nota(numero="2600000002098", servico=150.0, liquido=150.0)],
+                  [], [lanc(numero="2098", bruto=150.0, liquido=150.0)],
+                  [reg(numero="2600000002098", valor=150.0)])
+    item = r.itens[0]
+    assert item.lancamento.status == STATUS_OK
+    assert item.arquivo.status == STATUS_OK
+    assert item.veredito == "gerenciada"
+
+
+def test_sufixo_so_vale_quando_o_valor_bate():
+    # Número casa por sufixo, mas o valor NÃO bate → não é aceito como a mesma
+    # nota (guarda contra falso-positivo) → faltou lançar.
+    r = conciliar([nota(numero="2600000002098", servico=150.0, liquido=150.0)],
+                  [], [lanc(numero="2098", bruto=999.0, liquido=999.0)], [])
+    assert r.itens[0].lancamento.status == STATUS_FALTA
+
+
+def test_sufixo_tail_curto_de_composto_casa():
+    # Mesmo tail curto (ex.: '18') casa quando o número longo é claramente
+    # composto (prefixo grande) e o valor bate — caso real do Sieg.
+    r = conciliar([nota(numero="2026000000018", servico=150.0, liquido=150.0)],
+                  [], [lanc(numero="18", bruto=150.0, liquido=150.0)], [])
+    assert r.itens[0].lancamento.status == STATUS_OK
+
+
+def test_sufixo_nao_casa_numeros_curtos_parecidos():
+    # '5' NÃO casa com '125' (diferença de tamanho pequena) mesmo com valor
+    # batendo — evita falso-positivo entre números curtos distintos.
+    r = conciliar([nota(numero="125", servico=150.0, liquido=150.0)],
+                  [], [lanc(numero="5", bruto=150.0, liquido=150.0)], [])
+    assert r.itens[0].lancamento.status == STATUS_FALTA
