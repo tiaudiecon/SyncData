@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date
 from app.services.normalizacao import so_digitos, normalizar_numero_nf, limpar_moeda, para_data
 from app.services.planilha import abrir_planilha, mapa_cabecalho, indice, exigir_colunas

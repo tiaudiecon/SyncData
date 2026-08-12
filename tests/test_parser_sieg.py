@@ -80,7 +80,7 @@ def test_captura_impostos_e_derivados():
                "Desconto_Condic", "OutRetencoes", "Aliquota", "Base_Calculo",
                "Dt_Cancelamento", "Status"]
     wb = openpyxl.Workbook(); ws = wb.active; ws.append(headers)
-    # F&P: IR 308,70 / CSRF (PIS+COFINS+CSLL) 956,97 / base 20580 / aliq 2 / desc 0
+    # F&P: IR 308,70 / CSRF = CSLL 308,70 + PIS 133,77 + COFINS 617,40 = 1.059,87 / base 20580
     ws.append(["18", datetime(2026, 7, 17), "30590469000199", "F E P", CLIENTE,
                20580, 19314.33, 308.70, 0, "Não", 308.70, 133.77, 617.40, 0,
                0, 0, 0, 0, 2.0, 20580, None, "Autorizado o uso da NFS-e"])
