@@ -11,6 +11,9 @@ from app.services.configuracao import contexto_cliente
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+from app.services.formatacao import largura_numeros, pad_numero, registrar_filtros
+import json
+registrar_filtros(templates)
 _XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
@@ -29,13 +32,22 @@ def montar_resumo_e_itens(conc):
         "qt_falta_lancar": conc.qt_falta_lancar,
         "qt_falta_arquivar": conc.qt_falta_arquivar, "qt_canceladas": conc.qt_canceladas,
     }
-    itens = [{
-        "numero": i.numero, "nome_fornecedor": i.nome_fornecedor,
-        "data_emissao": i.data_emissao, "valor_bruto": i.valor_bruto,
-        "valor_liquido": i.valor_liquido, "status_lancamento": i.status_lancamento,
-        "status_arquivo": i.status_arquivo, "detalhe_lancamento": i.detalhe_lancamento,
-        "detalhe_arquivo": i.detalhe_arquivo, "veredito": i.veredito,
-    } for i in conc.itens]
+    largura = largura_numeros([i.numero for i in conc.itens])
+    itens = []
+    for i in conc.itens:
+        detalhe = "; ".join(d for d in (i.detalhe_lancamento, i.detalhe_arquivo) if d)
+        itens.append({
+            "numero": pad_numero(i.numero, largura),
+            "nome_fornecedor": i.nome_fornecedor, "data_emissao": i.data_emissao,
+            "tem_desconto": bool(i.tem_desconto),
+            "sieg_bruto": i.valor_bruto, "sieg_liquido": i.valor_liquido,
+            "sieg_imp": i.imp_sieg,
+            "sp_bruto": i.sp_valor_bruto, "sp_liquido": i.sp_valor_liquido,
+            "sp_imp": i.imp_spdata,
+            "status_lancamento": i.status_lancamento, "status_arquivo": i.status_arquivo,
+            "detalhe": detalhe, "veredito": i.veredito,
+            "impostos": json.loads(i.impostos_json) if i.impostos_json else {},
+        })
     return resumo, itens
 
 

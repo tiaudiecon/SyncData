@@ -3,6 +3,27 @@ import openpyxl
 from tests.test_conciliar import _sieg_xlsx, _renew_xlsx, _spdata_txt
 
 
+def test_montar_itens_enriquecido(client):
+    client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
+    client.post("/conciliar", files={
+        "spdata": ("SpData.txt", _spdata_txt(), "text/plain"),
+        "sieg": ("sieg.xlsx", _sieg_xlsx("04541288000162"), "application/octet-stream"),
+        "renew": ("renew.xlsx", _renew_xlsx(), "application/octet-stream"),
+    }, follow_redirects=False)
+    from app.database import SessionLocal
+    from app.models import Conciliacao
+    from app.routers.resultado import montar_resumo_e_itens
+    db = SessionLocal()
+    conc = db.query(Conciliacao).order_by(Conciliacao.id.desc()).first()
+    resumo, itens = montar_resumo_e_itens(conc)
+    db.close()
+    assert itens
+    it = itens[0]
+    for chave in ("sieg_bruto", "sieg_liquido", "sieg_imp", "sp_bruto", "impostos", "tem_desconto"):
+        assert chave in it
+    assert it["numero"].isdigit()          # nº padronizado (só dígitos)
+
+
 def test_resultado_e_export(client):
     client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
     resp = client.post("/conciliar", files={

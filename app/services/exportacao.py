@@ -28,12 +28,11 @@ CABECALHOS = ["Nº NF", "Fornecedor", "Emissão", "Valor Bruto", "Valor Líquido
 
 
 def _linha_item(it):
-    detalhes = "; ".join(d for d in (it["detalhe_lancamento"], it["detalhe_arquivo"]) if d)
     return [it["numero"], it["nome_fornecedor"], it["data_emissao"],
-            it["valor_bruto"], it["valor_liquido"],
+            it["sieg_bruto"], it["sieg_liquido"],
             _ROTULO_STATUS.get(it["status_lancamento"], it["status_lancamento"]),
             _ROTULO_STATUS.get(it["status_arquivo"], it["status_arquivo"]),
-            detalhes, it["veredito"].capitalize()]
+            it["detalhe"], it["veredito"].capitalize()]
 
 
 def _largura(ws, cabecalhos, linhas):

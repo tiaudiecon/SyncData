@@ -46,11 +46,11 @@
         <td class="bold mono">{{ i.numero }}</td>
         <td>{{ i.nome_fornecedor }}</td>
         <td class="mono">{{ i.data_emissao }}</td>
-        <td class="mono right">R$ {{ '%.2f'|format(i.valor_bruto) }}</td>
+        <td class="mono right">R$ {{ '%.2f'|format(i.sieg_bruto) }}</td>
         <td>{{ status(i.status_lancamento) }}</td>
         <td>{{ status(i.status_arquivo) }}</td>
         <td style="font-size:12px; color:var(--ink-3)">
-          {{- i.detalhe_lancamento }}{% if i.detalhe_lancamento and i.detalhe_arquivo %}; {% endif %}{{ i.detalhe_arquivo -}}
+          {{- i.detalhe -}}
         </td>
       </tr>
     {% endfor %}
