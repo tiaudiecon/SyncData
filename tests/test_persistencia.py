@@ -28,3 +28,21 @@ def test_persiste_impostos_e_lado_spdata():
     assert dados["sieg"]["ir"] == 100.0
     assert dados["spdata"]["ir"] == 100.0
     db.query(ConciliacaoItem).delete(); db.query(Conciliacao).delete(); db.commit(); db.close()
+
+
+def test_faltou_lancar_lado_spdata_fica_none():
+    Base.metadata.create_all(bind=engine)
+    n = NotaSieg("100", "100", "11111111000111", "F", date(2026, 7, 3), 1000.0, 900.0,
+                 False, ir=100.0)
+    from app.services.parser_renew import RegistroRenew
+    reg = RegistroRenew("100", "100", "11111111000111", "F", date(2026, 7, 3), 1000.0)
+    res = conciliar([n], [], [], [reg])          # sem SPData -> faltou lançar
+    db = SessionLocal()
+    conc = salvar_conciliacao(db, "04541288000162",
+                              {"spdata": "a", "sieg": "b", "renew": "c"}, res)
+    it = db.query(ConciliacaoItem).filter_by(conciliacao_id=conc.id).first()
+    assert it.sp_valor_bruto is None and it.sp_valor_liquido is None
+    assert it.imp_spdata is None
+    assert it.imp_sieg == 100.0                  # lado Sieg segue preenchido
+    assert json.loads(it.impostos_json)["spdata"] is None
+    db.query(ConciliacaoItem).delete(); db.query(Conciliacao).delete(); db.commit(); db.close()
