@@ -64,7 +64,12 @@ def _casa_numero(a, b):
 
 
 def _avaliar(nota, candidatos_cnpj, comparar):
-    """Devolve (Frente, candidato_casado_ou_None)."""
+    """`candidatos_cnpj` = itens do MESMO CNPJ do fornecedor. Casa por número: o
+    número exato tem prioridade (aí valor/data entram como conferência → 🟢/🟡);
+    sem número exato, tenta o número composto por sufixo (`_casa_numero`), que só
+    vale como a mesma nota quando o VALOR bate (guarda contra falso-positivo).
+    `comparar(nota, cand) -> (data_ok, valores_ok, detalhe)`.
+    Devolve (Frente, candidato_casado_ou_None)."""
     if not candidatos_cnpj:
         return Frente(STATUS_FALTA, ""), None
 
