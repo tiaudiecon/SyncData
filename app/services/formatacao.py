@@ -1,3 +1,4 @@
+import math
 import re
 
 
@@ -8,6 +9,8 @@ def moeda(v) -> str:
     try:
         n = float(v)
     except (TypeError, ValueError):
+        return ""
+    if math.isnan(n) or math.isinf(n):   # NaN/Inf também não são "número" exibível
         return ""
     s = f"{n:,.2f}"                    # 1,234.56 (estilo en-US)
     s = s.replace(",", "X").replace(".", ",").replace("X", ".")

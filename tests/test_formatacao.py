@@ -1,4 +1,4 @@
-from app.services.formatacao import moeda, largura_numeros, pad_numero
+from app.services.formatacao import moeda, largura_numeros, pad_numero, registrar_filtros
 
 
 def test_moeda_pt_br():
@@ -7,6 +7,19 @@ def test_moeda_pt_br():
     assert moeda(0) == "R$ 0,00"
     assert moeda(1234567.8) == "R$ 1.234.567,80"
     assert moeda(None) == ""
+
+
+def test_moeda_nao_numerico_vira_vazio():
+    assert moeda("abc") == ""
+    assert moeda(float("nan")) == ""
+    assert moeda(float("inf")) == ""
+
+
+def test_registrar_filtros():
+    from fastapi.templating import Jinja2Templates
+    t = Jinja2Templates(directory="templates")
+    registrar_filtros(t)
+    assert t.env.filters["moeda"] is moeda
 
 
 def test_padronizacao_pelo_maior():
