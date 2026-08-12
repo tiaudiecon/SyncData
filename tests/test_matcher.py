@@ -152,3 +152,26 @@ def test_sufixo_nao_casa_numeros_curtos_parecidos():
     r = conciliar([nota(numero="125", servico=150.0, liquido=150.0)],
                   [], [lanc(numero="5", bruto=150.0, liquido=150.0)], [])
     assert r.itens[0].lancamento.status == STATUS_FALTA
+
+
+def test_desconto_nao_gera_divergencia():
+    # Sieg bruto 10000, desconto 615 -> ajustado 9385; SPData bruto 9385 -> casa.
+    n = NotaSieg("100", "100", "11111111000111", "F", date(2026, 7, 3),
+                 10000.0, 9385.0, False, deducoes=615.0)
+    l = LancamentoSpData("100", "100", "11111111000111", "F", date(2026, 7, 3),
+                         9385.0, 9385.0)
+    r = conciliar([n], [], [l], [reg(valor=9385.0)])
+    item = r.itens[0]
+    assert item.lancamento.status == STATUS_OK
+    assert item.veredito == "gerenciada"
+
+
+def test_item_carrega_linha_spdata_casada():
+    r = conciliar([nota()], [], [lanc()], [reg()])
+    assert r.itens[0].lancamento_row is not None
+    assert r.itens[0].lancamento_row.cnpj == "11111111000111"
+
+
+def test_faltou_lancar_sem_linha_spdata():
+    r = conciliar([nota()], [], [], [reg()])
+    assert r.itens[0].lancamento_row is None

@@ -18,6 +18,7 @@ class ItemConciliacao:
     lancamento: Frente
     arquivo: Frente
     veredito: str = "pendente"
+    lancamento_row: object = None
 
 
 @dataclass
@@ -63,13 +64,9 @@ def _casa_numero(a, b):
 
 
 def _avaliar(nota, candidatos_cnpj, comparar):
-    """`candidatos_cnpj` = itens do MESMO CNPJ do fornecedor. Casa por número:
-    o número exato tem prioridade (aí valor/data são conferência → 🟢/🟡); se não
-    houver número exato, tenta o número composto por sufixo, que só vale como a
-    mesma nota quando o VALOR bate (guarda contra falso-positivo).
-    `comparar(nota, cand) -> (data_ok, valores_ok, detalhe)`."""
+    """Devolve (Frente, candidato_casado_ou_None)."""
     if not candidatos_cnpj:
-        return Frente(STATUS_FALTA, "")
+        return Frente(STATUS_FALTA, ""), None
 
     exatos = [c for c in candidatos_cnpj
               if nota.numero_norm and c.numero_norm == nota.numero_norm]
@@ -78,29 +75,29 @@ def _avaliar(nota, candidatos_cnpj, comparar):
         for c in exatos:
             data_ok, valores_ok, detalhe = comparar(nota, c)
             if data_ok and valores_ok:
-                return Frente(STATUS_OK, "")
+                return Frente(STATUS_OK, ""), c
             acertos = int(data_ok) + int(valores_ok)
             if melhor is None or acertos > melhor[0]:
-                melhor = (acertos, detalhe)
-        return Frente(STATUS_DIVERG, melhor[1])
+                melhor = (acertos, detalhe, c)
+        return Frente(STATUS_DIVERG, melhor[1]), melhor[2]
 
     for c in candidatos_cnpj:
         if _casa_numero(nota.numero_norm, c.numero_norm):
             _, valores_ok, _ = comparar(nota, c)
             if valores_ok:
-                return Frente(STATUS_OK, "")
-    return Frente(STATUS_FALTA, "")
+                return Frente(STATUS_OK, ""), c
+    return Frente(STATUS_FALTA, ""), None
 
 
 def _cmp_spdata(nota, c):
     # A data do SpData é a de LANÇAMENTO (= coluna ENTRADA), não a de emissão da
     # NF, então NÃO comparamos data nesta frente — só os valores (bruto e
     # líquido). data_ok=True sempre: o veredito 🟢 sai quando os valores batem.
-    bruto_ok = valores_batem(nota.valor_servico, c.valor_bruto)
+    bruto_ok = valores_batem(nota.bruto_ajustado, c.valor_bruto)
     liq_ok = valores_batem(nota.valor_liquido, c.valor_liquido)
     partes = []
     if not bruto_ok:
-        partes.append(f"bruto R$ {nota.valor_servico:.2f}≠R$ {c.valor_bruto:.2f}")
+        partes.append(f"bruto R$ {nota.bruto_ajustado:.2f}≠R$ {c.valor_bruto:.2f}")
     if not liq_ok:
         partes.append(f"líquido R$ {nota.valor_liquido:.2f}≠R$ {c.valor_liquido:.2f}")
     return True, (bruto_ok and liq_ok), "; ".join(partes)
@@ -111,12 +108,12 @@ def _cmp_renew(nota, c):
     # Valor_Servico do Sieg (bruto), não com o líquido. A data do Renew é a de
     # emissão de verdade, então aqui a data entra como conferência.
     data_ok = bool(nota.emissao and c.emissao and nota.emissao == c.emissao)
-    valor_ok = valores_batem(nota.valor_servico, c.valor)
+    valor_ok = valores_batem(nota.bruto_ajustado, c.valor)
     partes = []
     if not data_ok:
         partes.append(f"data {_fmt_data(nota.emissao)}≠{_fmt_data(c.emissao)}")
     if not valor_ok:
-        partes.append(f"valor R$ {nota.valor_servico:.2f}≠R$ {c.valor:.2f}")
+        partes.append(f"valor R$ {nota.bruto_ajustado:.2f}≠R$ {c.valor:.2f}")
     return data_ok, valor_ok, "; ".join(partes)
 
 
@@ -134,10 +131,10 @@ def conciliar(autorizadas, canceladas, spdata, renew):
 
     res = ResultadoConciliacao(canceladas=list(canceladas))
     for nota in autorizadas:
-        lanc = _avaliar(nota, idx_sp.get(nota.cnpj_prestador, []), _cmp_spdata)
-        arq = _avaliar(nota, idx_rn.get(nota.cnpj_prestador, []), _cmp_renew)
+        lanc, lanc_row = _avaliar(nota, idx_sp.get(nota.cnpj_prestador, []), _cmp_spdata)
+        arq, _ = _avaliar(nota, idx_rn.get(nota.cnpj_prestador, []), _cmp_renew)
         veredito = _veredito(lanc, arq)
-        res.itens.append(ItemConciliacao(nota, lanc, arq, veredito))
+        res.itens.append(ItemConciliacao(nota, lanc, arq, veredito, lanc_row))
 
         if lanc.status == STATUS_FALTA:
             res.qt_falta_lancar += 1
