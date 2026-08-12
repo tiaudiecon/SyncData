@@ -51,5 +51,11 @@ class ConciliacaoItem(Base):
     detalhe_arquivo = Column(String, default="")
     veredito = Column(String, default="pendente")         # gerenciada|ressalva|pendente
     cancelada = Column(Boolean, default=False)
+    sp_valor_bruto = Column(Float, nullable=True)
+    sp_valor_liquido = Column(Float, nullable=True)
+    imp_sieg = Column(Float, default=0.0)
+    imp_spdata = Column(Float, nullable=True)
+    tem_desconto = Column(Boolean, default=False)
+    impostos_json = Column(String, default="")
 
     conciliacao = relationship("Conciliacao", back_populates="itens")
