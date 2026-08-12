@@ -102,7 +102,8 @@ As três bases:
 - **Campos usados:** `Nº NF / Série` (ex.: `"202069 / 7"` ou `"1924136"` — número +
   série opcional), `CNPJ do Emissor` (**com máscara**, ex.: `39.362.611/0001-15`),
   `Fornecedor Emitente` (nome), `Data de Emissão` (datetime), `Valor da NF`
-  (= **líquido**, conforme informado pelo cliente).
+  (= valor de face/**BRUTO** — ver "Calibração com dados reais" no fim do doc;
+  o palpite inicial de "líquido" foi refutado pelos dados).
 - **Observação:** o Renew traz produto **e** serviço (`Tipo de Nota`). No Modelo A só
   as linhas que casarem com uma nota do Sieg (serviço) são relevantes; as demais
   ficam de fora naturalmente.
@@ -158,10 +159,16 @@ Cada frente recebe um status pela cascata (do mais rígido ao mais frouxo):
 
 **Quais valores cada frente compara:**
 
-- **SpData (lançamento):** `EMISSAO` × `Dt_Emissao`; `VALOR_BRUTO` × `Valor_Servico`;
-  `VALOR_LIQUIDO` × `Valor_Liquido`.
-- **Renew (arquivo):** `Data de Emissão` × `Dt_Emissao`; `Valor da NF` ×
-  `Valor_Liquido` (só líquido — o Renew não traz bruto).
+- **SpData (lançamento):** `VALOR_BRUTO` × `Valor_Servico` e `VALOR_LIQUIDO` ×
+  `Valor_Liquido`. **A data NÃO é comparada** nesta frente: o `EMISSAO` do SpData é
+  a data de lançamento (= `ENTRADA`), não a de emissão da NF (ver Calibração).
+- **Renew (arquivo):** `Data de Emissão` × `Dt_Emissao` (aqui a data é a de emissão
+  de verdade, então entra como conferência); `Valor da NF` × `Valor_Servico`
+  (**BRUTO** — o Renew traz o valor de face, não o líquido).
+
+Além disso, o número casa por **igualdade** ou, no caso de **número composto**
+(Sieg/Renew trazem `2026000000018`, o SpData guarda `18`), por **sufixo** — desde que
+o número longo tenha prefixo grande (≥6 dígitos) **e** o valor bata.
 
 **Múltiplos candidatos** (raro): escolher o de melhor score (data + valores batendo).
 
@@ -312,11 +319,38 @@ SyncData/
 - Portátil (`.exe`), SQLite, 1 CNPJ por cópia (digitado 1x), multi-cliente genérico.
 - Histórico persistido. Export `.xlsx` em 3 abas. Nome: **SyncData**.
 
-## 13. Pontos em aberto para o review
+## 13. Calibração com dados reais (2026-08-11)
 
-1. Confirmar a composição das **3 abas** do export (seção 6.2): manter "Conciliação"
-   completa com resumo no topo, ou trocar por uma aba "Resumo" dedicada?
-2. Onde o **arquivo SQLite** deve ficar (ao lado do `.exe` × pasta de dados do
-   usuário no Windows)? — decidir no plano de implementação.
-3. Futuro: relatório **NF-e (produtos)** do Sieg como segunda lista-mestra; **Modelo
-   B**.
+Rodamos o app sobre um trio real do Hospital São Sebastião (jul/2026: SpData + Sieg
+NFS-e + Renew). O que aprendemos e ajustamos:
+
+1. **Renew `Valor da NF` = BRUTO** (não líquido). Em 36/36 notas com retenção o valor
+   do Renew bateu com o `Valor_Servico` (bruto) do Sieg e 0/36 com o líquido. → matcher
+   passou a comparar Renew com o bruto; campo `RegistroRenew.valor`.
+2. **Status de cancelamento vem no texto `Status` (`'Cancelamento'`)**, não em
+   `Dt_Cancelamento` (sempre vazio nos dados). A lógica "`cancel` no `Status`" já
+   trata. As 25 linhas de `Status` nulo são notas recebidas legítimas (contam como
+   autorizadas).
+3. **Data do SpData é a de lançamento** (`EMISSAO == ENTRADA` em 100% das linhas), não
+   a de emissão da NF. → data **deixou de ser comparada** na frente do SpData (tirou
+   ~31 ressalvas falsas). A data do Renew (emissão de verdade) segue conferida.
+4. **Número composto:** Sieg/Renew trazem um número com prefixo de código
+   (`2026000000018`) e o SpData o número curto (`18`). → match por **sufixo** com guarda
+   de prefixo (≥6 dígitos) e de valor.
+5. **Direção confirmada:** no Sieg real o cliente é Prestador em ~783 linhas e Tomador
+   em ~122; o filtro `Tomador == cliente` isola corretamente as recebidas.
+
+Efeito no trio real: **39 → 71 gerenciadas**, **40 → 10 ressalvas** (universo de 130).
+
+**Pendência de qualidade de dado (na origem, decisão do cliente):** algumas linhas do
+SpData têm **CNPJ malformado** (falta zero à esquerda / sobra `000`, ex.:
+`8272578000109000`). O app não mascara isso — essas ~10 notas aparecem como "faltou
+lançar" até o cliente corrigir a exportação do SpData.
+
+## 14. Ainda em aberto / futuro
+
+1. Onde o **arquivo SQLite** deve ficar (ao lado do `.exe` × pasta de dados do usuário
+   no Windows) — hoje grava no diretório de trabalho.
+2. **NF-e (produtos)** do Sieg como segunda lista-mestra; **Modelo B** (cruzamento
+   todos-contra-todos).
+3. Ícone próprio do `.exe` (o `Logo.ico` do Integra era PNG inválido).
