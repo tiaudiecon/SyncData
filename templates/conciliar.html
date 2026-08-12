@@ -1,21 +1,45 @@
 {% extends "base.html" %}
-{% block conteudo %}
-<h1>Conciliar notas</h1>
-<p class="sub">Cliente: <strong>{{ cnpj_formatado }}</strong>
-  {% if razao %}— {{ razao }}{% endif %}
-  <a href="/configuracoes" style="font-size:12px;margin-left:8px">alterar</a></p>
-
-{% if erro %}<div class="card" style="border-color:var(--alert);color:var(--alert)">{{ erro }}</div>{% endif %}
-
-<div class="card">
-  <form method="post" action="/conciliar" enctype="multipart/form-data">
-    <label>1. SpData (.txt)</label>
-    <input type="file" name="spdata" accept=".txt" required>
-    <label>2. Sieg — Serviço (.xlsx)</label>
-    <input type="file" name="sieg" accept=".xlsx" required>
-    <label>3. Renew (.xlsx)</label>
-    <input type="file" name="renew" accept=".xlsx" required>
-    <div style="margin-top:22px"><button class="btn" type="submit">Conciliar</button></div>
-  </form>
+{% block titulo %}Conciliar · SyncData{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="crumb">Nova conciliação</div>
+    <h1>Conciliar <em>notas</em></h1>
+  </div>
 </div>
+
+{% if erro %}<div class="erro-box">{{ erro }}</div>{% endif %}
+
+<form method="post" action="/conciliar" enctype="multipart/form-data">
+  <div class="panel">
+    <div class="panel-head"><h3>Envie os três arquivos do período</h3></div>
+    <div class="panel-body">
+      <div class="upload">
+        <div class="num">1</div>
+        <div class="meta"><div class="t">SpData</div><div class="h">Lançamentos do cliente · arquivo .txt</div></div>
+        <input type="file" name="spdata" accept=".txt" required>
+      </div>
+      <div class="upload">
+        <div class="num">2</div>
+        <div class="meta"><div class="t">Sieg — Serviço</div><div class="h">NFS-e, a lista-mestra · arquivo .xlsx</div></div>
+        <input type="file" name="sieg" accept=".xlsx" required>
+      </div>
+      <div class="upload">
+        <div class="num">3</div>
+        <div class="meta"><div class="t">Renew</div><div class="h">Notas arquivadas · arquivo .xlsx</div></div>
+        <input type="file" name="renew" accept=".xlsx" required>
+      </div>
+
+      <div class="note-box">Confira que o <strong>Sieg</strong> e o <strong>Renew</strong> foram enviados
+        nos campos certos — se um arquivo estiver trocado, o SyncData avisa em vez de conciliar errado.</div>
+
+      <div style="margin-top:20px">
+        <button class="btn btn-accent btn-lg" type="submit">
+          <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Conciliar
+        </button>
+      </div>
+    </div>
+  </div>
+</form>
 {% endblock %}

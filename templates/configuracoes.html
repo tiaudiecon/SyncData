@@ -1,14 +1,28 @@
 {% extends "base.html" %}
-{% block conteudo %}
-<h1>Configurações</h1>
-<p class="sub">CNPJ do cliente usado para filtrar o Sieg (onde ele é o Tomador).</p>
-<div class="card">
-  <form method="post" action="/configuracoes">
-    <label for="cnpj">CNPJ do cliente</label>
-    <input type="text" id="cnpj" name="cnpj" value="{{ cfg.cnpj_cliente }}" required>
-    <label for="razao">Razão social (opcional)</label>
-    <input type="text" id="razao" name="razao_social" value="{{ cfg.razao_social or '' }}">
-    <div style="margin-top:20px"><button class="btn" type="submit">Salvar</button></div>
-  </form>
+{% block titulo %}Configurações · SyncData{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="crumb">Cliente ativo</div>
+    <h1>Configurações</h1>
+  </div>
+</div>
+
+<div class="panel" style="max-width:560px">
+  <div class="panel-head"><h3>CNPJ do cliente</h3></div>
+  <div class="panel-body">
+    <p class="sub" style="margin-bottom:18px">É o CNPJ usado para filtrar o Sieg (as notas em que o cliente é o <strong>Tomador</strong>).</p>
+    <form method="post" action="/configuracoes">
+      <div class="field">
+        <label for="cnpj">CNPJ</label>
+        <input class="input" type="text" id="cnpj" name="cnpj" value="{{ cfg.cnpj_cliente }}" required>
+      </div>
+      <div class="field">
+        <label for="razao">Razão social (opcional)</label>
+        <input class="input" type="text" id="razao" name="razao_social" value="{{ cfg.razao_social or '' }}">
+      </div>
+      <div style="margin-top:6px"><button class="btn btn-accent" type="submit">Salvar</button></div>
+    </form>
+  </div>
 </div>
 {% endblock %}

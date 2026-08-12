@@ -7,6 +7,7 @@ from app.database import get_db
 from app.models import Conciliacao
 from app.services.exportacao import gerar_xlsx
 from app.services.tempo import formatar_dt
+from app.services.configuracao import contexto_cliente
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -44,7 +45,7 @@ def ver(conciliacao_id: int, request: Request, db: Session = Depends(get_db)):
     resumo, itens = montar_resumo_e_itens(conc)
     return templates.TemplateResponse(request, "resultado.html", {
         "ativo": "conciliar", "c": conc,
-        "resumo": resumo, "itens": itens,
+        "resumo": resumo, "itens": itens, **contexto_cliente(db),
     })
 
 

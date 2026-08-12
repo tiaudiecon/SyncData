@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Conciliacao
 from app.services.tempo import formatar_dt
+from app.services.configuracao import contexto_cliente
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -18,5 +19,5 @@ def listar(request: Request, db: Session = Depends(get_db)):
         "falta_lancar": c.qt_falta_lancar, "falta_arquivar": c.qt_falta_arquivar,
     } for c in registros]
     return templates.TemplateResponse(request, "historico.html", {
-        "ativo": "historico", "linhas": linhas,
+        "ativo": "historico", "linhas": linhas, **contexto_cliente(db),
     })

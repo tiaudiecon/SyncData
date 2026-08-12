@@ -1,9 +1,10 @@
+import io
 from fastapi import APIRouter, Depends, File, Request, UploadFile
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.services.configuracao import esta_configurado, obter_config
+from app.services.configuracao import esta_configurado, obter_config, contexto_cliente
 from app.services.parser_spdata import ler_spdata
 from app.services.parser_sieg import ler_sieg
 from app.services.parser_renew import ler_renew
@@ -14,22 +15,12 @@ router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
 
-def _formatar_cnpj(cnpj):
-    d = "".join(ch for ch in (cnpj or "") if ch.isdigit())
-    if len(d) == 14:
-        return f"{d[:2]}.{d[2:5]}.{d[5:8]}/{d[8:12]}-{d[12:]}"
-    return cnpj
-
-
 @router.get("/")
 def home(request: Request, db: Session = Depends(get_db)):
     if not esta_configurado(db):
         return RedirectResponse(url="/setup", status_code=303)
-    cfg = obter_config(db)
     return templates.TemplateResponse(request, "conciliar.html", {
-        "ativo": "conciliar",
-        "cnpj_formatado": _formatar_cnpj(cfg.cnpj_cliente),
-        "razao": cfg.razao_social, "erro": None,
+        "ativo": "conciliar", "erro": None, **contexto_cliente(db),
     })
 
 
@@ -37,7 +28,6 @@ def home(request: Request, db: Session = Depends(get_db)):
 async def executar(request: Request, db: Session = Depends(get_db),
                    spdata: UploadFile = File(...), sieg: UploadFile = File(...),
                    renew: UploadFile = File(...)):
-    import io
     cfg = obter_config(db)
     try:
         lancamentos = ler_spdata(await spdata.read())
@@ -46,9 +36,8 @@ async def executar(request: Request, db: Session = Depends(get_db),
     except Exception as exc:  # arquivo trocado/ilegível: mostra na própria tela
         return templates.TemplateResponse(request, "conciliar.html", {
             "ativo": "conciliar",
-            "cnpj_formatado": _formatar_cnpj(cfg.cnpj_cliente),
-            "razao": cfg.razao_social,
             "erro": f"Não consegui ler um dos arquivos: {exc}",
+            **contexto_cliente(db),
         })
 
     resultado = rodar_conciliacao(autorizadas, canceladas, lancamentos, registros)

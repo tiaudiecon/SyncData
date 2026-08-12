@@ -1,36 +1,57 @@
 {% extends "base.html" %}
-{% block conteudo %}
-<h1>Resultado da conciliação</h1>
-<p class="sub">{{ resumo.total_universo }} notas do Sieg · gerado em {{ resumo.data_hora }}
-  · <a class="btn" style="padding:6px 14px" href="/resultado/{{ c.id }}/planilha.xlsx">Exportar .xlsx</a></p>
-
-<div class="grid-cards">
-  <div class="stat"><div class="num">{{ resumo.qt_gerenciadas }}</div><div class="lbl">Gerenciadas</div></div>
-  <div class="stat"><div class="num">{{ resumo.qt_ressalva }}</div><div class="lbl">Com ressalva</div></div>
-  <div class="stat"><div class="num">{{ resumo.qt_falta_lancar }}</div><div class="lbl">Faltou lançar</div></div>
-  <div class="stat"><div class="num">{{ resumo.qt_falta_arquivar }}</div><div class="lbl">Faltou arquivar</div></div>
-  <div class="stat"><div class="num">{{ resumo.qt_canceladas }}</div><div class="lbl">Canceladas</div></div>
+{% block titulo %}Resultado · SyncData{% endblock %}
+{% block content %}
+{% macro status(s) %}
+  {%- if s == 'ok' -%}<span class="badge b-ok">OK</span>
+  {%- elif s == 'diverg' -%}<span class="badge b-warn">Divergência</span>
+  {%- else -%}<span class="badge b-alert">Faltou</span>{%- endif -%}
+{% endmacro %}
+<div class="page-head">
+  <div>
+    <div class="crumb">Resultado · {{ resumo.data_hora }}</div>
+    <h1>Conciliação</h1>
+  </div>
+  <div class="actions">
+    <a class="btn btn-primary" href="/resultado/{{ c.id }}/planilha.xlsx">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Exportar .xlsx
+    </a>
+  </div>
 </div>
 
-<div class="card" style="margin-top:18px;padding:0;overflow:auto">
-  <table>
-    <thead><tr>
-      <th>Nº NF</th><th>Fornecedor</th><th>Emissão</th><th>Valor</th>
-      <th>Lançamento</th><th>Arquivo</th><th>Divergências</th>
-    </tr></thead>
+<div class="kpi-row">
+  <div class="kpi hl"><div class="lbl">Universo</div><div class="val tnum">{{ resumo.total_universo }}</div><div class="sub">notas do Sieg</div></div>
+  <div class="kpi ok"><div class="lbl">Gerenciadas</div><div class="val tnum">{{ resumo.qt_gerenciadas }}</div></div>
+  <div class="kpi warn"><div class="lbl">Com ressalva</div><div class="val tnum">{{ resumo.qt_ressalva }}</div></div>
+  <div class="kpi alert"><div class="lbl">Faltou lançar</div><div class="val tnum">{{ resumo.qt_falta_lancar }}</div></div>
+  <div class="kpi alert"><div class="lbl">Faltou arquivar</div><div class="val tnum">{{ resumo.qt_falta_arquivar }}</div></div>
+</div>
+
+<div class="note-box" style="margin-bottom:22px">
+  {{ resumo.qt_canceladas }} nota(s) cancelada(s) ficam fora do universo (informativo).
+  “Faltou lançar/arquivar” são medidas por frente e podem se sobrepor.
+</div>
+
+<div class="table-scroll">
+  <table class="dense">
+    <thead>
+      <tr>
+        <th>Nº NF</th><th>Fornecedor</th><th>Emissão</th><th class="right">Valor</th>
+        <th>Lançamento</th><th>Arquivo</th><th>Divergências</th>
+      </tr>
+    </thead>
     <tbody>
     {% for i in itens %}
       <tr>
-        <td class="tnum">{{ i.numero }}</td>
+        <td class="bold mono">{{ i.numero }}</td>
         <td>{{ i.nome_fornecedor }}</td>
-        <td class="tnum">{{ i.data_emissao }}</td>
-        <td class="tnum">R$ {{ '%.2f'|format(i.valor_bruto) }}</td>
-        <td><span class="pill {{ i.status_lancamento }}">
-          {{ {'ok':'OK','diverg':'Divergência','falta':'Faltou'}[i.status_lancamento] }}</span></td>
-        <td><span class="pill {{ i.status_arquivo }}">
-          {{ {'ok':'OK','diverg':'Divergência','falta':'Faltou'}[i.status_arquivo] }}</span></td>
-        <td style="font-size:12px;color:var(--ink-3)">
-          {{ i.detalhe_lancamento }}{% if i.detalhe_lancamento and i.detalhe_arquivo %}; {% endif %}{{ i.detalhe_arquivo }}</td>
+        <td class="mono">{{ i.data_emissao }}</td>
+        <td class="mono right">R$ {{ '%.2f'|format(i.valor_bruto) }}</td>
+        <td>{{ status(i.status_lancamento) }}</td>
+        <td>{{ status(i.status_arquivo) }}</td>
+        <td style="font-size:12px; color:var(--ink-3)">
+          {{- i.detalhe_lancamento }}{% if i.detalhe_lancamento and i.detalhe_arquivo %}; {% endif %}{{ i.detalhe_arquivo -}}
+        </td>
       </tr>
     {% endfor %}
     </tbody>
