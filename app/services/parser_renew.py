@@ -11,11 +11,14 @@ class RegistroRenew:
     cnpj_emissor: str
     fornecedor: str
     emissao: "date | None"
-    valor_liquido: float
+    valor: float          # `Valor da NF` = valor de FACE/BRUTO da nota
 
 
 def ler_renew(arquivo):
-    """Lê o Renew. `Valor da NF` é tratado como valor LÍQUIDO."""
+    """Lê o Renew. `Valor da NF` é o valor de FACE (bruto) da nota — confirmado
+    com dados reais do cliente (36/36 notas com retenção bateram com o bruto do
+    Sieg, 0 com o líquido). Por isso o matcher compara este valor com o
+    `Valor_Servico` (bruto) do Sieg, não com o líquido."""
     headers, linhas = abrir_planilha(arquivo)
     mapa = mapa_cabecalho(headers)
 
@@ -50,6 +53,6 @@ def ler_renew(arquivo):
             cnpj_emissor=so_digitos(val(row, i_cnpj)),
             fornecedor=str(val(row, i_forn) or "").strip(),
             emissao=para_data(val(row, i_emi)),
-            valor_liquido=limpar_moeda(val(row, i_val)),
+            valor=limpar_moeda(val(row, i_val)),
         ))
     return itens

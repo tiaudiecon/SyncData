@@ -17,8 +17,8 @@ def lanc(numero="100", cnpj="11111111000111", emissao=date(2026, 7, 3),
                             emissao, bruto, liquido)
 
 
-def reg(numero="100", cnpj="11111111000111", emissao=date(2026, 7, 3), liquido=150.0):
-    return RegistroRenew(numero, numero.lstrip("0"), cnpj, "FORNEC A", emissao, liquido)
+def reg(numero="100", cnpj="11111111000111", emissao=date(2026, 7, 3), valor=150.0):
+    return RegistroRenew(numero, numero.lstrip("0"), cnpj, "FORNEC A", emissao, valor)
 
 
 def test_nota_totalmente_gerenciada():
@@ -42,7 +42,7 @@ def test_faltou_lancar_e_faltou_arquivar():
 
 def test_divergencia_de_valor_vira_ressalva():
     r = conciliar([nota(liquido=150.0, servico=150.0)],
-                  [], [lanc(bruto=150.0, liquido=140.0)], [reg(liquido=150.0)])
+                  [], [lanc(bruto=150.0, liquido=140.0)], [reg(valor=150.0)])
     item = r.itens[0]
     assert item.lancamento.status == STATUS_DIVERG
     assert "líquido" in item.lancamento.detalhe.lower()
@@ -61,7 +61,7 @@ def test_divergencia_de_data():
 
 def test_tolerancia_5_centavos_conta_como_ok():
     r = conciliar([nota(liquido=150.00, servico=150.00)],
-                  [], [lanc(bruto=150.05, liquido=150.00)], [reg(liquido=150.00)])
+                  [], [lanc(bruto=150.05, liquido=150.00)], [reg(valor=150.00)])
     assert r.itens[0].lancamento.status == STATUS_OK
 
 
@@ -83,12 +83,12 @@ def test_falta_domina_diverg_vira_pendente():
 
 
 def test_divergencia_na_frente_arquivo_renew():
-    # arquivo (Renew) diverge no líquido; lançamento ok → ressalva
-    r = conciliar([nota(liquido=150.0)], [], [lanc()], [reg(liquido=140.0)])
+    # arquivo (Renew) diverge no valor (bruto); lançamento ok → ressalva
+    r = conciliar([nota(servico=150.0, liquido=150.0)], [], [lanc()], [reg(valor=140.0)])
     item = r.itens[0]
     assert item.lancamento.status == STATUS_OK
     assert item.arquivo.status == STATUS_DIVERG
-    assert "líquido" in item.arquivo.detalhe.lower()
+    assert "valor" in item.arquivo.detalhe.lower()
     assert item.veredito == "ressalva"
 
 

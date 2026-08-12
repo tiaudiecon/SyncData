@@ -35,7 +35,7 @@ def test_le_e_normaliza():
     assert it.cnpj_emissor == "39362611000115"   # máscara removida
     assert it.fornecedor == "VITORIA HOSPITALAR LTDA"
     assert it.emissao == date(2026, 5, 11)
-    assert it.valor_liquido == 1800.0
+    assert it.valor == 1800.0        # `Valor da NF` = valor de face (bruto)
 
 
 def test_coluna_obrigatoria_faltando_gera_erro_claro():

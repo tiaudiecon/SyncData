@@ -75,14 +75,16 @@ def _cmp_spdata(nota, c):
 
 
 def _cmp_renew(nota, c):
+    # O Renew guarda o valor de FACE (bruto) da nota, então comparamos com o
+    # Valor_Servico do Sieg (bruto), não com o líquido.
     data_ok = bool(nota.emissao and c.emissao and nota.emissao == c.emissao)
-    liq_ok = valores_batem(nota.valor_liquido, c.valor_liquido)
+    valor_ok = valores_batem(nota.valor_servico, c.valor)
     partes = []
     if not data_ok:
         partes.append(f"data {_fmt_data(nota.emissao)}≠{_fmt_data(c.emissao)}")
-    if not liq_ok:
-        partes.append(f"líquido R$ {nota.valor_liquido:.2f}≠R$ {c.valor_liquido:.2f}")
-    return data_ok, liq_ok, "; ".join(partes)
+    if not valor_ok:
+        partes.append(f"valor R$ {nota.valor_servico:.2f}≠R$ {c.valor:.2f}")
+    return data_ok, valor_ok, "; ".join(partes)
 
 
 def _veredito(lanc, arq):
