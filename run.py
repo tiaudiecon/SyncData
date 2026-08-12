@@ -8,13 +8,17 @@ from pathlib import Path
 
 
 def _diretorio_aplicacao():
-    if not getattr(sys, "frozen", False):
-        return Path(__file__).resolve().parent
-    executavel = Path(sys.executable).resolve().parent
-    candidato = executavel.parent.parent
-    if (candidato / "templates").is_dir() and (candidato / "static").is_dir():
-        return candidato
-    return executavel
+    """No .exe (onedir), os dados empacotados (templates/static) ficam em
+    `sys._MEIPASS` — a pasta `_internal` ao lado do executável. Trabalhamos a
+    partir dali para o Jinja/StaticFiles acharem `templates/` e `static/`. Já o
+    BANCO deve viver AO LADO do .exe (não dentro de `_internal`, que some numa
+    reinstalação), então fixamos `SYNCDATA_DB` na pasta do executável.
+    Em desenvolvimento, tudo roda a partir da raiz do projeto."""
+    if getattr(sys, "frozen", False):
+        pasta_exe = Path(sys.executable).resolve().parent
+        os.environ.setdefault("SYNCDATA_DB", str(pasta_exe / "syncdata.db"))
+        return Path(sys._MEIPASS)
+    return Path(__file__).resolve().parent
 
 
 os.chdir(_diretorio_aplicacao())

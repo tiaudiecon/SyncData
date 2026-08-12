@@ -347,10 +347,26 @@ SpData têm **CNPJ malformado** (falta zero à esquerda / sobra `000`, ex.:
 `8272578000109000`). O app não mascara isso — essas ~10 notas aparecem como "faltou
 lançar" até o cliente corrigir a exportação do SpData.
 
-## 14. Ainda em aberto / futuro
+## 14. Empacotamento do `.exe` (validado rodando)
 
-1. Onde o **arquivo SQLite** deve ficar (ao lado do `.exe` × pasta de dados do usuário
-   no Windows) — hoje grava no diretório de trabalho.
-2. **NF-e (produtos)** do Sieg como segunda lista-mestra; **Modelo B** (cruzamento
+O `.exe` foi **gerado e executado de verdade** (não só compilado). Lições:
+
+- **`pydantic_core` (extensão nativa do FastAPI):** o `contents_directory='.'` (que o
+  Integra usa) impede o registro da extensão → o `.exe` compila mas quebra com
+  "No module named 'pydantic_core._pydantic_core'". Solução: **layout padrão**
+  (`_internal/`) + `collect_all('pydantic'/'pydantic_core')`. `run.py` acha
+  templates/static via `sys._MEIPASS`.
+- **Banco:** fica **ao lado do `.exe`** (não dentro de `_internal`, que some numa
+  reinstalação) — `run.py` fixa `SYNCDATA_DB` na pasta do executável.
+- **Caminho longo (Windows):** o layout onedir com `_internal/` estoura o limite de 260
+  caracteres se instalado numa pasta muito profunda (erro "nome do arquivo muito
+  grande" ao carregar DLLs). Instalar em pasta rasa (ex.: `C:\SyncData\`) ou avaliar
+  build **onefile** no futuro.
+- UPX desligado (pode corromper extensões nativas).
+
+## 15. Ainda em aberto / futuro
+
+1. **NF-e (produtos)** do Sieg como segunda lista-mestra; **Modelo B** (cruzamento
    todos-contra-todos).
-3. Ícone próprio do `.exe` (o `Logo.ico` do Integra era PNG inválido).
+2. Ícone próprio do `.exe` (o `Logo.ico` do Integra era PNG inválido).
+3. Avaliar **onefile** para contornar o limite de caminho longo do Windows.
