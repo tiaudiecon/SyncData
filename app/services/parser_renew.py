@@ -12,6 +12,7 @@ class RegistroRenew:
     fornecedor: str
     emissao: "date | None"
     valor: float          # `Valor da NF` = valor de FACE/BRUTO da nota
+    arquivo_pdf: str = ""  # `Novo Nome` = nome do PDF renomeado pelo Renew
 
 
 def ler_renew(arquivo):
@@ -27,6 +28,7 @@ def ler_renew(arquivo):
     i_forn = indice(mapa, "Fornecedor Emitente")
     i_emi = indice(mapa, "Data de Emissão")
     i_val = indice(mapa, "Valor da NF")
+    i_pdf = indice(mapa, "Novo Nome")
 
     exigir_colunas(
         {"Nº NF / Série": i_num, "CNPJ do Emissor": i_cnpj,
@@ -54,5 +56,6 @@ def ler_renew(arquivo):
             fornecedor=str(val(row, i_forn) or "").strip(),
             emissao=para_data(val(row, i_emi)),
             valor=limpar_moeda(val(row, i_val)),
+            arquivo_pdf=str(val(row, i_pdf) or "").strip(),
         ))
     return itens

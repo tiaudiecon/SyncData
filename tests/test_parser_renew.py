@@ -51,3 +51,22 @@ def test_coluna_obrigatoria_faltando_gera_erro_claro():
 
     with pytest.raises(ValueError, match="Valor da NF"):
         ler_renew(buf)
+
+
+def test_captura_novo_nome_como_arquivo_pdf():
+    arq = _xlsx(
+        ["OK", "PRODUTO", "x.pdf", "E_2026-05-11_NF202069.pdf", "VITORIA HOSPITALAR LTDA",
+         "39.362.611/0001-15", "202069 / 7", datetime(2026, 5, 11), 1800],
+    )
+    it = ler_renew(arq)[0]
+    assert it.arquivo_pdf == "E_2026-05-11_NF202069.pdf"
+
+
+def test_sem_coluna_novo_nome_fica_vazio():
+    headers = [h for h in HEADERS if h != "Novo Nome"]
+    wb = openpyxl.Workbook(); ws = wb.active; ws.append(headers)
+    ws.append(["OK", "PRODUTO", "x.pdf", "VITORIA HOSPITALAR LTDA",
+               "39.362.611/0001-15", "202069 / 7", datetime(2026, 5, 11), 1800])
+    buf = io.BytesIO(); wb.save(buf); buf.seek(0)
+    it = ler_renew(buf)[0]
+    assert it.arquivo_pdf == ""
