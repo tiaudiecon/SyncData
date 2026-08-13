@@ -32,27 +32,56 @@ def _spdata_txt():
     return (cab + "\n" + linha + "\n").encode("cp1252")
 
 
-def test_fluxo_conciliar_gerenciada(client):
+import re
+import time
+from tests._fakes import pasta_com_pdf, fake_runner
+from app.services import renew_runner
+
+
+def _poll(client, jid, timeout=5.0):
+    fim = time.time() + timeout
+    ultimo = None
+    while time.time() < fim:
+        ultimo = client.get(f"/processar/{jid}").json()
+        if ultimo.get("fase") in ("pronto", "erro"):
+            return ultimo
+        time.sleep(0.05)
+    return ultimo
+
+
+def test_fluxo_conciliar_gerenciada(client, monkeypatch):
+    monkeypatch.setattr(renew_runner, "rodar_renew", fake_runner)
     client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
-    resp = client.post("/conciliar", files={
-        "spdata": ("SpData.txt", _spdata_txt(), "text/plain"),
-        "sieg": ("sieg.xlsx", _sieg_xlsx("04541288000162"),
-                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
-        "renew": ("renew.xlsx", _renew_xlsx(),
-                  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
-    }, follow_redirects=False)
-    assert resp.status_code == 303
-    assert resp.headers["location"].startswith("/resultado/")
+    resp = client.post("/conciliar",
+                       data={"pasta": pasta_com_pdf()},
+                       files={"spdata": ("SpData.txt", _spdata_txt(), "text/plain"),
+                              "sieg": ("sieg.xlsx", _sieg_xlsx("04541288000162"),
+                                       "application/octet-stream")})
+    assert resp.status_code == 200
+    m = re.search(r'data-job="([0-9a-f]+)"', resp.text)
+    assert m
+    s = _poll(client, m.group(1))
+    assert s["fase"] == "pronto"
+    assert client.get(f"/resultado/{s['conciliacao_id']}").status_code == 200
 
 
 def test_arquivo_trocado_no_campo_sieg_mostra_erro_claro(client):
     client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
-    resp = client.post("/conciliar", files={
-        "spdata": ("SpData.txt", _spdata_txt(), "text/plain"),
-        "sieg": ("renew.xlsx", _renew_xlsx(),  # arquivo errado no campo do Sieg
-                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
-        "renew": ("renew.xlsx", _renew_xlsx(),
-                  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
-    }, follow_redirects=False)
+    resp = client.post("/conciliar",
+                       data={"pasta": pasta_com_pdf()},
+                       files={"spdata": ("SpData.txt", _spdata_txt(), "text/plain"),
+                              "sieg": ("renew.xlsx", _renew_xlsx(),  # arquivo errado
+                                       "application/octet-stream")})
     assert resp.status_code == 200
     assert "Não consegui ler" in resp.text
+
+
+def test_pasta_inexistente_avisa(client):
+    client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
+    resp = client.post("/conciliar",
+                       data={"pasta": r"C:\pasta\que\nao\existe"},
+                       files={"spdata": ("SpData.txt", _spdata_txt(), "text/plain"),
+                              "sieg": ("sieg.xlsx", _sieg_xlsx("04541288000162"),
+                                       "application/octet-stream")})
+    assert resp.status_code == 200
+    assert "não existe" in resp.text.lower()

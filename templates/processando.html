@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block titulo %}Processando · SyncData{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><div class="crumb">Nova conciliação</div><h1>Processando notas</h1></div>
+</div>
+<div class="panel"><div class="panel-body">
+  <div id="proc" data-job="{{ job_id }}">
+    <div id="fase" class="sub">Lendo os PDFs e extraindo as notas…</div>
+    <div class="prog"><div id="barra" class="prog-fill" style="width:5%"></div></div>
+    <div id="cont" class="mono" style="margin-top:8px">0 / 0</div>
+    <div id="erro" class="erro-box" style="display:none; margin-top:16px"></div>
+  </div>
+</div></div>
+<script>
+  const jid = document.getElementById('proc').dataset.job;
+  async function poll(){
+    try{
+      const r = await fetch('/processar/' + jid);
+      if (r.status !== 404){
+        const s = await r.json();
+        if (s.fase === 'conciliando'){
+          document.getElementById('fase').textContent = 'Conferindo lançamentos e arquivamento…';
+        }
+        const total = s.total || 0, atual = s.atual || 0;
+        const pct = total ? Math.round(atual * 100 / total) : (s.fase === 'conciliando' ? 95 : 5);
+        document.getElementById('barra').style.width = pct + '%';
+        document.getElementById('cont').textContent = atual + ' / ' + total;
+        if (s.fase === 'pronto' && s.conciliacao_id){
+          window.location = '/resultado/' + s.conciliacao_id; return;
+        }
+        if (s.fase === 'erro'){
+          const e = document.getElementById('erro');
+          e.style.display = 'block'; e.textContent = s.erro || 'Falha ao processar.';
+          document.getElementById('fase').textContent = 'Não foi possível concluir.';
+          return;
+        }
+      }
+    }catch(e){}
+    setTimeout(poll, 1000);
+  }
+  poll();
+</script>
+{% endblock %}

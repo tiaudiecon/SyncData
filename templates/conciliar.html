@@ -2,17 +2,14 @@
 {% block titulo %}Conciliar · SyncData{% endblock %}
 {% block content %}
 <div class="page-head">
-  <div>
-    <div class="crumb">Nova conciliação</div>
-    <h1>Conciliar <em>notas</em></h1>
-  </div>
+  <div><div class="crumb">Nova conciliação</div><h1>Conciliar <em>notas</em></h1></div>
 </div>
 
 {% if erro %}<div class="erro-box">{{ erro }}</div>{% endif %}
 
 <form method="post" action="/conciliar" enctype="multipart/form-data">
   <div class="panel">
-    <div class="panel-head"><h3>Envie os três arquivos do período</h3></div>
+    <div class="panel-head"><h3>Envie os arquivos do período</h3></div>
     <div class="panel-body">
       <div class="upload">
         <div class="num">1</div>
@@ -26,12 +23,16 @@
       </div>
       <div class="upload">
         <div class="num">3</div>
-        <div class="meta"><div class="t">Renew</div><div class="h">Notas arquivadas · arquivo .xlsx</div></div>
-        <input type="file" name="renew" accept=".xlsx" required>
+        <div class="meta"><div class="t">Pasta dos PDFs</div><div class="h">Notas arquivadas · o SyncData processa com o Renew</div></div>
+        <div style="display:flex; gap:8px; flex:1; min-width:0">
+          <input type="text" id="pasta" name="pasta" class="input" style="flex:1"
+                 placeholder="Escolha a pasta com os PDFs…" required readonly>
+          <button type="button" class="btn btn-ghost" onclick="procurarPasta()">Procurar…</button>
+        </div>
       </div>
 
-      <div class="note-box">Confira que o <strong>Sieg</strong> e o <strong>Renew</strong> foram enviados
-        nos campos certos — se um arquivo estiver trocado, o SyncData avisa em vez de conciliar errado.</div>
+      <div class="note-box">O SyncData roda o <strong>Renew</strong> nessa pasta (renomeia e
+        extrai as notas) e concilia. A primeira leitura de PDFs escaneados pode levar alguns minutos.</div>
 
       <div style="margin-top:20px">
         <button class="btn btn-accent btn-lg" type="submit">
@@ -42,4 +43,17 @@
     </div>
   </div>
 </form>
+
+<script>
+  const campoPasta = document.getElementById('pasta');
+  const ultimo = localStorage.getItem('syncdata_pasta');
+  if (ultimo) { campoPasta.value = ultimo; }
+  async function procurarPasta(){
+    try{
+      const r = await fetch('/procurar-pasta');
+      const d = await r.json();
+      if (d.pasta){ campoPasta.value = d.pasta; localStorage.setItem('syncdata_pasta', d.pasta); }
+    }catch(e){}
+  }
+</script>
 {% endblock %}
