@@ -66,3 +66,33 @@ def rodar_renew(pasta, comando=None, cwd=None, on_progress=None, intervalo=1.0) 
     if not rel.is_file():
         raise RuntimeError("O Renew rodou mas não gerou o 'Relatório Renew.xlsx'.")
     return rel
+
+
+def processar_pasta(job_id, pasta, autorizadas, canceladas, lancamentos, cnpj,
+                    nomes=None, runner=None):
+    """Roda o Renew na pasta, concilia e salva. Atualiza o job (pronto/erro).
+    Feito para rodar numa thread — abre a própria sessão do banco."""
+    from app.services.jobs import atualizar
+    from app.services.parser_renew import ler_renew
+    from app.services.matcher import conciliar
+    from app.services.persistencia import salvar_conciliacao
+    from app.database import SessionLocal
+
+    executor = runner or rodar_renew
+    try:
+        rel = executor(pasta, on_progress=lambda a, t: atualizar(
+            job_id, fase="ocr", atual=a, total=t))
+        atualizar(job_id, fase="conciliando")
+        registros = ler_renew(rel)
+        resultado = conciliar(autorizadas, canceladas, lancamentos, registros)
+        info = dict(nomes or {})
+        info["pasta_pdfs"] = str(pasta)
+        db = SessionLocal()
+        try:
+            conc = salvar_conciliacao(db, cnpj, info, resultado)
+            cid = conc.id
+        finally:
+            db.close()
+        atualizar(job_id, fase="pronto", conciliacao_id=cid)
+    except Exception as exc:
+        atualizar(job_id, fase="erro", erro=str(exc))
