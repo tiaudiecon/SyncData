@@ -58,3 +58,10 @@ def test_rodar_renew_falha(tmp_path):
         renew_runner.rodar_renew(
             str(tmp_path), comando=[sys.executable, _fake_script(False, False)],
             intervalo=0.02)
+
+
+def test_rodar_renew_sem_relatorio_levanta(tmp_path):
+    with pytest.raises(RuntimeError):
+        renew_runner.rodar_renew(
+            str(tmp_path), comando=[sys.executable, _fake_script(True, False)],
+            intervalo=0.02)

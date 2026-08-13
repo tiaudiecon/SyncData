@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import tempfile
 import subprocess
 from pathlib import Path
 
@@ -46,18 +47,20 @@ def rodar_renew(pasta, comando=None, cwd=None, on_progress=None, intervalo=1.0) 
         exe = localizar_renew_exe()
         comando = [str(exe)]
         cwd = cwd or str(exe.parent)
-    proc = subprocess.Popen([*comando, str(pasta)], cwd=cwd,
-                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    while proc.poll() is None:
-        if on_progress:
-            on_progress(contar_renomeados(pasta), contar_pdfs(pasta))
-        time.sleep(intervalo)
-    saida = proc.stdout.read() if proc.stdout else ""
+    with tempfile.TemporaryFile("w+b") as logf:
+        proc = subprocess.Popen([*comando, str(pasta)], cwd=cwd,
+                                stdout=logf, stderr=subprocess.STDOUT)
+        while proc.poll() is None:
+            if on_progress:
+                on_progress(contar_renomeados(pasta), contar_pdfs(pasta))
+            time.sleep(intervalo)
+        logf.seek(0)
+        saida = logf.read().decode("utf-8", errors="replace")
     if proc.returncode != 0:
         cauda = "\n".join(saida.splitlines()[-8:])
         raise RuntimeError(f"O Renew falhou (código {proc.returncode}).\n{cauda}")
-    total = contar_pdfs(pasta)
     if on_progress:
+        total = contar_pdfs(pasta)
         on_progress(total, total)
     rel = pasta / RELATORIO_NOME
     if not rel.is_file():
