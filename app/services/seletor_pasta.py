@@ -1,6 +1,7 @@
 import subprocess
 
 _PS = r'''
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 Add-Type -AssemblyName System.Windows.Forms
 $dlg = New-Object System.Windows.Forms.FolderBrowserDialog
 $dlg.Description = "Selecione a pasta com os PDFs das notas"
@@ -24,7 +25,7 @@ def escolher_pasta() -> "str | None":
     try:
         r = subprocess.run(
             ["powershell", "-NoProfile", "-STA", "-Command", _PS],
-            capture_output=True, text=True, timeout=300,
+            capture_output=True, encoding="utf-8", timeout=300,
         )
     except Exception:
         return None
