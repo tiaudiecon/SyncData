@@ -49,3 +49,18 @@ def test_pdf_ausente_404(client):
     pasta = tempfile.mkdtemp(prefix="pdf_")
     iid = _conc_com_pdf(pasta, "nao_existe.pdf")
     assert client.get(f"/pdf/{iid}").status_code == 404
+
+
+def test_bloqueia_caminho_absoluto(client):
+    # arquivo_pdf como caminho ABSOLUTO: Path(base) / abs descarta a base e
+    # aponta pra fora da pasta servida. A trava (is_relative_to) deve barrar.
+    base_dir = tempfile.mkdtemp(prefix="pdf_base_")
+    pasta = os.path.join(base_dir, "pdfs")
+    os.makedirs(pasta)
+    segredo = os.path.join(base_dir, "segredo_abs.pdf")
+    with open(segredo, "wb") as f:
+        f.write(b"%PDF-1.4 ABS SECRET")
+    iid = _conc_com_pdf(pasta, segredo)   # caminho absoluto, fora da pasta
+    r = client.get(f"/pdf/{iid}")
+    assert r.status_code == 404
+    assert b"ABS SECRET" not in r.content

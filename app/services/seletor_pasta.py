@@ -1,4 +1,7 @@
+import logging
 import subprocess
+
+log = logging.getLogger(__name__)
 
 _PS = r'''
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -28,5 +31,8 @@ def escolher_pasta() -> "str | None":
             capture_output=True, encoding="utf-8", timeout=300,
         )
     except Exception:
+        # Erro real (PowerShell ausente, timeout, etc.) — distinto de um
+        # cancelamento, que retorna stdout vazio e vira None em _parse_saida.
+        log.warning("Falha ao abrir o seletor de pasta nativo", exc_info=True)
         return None
     return _parse_saida(r.stdout)

@@ -39,7 +39,8 @@ async def executar(request: Request, db: Session = Depends(get_db),
     pasta_lim = (pasta or "").strip()
     if not pasta_lim or not os.path.isdir(pasta_lim):
         return _erro(request, db, "Selecione a pasta dos PDFs — o caminho informado não existe.")
-    if contar_pdfs(pasta_lim) == 0:
+    n_pdfs = contar_pdfs(pasta_lim)
+    if n_pdfs == 0:
         return _erro(request, db, "A pasta selecionada não tem nenhum PDF.")
     try:
         lancamentos = ler_spdata(await spdata.read())
@@ -47,7 +48,7 @@ async def executar(request: Request, db: Session = Depends(get_db),
     except Exception as exc:   # arquivo trocado/ilegível: avisa na própria tela
         return _erro(request, db, f"Não consegui ler um dos arquivos: {exc}")
 
-    jid = criar_job(total=contar_pdfs(pasta_lim))
+    jid = criar_job(total=n_pdfs)
     nomes = {"spdata": spdata.filename, "sieg": sieg.filename}
     threading.Thread(
         target=processar_pasta,
