@@ -3,9 +3,13 @@
 {% block wrapclass %}wrap-wide{% endblock %}
 {% block content %}
 {% macro cel(p) %}
-  {%- if p.sp is none -%}<td class="mono right">{{ p.sieg|moeda }}</td><td class="mono right">—</td><td class="right">—</td>
-  {%- else -%}<td class="mono right">{{ p.sieg|moeda }}</td><td class="mono right">{{ p.sp|moeda }}</td>
-    <td class="mono right {% if p.delta and (p.delta > 0.05 or p.delta < -0.05) %}dz{% endif %}">{{ p.delta|moeda }}</td>{%- endif -%}
+  {%- set diverge = p.delta is not none and (p.delta > 0.05 or p.delta < -0.05) -%}
+  {%- if p.sp is none -%}
+    <td class="mono right">{{ p.sieg|moeda }}</td><td class="mono right">—</td>
+  {%- else -%}
+    <td class="mono right {% if diverge %}dz{% endif %}">{{ p.sieg|moeda }}</td>
+    <td class="mono right {% if diverge %}dz{% endif %}">{{ p.sp|moeda }}</td>
+  {%- endif -%}
 {% endmacro %}
 <div class="page-head">
   <div><div class="crumb">{% if conc %}Conciliação · {{ data_hora }}{% endif %}</div><h1>Detalhamento de Impostos</h1></div>
@@ -17,20 +21,21 @@
 {% else %}
 <div class="toolbar">
   <label class="chip" id="chDiv"><input type="checkbox" onchange="soDiverg(this)" style="margin-right:6px">Só divergências</label>
+  <span class="legenda"><span class="dz">valor em vermelho</span> = Sieg e SPData divergem</span>
 </div>
 <div class="table-scroll">
   <table class="dense" id="tab">
     <thead>
       <tr>
         <th rowspan="2">Nº</th><th rowspan="2">Fornecedor</th>
-        <th colspan="3" class="grp">ISS</th><th colspan="3" class="grp">INSS</th>
-        <th colspan="3" class="grp">IRRF</th><th colspan="3" class="grp">CSRF</th>
+        <th colspan="2" class="grp">ISS</th><th colspan="2" class="grp">INSS</th>
+        <th colspan="2" class="grp">IRRF</th><th colspan="2" class="grp">CSRF</th>
         <th rowspan="2" class="right">Descontos</th><th rowspan="2" class="right">Base Cálc.</th>
         <th rowspan="2" class="right">Alíq.</th>
-        <th colspan="3" class="grp">Total ret.</th>
+        <th colspan="2" class="grp">Total ret.</th>
       </tr>
       <tr>
-        {% for _ in range(5) %}<th class="right">Sieg</th><th class="right">SPData</th><th class="right">Δ</th>{% endfor %}
+        {% for _ in range(5) %}<th class="right">Sieg</th><th class="right">SPData</th>{% endfor %}
       </tr>
     </thead>
     <tbody>

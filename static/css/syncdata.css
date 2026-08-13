@@ -191,6 +191,8 @@ table.dense td.right, table.dense th.right{text-align:right}
 /* valores mono (moeda, nº, data) não quebram em 2 linhas — evita desalinhar a linha */
 table.dense td.mono, table.dense th.right{white-space:nowrap}
 .dz{color:var(--alert); font-weight:700}
+.legenda{font-size:11.5px; color:var(--ink-3)}
+.legenda .dz{font-weight:700}
 table.dense tfoot .tot td{background:var(--surface-3); border-top:2px solid var(--line-2); font-weight:700; color:var(--ink)}
 
 .prog{height:12px; background:var(--surface-2); border:1px solid var(--line-2);
