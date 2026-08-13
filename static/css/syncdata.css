@@ -175,3 +175,4 @@ table.dense tr:hover td{background:var(--creme-soft)}
 .chip-desc{display:inline-block; font-size:10px; font-weight:700; color:var(--burdo);
   background:var(--burdo-100); padding:1px 6px; border-radius:999px; vertical-align:middle}
 table.dense th.grp{text-align:center; background:var(--navy); color:var(--creme)}
+.dz{color:var(--alert); font-weight:700}

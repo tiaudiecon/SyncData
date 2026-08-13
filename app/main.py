@@ -7,6 +7,7 @@ from app.routers import setup
 from app.routers import conciliar
 from app.routers import resultado
 from app.routers import historico, configuracoes
+from app.routers import impostos
 
 Base.metadata.create_all(bind=engine)
 
@@ -20,6 +21,7 @@ app.include_router(conciliar.router)
 app.include_router(resultado.router)
 app.include_router(historico.router)
 app.include_router(configuracoes.router)
+app.include_router(impostos.router)
 
 
 @app.get("/health")
