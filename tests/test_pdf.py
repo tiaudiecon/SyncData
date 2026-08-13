@@ -27,9 +27,22 @@ def test_serve_pdf_inline(client):
 
 
 def test_bloqueia_path_traversal(client):
-    pasta = tempfile.mkdtemp(prefix="pdf_")
-    iid = _conc_com_pdf(pasta, "..\\..\\segredo.pdf")
-    assert client.get(f"/pdf/{iid}").status_code == 404
+    # Cria dir base com pasta de PDFs aninhada; planta arquivo secreto FORA
+    base_dir = tempfile.mkdtemp(prefix="pdf_base_")
+    pasta = os.path.join(base_dir, "pdfs")
+    os.makedirs(pasta)
+
+    # Arquivo secreto um nível ACIMA da pasta servida
+    with open(os.path.join(base_dir, "segredo.pdf"), "wb") as f:
+        f.write(b"%PDF-1.4 TOP SECRET")
+
+    # Tenta escapar via path traversal
+    iid = _conc_com_pdf(pasta, "..\\segredo.pdf")
+    r = client.get(f"/pdf/{iid}")
+
+    # Guard bloqueia mesmo o arquivo existindo, não vaza conteúdo
+    assert r.status_code == 404
+    assert b"TOP SECRET" not in r.content
 
 
 def test_pdf_ausente_404(client):
