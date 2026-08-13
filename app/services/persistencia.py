@@ -32,6 +32,7 @@ def salvar_conciliacao(db, cnpj, nomes, resultado):
         qt_falta_lancar=resultado.qt_falta_lancar,
         qt_falta_arquivar=resultado.qt_falta_arquivar,
         qt_canceladas=resultado.qt_canceladas,
+        pasta_pdfs=nomes.get("pasta_pdfs"),
     )
     db.add(conc)
     db.flush()
@@ -53,6 +54,7 @@ def salvar_conciliacao(db, cnpj, nomes, resultado):
             imp_spdata=(sp.total_retencoes if sp else None),
             tem_desconto=(n.descontos > 0.05),
             impostos_json=_impostos_json(n, sp),
+            arquivo_pdf=(item.arquivo_row.arquivo_pdf if item.arquivo_row else None),
             status_lancamento=item.lancamento.status,
             status_arquivo=item.arquivo.status,
             detalhe_lancamento=item.lancamento.detalhe,

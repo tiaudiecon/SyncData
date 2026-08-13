@@ -71,3 +71,20 @@ def test_impostos_json_remap_por_campo():
     assert d["sieg"]["base_calculo"] == 900.0 and d["sieg"]["aliquota"] == 5.0
     assert d["sieg"]["iss_retido"] is True
     db.query(ConciliacaoItem).delete(); db.query(Conciliacao).delete(); db.commit(); db.close()
+
+
+def test_persiste_pasta_e_arquivo_pdf():
+    Base.metadata.create_all(bind=engine)
+    from app.services.parser_renew import RegistroRenew
+    n = NotaSieg("100", "100", "11111111000111", "F", date(2026, 7, 3), 150.0, 150.0, False)
+    l = LancamentoSpData("100", "100", "11111111000111", "F", date(2026, 7, 3), 150.0, 150.0)
+    reg = RegistroRenew("100", "100", "11111111000111", "F", date(2026, 7, 3), 150.0,
+                        arquivo_pdf="E_100.pdf")
+    res = conciliar([n], [], [l], [reg])
+    db = SessionLocal()
+    conc = salvar_conciliacao(db, "04541288000162",
+                              {"spdata": "a", "sieg": "b", "pasta_pdfs": r"C:\pdfs"}, res)
+    it = db.query(ConciliacaoItem).filter_by(conciliacao_id=conc.id).first()
+    assert conc.pasta_pdfs == r"C:\pdfs"
+    assert it.arquivo_pdf == "E_100.pdf"
+    db.close()

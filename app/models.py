@@ -29,6 +29,7 @@ class Conciliacao(Base):
     qt_falta_lancar = Column(Integer, default=0)
     qt_falta_arquivar = Column(Integer, default=0)
     qt_canceladas = Column(Integer, default=0)
+    pasta_pdfs = Column(String, nullable=True)
 
     itens = relationship("ConciliacaoItem", back_populates="conciliacao",
                          cascade="all, delete-orphan")
@@ -57,5 +58,6 @@ class ConciliacaoItem(Base):
     imp_spdata = Column(Float, nullable=True)
     tem_desconto = Column(Boolean, default=False)
     impostos_json = Column(String, default="")
+    arquivo_pdf = Column(String, nullable=True)
 
     conciliacao = relationship("Conciliacao", back_populates="itens")
