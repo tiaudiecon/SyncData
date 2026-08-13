@@ -73,8 +73,7 @@ def test_impostos_json_remap_por_campo():
     db.query(ConciliacaoItem).delete(); db.query(Conciliacao).delete(); db.commit(); db.close()
 
 
-def test_persiste_pasta_e_arquivo_pdf():
-    Base.metadata.create_all(bind=engine)
+def test_persiste_pasta_e_arquivo_pdf(client):
     from app.services.parser_renew import RegistroRenew
     n = NotaSieg("100", "100", "11111111000111", "F", date(2026, 7, 3), 150.0, 150.0, False)
     l = LancamentoSpData("100", "100", "11111111000111", "F", date(2026, 7, 3), 150.0, 150.0)
