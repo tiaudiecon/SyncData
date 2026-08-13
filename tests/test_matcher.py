@@ -155,14 +155,17 @@ def test_sufixo_nao_casa_numeros_curtos_parecidos():
 
 
 def test_desconto_nao_gera_divergencia():
-    # Sieg bruto 10000, desconto 615 -> ajustado 9385; SPData bruto 9385 -> casa.
+    # Sieg bruto 10000, desconto 615 -> ajustado 9385. Os lados registram bases
+    # diferentes (confirmado com dados reais): o SPData lança LÍQUIDO do desconto
+    # (9385), e o Renew guarda o BRUTO cheio (10000). Nenhuma frente diverge.
     n = NotaSieg("100", "100", "11111111000111", "F", date(2026, 7, 3),
                  10000.0, 9385.0, False, deducoes=615.0)
     l = LancamentoSpData("100", "100", "11111111000111", "F", date(2026, 7, 3),
                          9385.0, 9385.0)
-    r = conciliar([n], [], [l], [reg(valor=9385.0)])
+    r = conciliar([n], [], [l], [reg(valor=10000.0)])
     item = r.itens[0]
     assert item.lancamento.status == STATUS_OK
+    assert item.arquivo.status == STATUS_OK
     assert item.veredito == "gerenciada"
 
 
