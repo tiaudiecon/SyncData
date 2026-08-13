@@ -73,13 +73,14 @@ def processar_pasta(job_id, pasta, autorizadas, canceladas, lancamentos, cnpj,
     """Roda o Renew na pasta, concilia e salva. Atualiza o job (pronto/erro).
     Feito para rodar numa thread — abre a própria sessão do banco."""
     from app.services.jobs import atualizar
-    from app.services.parser_renew import ler_renew
-    from app.services.matcher import conciliar
-    from app.services.persistencia import salvar_conciliacao
-    from app.database import SessionLocal
 
-    executor = runner or rodar_renew
     try:
+        from app.services.parser_renew import ler_renew
+        from app.services.matcher import conciliar
+        from app.services.persistencia import salvar_conciliacao
+        from app.database import SessionLocal
+
+        executor = runner or rodar_renew
         rel = executor(pasta, on_progress=lambda a, t: atualizar(
             job_id, fase="ocr", atual=a, total=t))
         atualizar(job_id, fase="conciliando")

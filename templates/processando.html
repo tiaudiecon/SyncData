@@ -14,10 +14,21 @@
 </div></div>
 <script>
   const jid = document.getElementById('proc').dataset.job;
+  let notFoundSeguidos = 0;
   async function poll(){
     try{
       const r = await fetch('/processar/' + jid);
-      if (r.status !== 404){
+      if (r.status === 404){
+        notFoundSeguidos++;
+        if (notFoundSeguidos >= 10){
+          const e = document.getElementById('erro');
+          e.style.display = 'block';
+          e.textContent = 'Perdi o progresso desta conciliação (o app pode ter reiniciado). Volte e rode de novo.';
+          document.getElementById('fase').textContent = 'Não foi possível concluir.';
+          return;
+        }
+      } else {
+        notFoundSeguidos = 0;
         const s = await r.json();
         if (s.fase === 'conciliando'){
           document.getElementById('fase').textContent = 'Conferindo lançamentos e arquivamento…';

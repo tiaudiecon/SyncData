@@ -60,10 +60,10 @@ Passa a ser:
   **some**.
 
 Ao clicar **Conciliar**:
-1. O front envia os 2 arquivos + o caminho da pasta para `POST /processar`.
-2. O servidor salva os 2 arquivos num diretório de trabalho, cria um **job** e devolve na hora
-   um `job_id` (o Renew roda numa thread em segundo plano). A tela vai para o estado
-   **"Processando notas… X/Y"**.
+1. O front envia os 2 arquivos + o caminho da pasta para `POST /conciliar`.
+2. O servidor salva os 2 arquivos num diretório de trabalho, cria um **job**, dispara o Renew
+   numa thread em segundo plano e já renderiza `processando.html` (com o `job_id`). A tela vai
+   para o estado **"Processando notas… X/Y"**.
 3. O front consulta `GET /processar/{job_id}` a cada ~1s e atualiza a barra.
 4. Ao terminar, o status vira `pronto` com o `conciliacao_id`; o front redireciona para
    `/resultado/{id}`.
@@ -228,8 +228,8 @@ se preferir preservar, um `ALTER TABLE ADD COLUMN` de guarda no start resolve. D
   devolve o caminho do `Relatório Renew.xlsx`; + **registro de jobs** em memória.
 - `app/services/seletor_pasta.py` — abre a janela nativa (PowerShell `FolderBrowserDialog`) e
   devolve o caminho.
-- `app/routers/processar.py` — `POST /processar` (inicia o job), `GET /processar/{job_id}`
-  (status/progresso), `GET /procurar-pasta` (abre o diálogo).
+- `app/routers/processar.py` — `GET /procurar-pasta` (abre o diálogo), `GET /processar/{job_id}`
+  (status/progresso). O job em si é iniciado por `POST /conciliar` (em `routers/conciliar.py`).
 - `app/routers/pdf.py` — `GET /pdf/{item_id}` (serve o PDF inline, com trava de caminho).
 
 ### Alterados
@@ -238,8 +238,9 @@ se preferir preservar, um `ALTER TABLE ADD COLUMN` de guarda no start resolve. D
   Renew.
 - `app/services/persistencia.py` — gravar `pasta_pdfs` e `arquivo_pdf`.
 - `app/models.py` — `Conciliacao.pasta_pdfs`, `ConciliacaoItem.arquivo_pdf`.
-- `app/routers/conciliar.py` — a rota `POST /conciliar` síncrona com 3 uploads dá lugar ao fluxo
-  de job (o `POST /processar` + progresso); a tela inicial passa a ter o picker de pasta.
+- `app/routers/conciliar.py` — a rota `POST /conciliar` síncrona com 3 uploads dá lugar a uma
+  versão com 2 uploads + pasta, que inicia o job e renderiza `processando.html`; a tela inicial
+  passa a ter o picker de pasta.
 - `templates/conciliar.html` — campo de pasta + botão "Procurar…" + tela/estado de progresso
   (barra "X/Y" com polling).
 - `templates/resultado.html` — coluna "PDF" + painel de preview + botão "Abrir".
