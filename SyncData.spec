@@ -1,7 +1,9 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_all
+import os
 
-datas = [('templates', 'templates'), ('static', 'static')]
+_RENEW_DIR = os.environ.get("SYNCDATA_RENEW_DIR", os.path.join('..', 'Renew'))
+datas = [('templates', 'templates'), ('static', 'static'), (_RENEW_DIR, 'renew')]
 binaries = []
 hiddenimports = ['uvicorn', 'uvicorn.logging', 'uvicorn.loops', 'uvicorn.loops.auto',
     'uvicorn.protocols', 'uvicorn.protocols.http', 'uvicorn.protocols.http.auto',
