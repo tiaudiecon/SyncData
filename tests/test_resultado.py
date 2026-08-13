@@ -38,4 +38,4 @@ def test_resultado_e_export(client):
     planilha = client.get(destino + "/planilha.xlsx")
     assert planilha.status_code == 200
     wb = openpyxl.load_workbook(io.BytesIO(planilha.content))
-    assert wb.sheetnames == ["Conciliação", "Faltou Lançar", "Faltou Arquivar"]
+    assert wb.sheetnames == ["Conciliação", "Faltou Lançar", "Faltou Arquivar", "Impostos"]

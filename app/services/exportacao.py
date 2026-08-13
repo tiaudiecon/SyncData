@@ -23,16 +23,23 @@ _FONTE_DADO = Font(color=_TINTA, size=10)
 _BORDA = Border(bottom=Side(style="thin", color=_LINHA))
 _CENTRO = Alignment(vertical="center")
 
-CABECALHOS = ["Nº NF", "Fornecedor", "Emissão", "Valor Bruto", "Valor Líquido",
-              "Lançamento", "Arquivo", "Divergências", "Veredito"]
+_MOEDA = 'R$ #,##0.00'
+CABECALHOS = ["Nº NF", "Fornecedor", "Emissão",
+              "Bruto (Sieg)", "Líq (Sieg)", "Imp (Sieg)",
+              "Bruto (SPData)", "Líq (SPData)", "Imp (SPData)",
+              "Desc?", "Lançamento", "Arquivo", "Divergências", "Veredito"]
+_COLS_MOEDA = (4, 5, 6, 7, 8, 9)          # 1-based: as 6 colunas de valor
+_COL_STATUS = (11, 12)                     # Lançamento, Arquivo
 
 
 def _linha_item(it):
     return [it["numero"], it["nome_fornecedor"], it["data_emissao"],
-            it["sieg_bruto"], it["sieg_liquido"],
+            it.get("sieg_bruto", 0.0), it.get("sieg_liquido", 0.0), it.get("sieg_imp", 0.0),
+            it.get("sp_bruto"), it.get("sp_liquido"), it.get("sp_imp"),
+            "Sim" if it.get("tem_desconto") else "",
             _ROTULO_STATUS.get(it["status_lancamento"], it["status_lancamento"]),
             _ROTULO_STATUS.get(it["status_arquivo"], it["status_arquivo"]),
-            it["detalhe"], it["veredito"].capitalize()]
+            it.get("detalhe", ""), it["veredito"].capitalize()]
 
 
 def _largura(ws, cabecalhos, linhas):
@@ -68,13 +75,43 @@ def _escrever_aba(ws, itens, com_totais=None):
             cel.border = _BORDA
             if offset % 2 == 1:
                 cel.fill = _FILL_ZEBRA
-        # colore as colunas de status (6 = Lançamento, 7 = Arquivo)
-        for col, chave in ((6, it["status_lancamento"]), (7, it["status_arquivo"])):
+            if c in _COLS_MOEDA and isinstance(valor, (int, float)):
+                cel.number_format = _MOEDA
+        for col, chave in ((_COL_STATUS[0], it["status_lancamento"]),
+                           (_COL_STATUS[1], it["status_arquivo"])):
             fill, fonte = _FILL_STATUS.get(chave, (None, _FONTE_DADO))
             if fill:
                 ws.cell(r, col).fill = fill
                 ws.cell(r, col).font = fonte
     _largura(ws, CABECALHOS, [[""] * len(CABECALHOS)] + linhas)
+
+
+CAB_IMP = ["Nº NF", "Fornecedor",
+           "ISS Sieg", "ISS SP", "INSS Sieg", "INSS SP", "IRRF Sieg", "IRRF SP",
+           "CSRF Sieg", "CSRF SP", "Descontos", "Base Cálc.", "Alíquota",
+           "Total Sieg", "Total SP"]
+
+
+def _aba_impostos(ws, itens):
+    for c, t in enumerate(CAB_IMP, start=1):
+        cel = ws.cell(1, c, t); cel.font = _FONTE_CAB; cel.fill = _FILL_CAB; cel.alignment = _CENTRO
+    ws.freeze_panes = "A2"
+    for off, it in enumerate(itens):
+        s = (it.get("impostos") or {}).get("sieg") or {}
+        p = (it.get("impostos") or {}).get("spdata") or {}
+        vals = [it["numero"], it["nome_fornecedor"],
+                s.get("iss", 0), p.get("iss"), s.get("inss", 0), p.get("inss"),
+                s.get("ir", 0), p.get("ir"), s.get("csrf", 0), p.get("csrf"),
+                s.get("descontos", 0), s.get("base_calculo", 0), s.get("aliquota", 0),
+                s.get("total", 0), p.get("total")]
+        r = 2 + off
+        for c, v in enumerate(vals, start=1):
+            cel = ws.cell(r, c, v); cel.font = _FONTE_DADO; cel.border = _BORDA
+            if off % 2 == 1:
+                cel.fill = _FILL_ZEBRA
+            if c >= 3 and c != 13 and isinstance(v, (int, float)):   # 13 = Alíquota (não é moeda)
+                cel.number_format = _MOEDA
+    _largura(ws, CAB_IMP, [[c] for c in CAB_IMP])
 
 
 def gerar_xlsx(resumo: dict, itens: list) -> bytes:
@@ -97,6 +134,7 @@ def gerar_xlsx(resumo: dict, itens: list) -> bytes:
                   [i for i in itens if i["status_lancamento"] == "falta"])
     _escrever_aba(wb.create_sheet("Faltou Arquivar"),
                   [i for i in itens if i["status_arquivo"] == "falta"])
+    _aba_impostos(wb.create_sheet("Impostos"), itens)
 
     buf = io.BytesIO()
     wb.save(buf)

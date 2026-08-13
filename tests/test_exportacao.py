@@ -27,10 +27,37 @@ def _itens():
     ]
 
 
+def _itens_ricos():
+    base = _itens()
+    for it in base:
+        it.update({"sieg_bruto": it["valor_bruto"], "sieg_liquido": it["valor_liquido"],
+                   "sieg_imp": 0.0, "sp_bruto": it["valor_bruto"],
+                   "sp_liquido": it["valor_liquido"], "sp_imp": 0.0, "tem_desconto": False,
+                   "impostos": {"sieg": {"iss":0,"inss":0,"ir":0,"csrf":0,"descontos":0,
+                                "base_calculo":0,"aliquota":0,"iss_retido":False,"total":0},
+                                "spdata": {"iss":0,"inss":0,"ir":0,"csrf":0,"total":0}}})
+    return base
+
+
+def test_export_tem_aba_impostos_e_moeda_numerica():
+    import io, openpyxl
+    conteudo = gerar_xlsx(_resumo(), _itens_ricos())
+    wb = openpyxl.load_workbook(io.BytesIO(conteudo))
+    assert "Impostos" in wb.sheetnames
+    ws = wb["Conciliação"]
+    # acha uma célula de valor (Bruto Sieg) e confirma que é número com formato moeda
+    achou = False
+    for row in ws.iter_rows():
+        for cel in row:
+            if isinstance(cel.value, (int, float)) and "R$" in (cel.number_format or ""):
+                achou = True
+    assert achou
+
+
 def test_gera_tres_abas_com_conteudo():
     conteudo = gerar_xlsx(_resumo(), _itens())
     wb = openpyxl.load_workbook(io.BytesIO(conteudo))
-    assert wb.sheetnames == ["Conciliação", "Faltou Lançar", "Faltou Arquivar"]
+    assert wb.sheetnames == ["Conciliação", "Faltou Lançar", "Faltou Arquivar", "Impostos"]
     # a aba "Faltou Lançar" tem só a nota 101 (1 cabeçalho + 1 linha)
     aba = wb["Faltou Lançar"]
     valores = [c.value for c in aba["A"] if c.value is not None]
