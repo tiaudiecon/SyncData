@@ -165,3 +165,13 @@ table.dense tr:hover td{background:var(--creme-soft)}
   .upload{flex-wrap:wrap}
   .upload input[type=file]{max-width:none}
 }
+
+.toolbar{display:flex; align-items:center; gap:14px; margin:0 0 16px; flex-wrap:wrap}
+.chips{display:flex; gap:6px; flex-wrap:wrap}
+.chip{border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink-2);
+  padding:6px 13px; border-radius:999px; font-size:12.5px; font-weight:600; cursor:pointer}
+.chip:hover{border-color:var(--ink-3)}
+.chip.on{background:var(--navy); color:var(--creme); border-color:var(--navy)}
+.chip-desc{display:inline-block; font-size:10px; font-weight:700; color:var(--burdo);
+  background:var(--burdo-100); padding:1px 6px; border-radius:999px; vertical-align:middle}
+table.dense th.grp{text-align:center; background:var(--navy); color:var(--creme)}

@@ -24,6 +24,18 @@ def test_montar_itens_enriquecido(client):
     assert it["numero"].isdigit()          # nº padronizado (só dígitos)
 
 
+def test_resultado_tem_busca_e_grupos(client):
+    client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
+    resp = client.post("/conciliar", files={
+        "spdata": ("SpData.txt", _spdata_txt(), "text/plain"),
+        "sieg": ("sieg.xlsx", _sieg_xlsx("04541288000162"), "application/octet-stream"),
+        "renew": ("renew.xlsx", _renew_xlsx(), "application/octet-stream"),
+    }, follow_redirects=False)
+    html = client.get(resp.headers["location"]).text
+    assert 'id="busca"' in html
+    assert "Ver impostos" in html
+
+
 def test_resultado_e_export(client):
     client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
     resp = client.post("/conciliar", files={

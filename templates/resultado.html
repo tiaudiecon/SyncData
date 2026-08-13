@@ -7,54 +7,78 @@
   {%- else -%}<span class="badge b-alert">Faltou</span>{%- endif -%}
 {% endmacro %}
 <div class="page-head">
-  <div>
-    <div class="crumb">Resultado · {{ resumo.data_hora }}</div>
-    <h1>Conciliação</h1>
-  </div>
+  <div><div class="crumb">Resultado · {{ resumo.data_hora }}</div><h1>Conciliação</h1></div>
   <div class="actions">
+    <a class="btn btn-ghost" href="/impostos/{{ c.id }}">Ver impostos</a>
     <a class="btn btn-primary" href="/resultado/{{ c.id }}/planilha.xlsx">
       <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Exportar .xlsx
-    </a>
+      Exportar .xlsx</a>
   </div>
 </div>
 
 <div class="kpi-row">
-  <div class="kpi hl"><div class="lbl">Universo</div><div class="val tnum">{{ resumo.total_universo }}</div><div class="sub">notas do Sieg</div></div>
+  <div class="kpi hl"><div class="lbl">Universo</div><div class="val tnum">{{ resumo.total_universo }}</div></div>
   <div class="kpi ok"><div class="lbl">Gerenciadas</div><div class="val tnum">{{ resumo.qt_gerenciadas }}</div></div>
   <div class="kpi warn"><div class="lbl">Com ressalva</div><div class="val tnum">{{ resumo.qt_ressalva }}</div></div>
   <div class="kpi alert"><div class="lbl">Faltou lançar</div><div class="val tnum">{{ resumo.qt_falta_lancar }}</div></div>
   <div class="kpi alert"><div class="lbl">Faltou arquivar</div><div class="val tnum">{{ resumo.qt_falta_arquivar }}</div></div>
 </div>
 
-<div class="note-box" style="margin-bottom:22px">
-  {{ resumo.qt_canceladas }} nota(s) cancelada(s) ficam fora do universo (informativo).
-  “Faltou lançar/arquivar” são medidas por frente e podem se sobrepor.
+<div class="toolbar">
+  <input id="busca" class="input" style="max-width:320px" placeholder="Buscar por nº, fornecedor ou valor…" oninput="filtrar()">
+  <div class="chips">
+    <button class="chip on" data-f="todas" onclick="setFiltro(this)">Todas</button>
+    <button class="chip" data-f="gerenciada" onclick="setFiltro(this)">Gerenciadas</button>
+    <button class="chip" data-f="ressalva" onclick="setFiltro(this)">Ressalva</button>
+    <button class="chip" data-f="pendente" onclick="setFiltro(this)">Pendentes</button>
+  </div>
 </div>
 
 <div class="table-scroll">
-  <table class="dense">
+  <table class="dense" id="tab">
     <thead>
       <tr>
-        <th>Nº NF</th><th>Fornecedor</th><th>Emissão</th><th class="right">Valor</th>
-        <th>Lançamento</th><th>Arquivo</th><th>Divergências</th>
+        <th rowspan="2">Nº NF</th><th rowspan="2">Fornecedor</th><th rowspan="2">Emissão</th>
+        <th colspan="3" class="grp">Sieg</th><th colspan="3" class="grp">SPData</th>
+        <th rowspan="2">Lançam.</th><th rowspan="2">Arquivo</th><th rowspan="2">Divergências</th>
       </tr>
+      <tr><th class="right">Bruto</th><th class="right">Líq</th><th class="right">Imp</th>
+          <th class="right">Bruto</th><th class="right">Líq</th><th class="right">Imp</th></tr>
     </thead>
     <tbody>
     {% for i in itens %}
-      <tr>
+      <tr data-v="{{ i.veredito }}" data-busca="{{ (i.numero ~ ' ' ~ i.nome_fornecedor ~ ' ' ~ i.sieg_bruto)|lower }}">
         <td class="bold mono">{{ i.numero }}</td>
-        <td>{{ i.nome_fornecedor }}</td>
+        <td>{{ i.nome_fornecedor }}{% if i.tem_desconto %} <span class="chip-desc">• desc</span>{% endif %}</td>
         <td class="mono">{{ i.data_emissao }}</td>
-        <td class="mono right">R$ {{ '%.2f'|format(i.sieg_bruto) }}</td>
+        <td class="mono right">{{ i.sieg_bruto|moeda }}</td>
+        <td class="mono right">{{ i.sieg_liquido|moeda }}</td>
+        <td class="mono right">{{ i.sieg_imp|moeda }}</td>
+        <td class="mono right">{{ i.sp_bruto|moeda if i.sp_bruto is not none else '—' }}</td>
+        <td class="mono right">{{ i.sp_liquido|moeda if i.sp_liquido is not none else '—' }}</td>
+        <td class="mono right">{{ i.sp_imp|moeda if i.sp_imp is not none else '—' }}</td>
         <td>{{ status(i.status_lancamento) }}</td>
         <td>{{ status(i.status_arquivo) }}</td>
-        <td style="font-size:12px; color:var(--ink-3)">
-          {{- i.detalhe -}}
-        </td>
+        <td style="font-size:12px; color:var(--ink-3)">{{ i.detalhe }}</td>
       </tr>
     {% endfor %}
     </tbody>
   </table>
 </div>
+
+<script>
+  let filtroStatus = 'todas';
+  function setFiltro(btn){
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+    btn.classList.add('on'); filtroStatus = btn.dataset.f; filtrar();
+  }
+  function filtrar(){
+    const q = (document.getElementById('busca').value || '').toLowerCase();
+    document.querySelectorAll('#tab tbody tr').forEach(tr => {
+      const okStatus = filtroStatus === 'todas' || tr.dataset.v === filtroStatus;
+      const okBusca = !q || (tr.dataset.busca || '').includes(q);
+      tr.style.display = (okStatus && okBusca) ? '' : 'none';
+    });
+  }
+</script>
 {% endblock %}
