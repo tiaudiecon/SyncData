@@ -189,3 +189,15 @@ def test_renew_aceita_valor_bruto_mesmo_com_desconto():
                          9385.0, 9385.0)
     r = conciliar([n], [], [l], [reg(valor=10000.0)])   # Renew com o bruto cheio
     assert r.itens[0].arquivo.status == STATUS_OK
+
+
+def test_item_carrega_registro_renew_casado():
+    r = conciliar([nota()], [], [lanc()], [reg()])
+    assert r.itens[0].arquivo_row is not None
+    assert r.itens[0].arquivo_row.cnpj_emissor == "11111111000111"
+
+
+def test_faltou_arquivar_sem_registro_renew():
+    r = conciliar([nota()], [], [lanc()], [])   # nada no Renew
+    assert r.itens[0].arquivo.status == STATUS_FALTA
+    assert r.itens[0].arquivo_row is None

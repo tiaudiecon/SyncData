@@ -19,6 +19,7 @@ class ItemConciliacao:
     arquivo: Frente
     veredito: str = "pendente"
     lancamento_row: object = None
+    arquivo_row: object = None
 
 
 @dataclass
@@ -140,9 +141,9 @@ def conciliar(autorizadas, canceladas, spdata, renew):
     res = ResultadoConciliacao(canceladas=list(canceladas))
     for nota in autorizadas:
         lanc, lanc_row = _avaliar(nota, idx_sp.get(nota.cnpj_prestador, []), _cmp_spdata)
-        arq, _ = _avaliar(nota, idx_rn.get(nota.cnpj_prestador, []), _cmp_renew)
+        arq, arq_row = _avaliar(nota, idx_rn.get(nota.cnpj_prestador, []), _cmp_renew)
         veredito = _veredito(lanc, arq)
-        res.itens.append(ItemConciliacao(nota, lanc, arq, veredito, lanc_row))
+        res.itens.append(ItemConciliacao(nota, lanc, arq, veredito, lanc_row, arq_row))
 
         if lanc.status == STATUS_FALTA:
             res.qt_falta_lancar += 1
