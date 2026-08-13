@@ -29,6 +29,14 @@ def test_resultado_tem_busca_e_grupos(client):
     assert "Ver impostos" in html
 
 
+def test_resultado_mostra_botao_pdf(client):
+    client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
+    st = montar_conciliacao("04541288000162", _spdata_txt(), _sieg_xlsx("04541288000162"))
+    html = client.get(f"/resultado/{st['conciliacao_id']}").text
+    assert "/pdf/" in html
+    assert "Abrir" in html
+
+
 def test_resultado_e_export(client):
     client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
     st = montar_conciliacao("04541288000162", _spdata_txt(), _sieg_xlsx("04541288000162"))

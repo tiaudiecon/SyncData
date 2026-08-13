@@ -9,6 +9,7 @@ from app.routers import resultado
 from app.routers import historico, configuracoes
 from app.routers import impostos
 from app.routers import processar
+from app.routers import pdf
 
 Base.metadata.create_all(bind=engine)
 
@@ -24,6 +25,7 @@ app.include_router(historico.router)
 app.include_router(configuracoes.router)
 app.include_router(impostos.router)
 app.include_router(processar.router)
+app.include_router(pdf.router)
 
 
 @app.get("/health")

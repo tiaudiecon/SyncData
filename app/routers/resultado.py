@@ -37,6 +37,7 @@ def montar_resumo_e_itens(conc):
     for i in conc.itens:
         detalhe = "; ".join(d for d in (i.detalhe_lancamento, i.detalhe_arquivo) if d)
         itens.append({
+            "id": i.id,
             "numero": pad_numero(i.numero, largura),
             "nome_fornecedor": i.nome_fornecedor, "data_emissao": i.data_emissao,
             "tem_desconto": bool(i.tem_desconto),
@@ -47,6 +48,7 @@ def montar_resumo_e_itens(conc):
             "status_lancamento": i.status_lancamento, "status_arquivo": i.status_arquivo,
             "detalhe": detalhe, "veredito": i.veredito,
             "impostos": json.loads(i.impostos_json) if i.impostos_json else {},
+            "arquivo_pdf": i.arquivo_pdf,
         })
     return resumo, itens
 
