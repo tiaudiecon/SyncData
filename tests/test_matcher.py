@@ -175,3 +175,14 @@ def test_item_carrega_linha_spdata_casada():
 def test_faltou_lancar_sem_linha_spdata():
     r = conciliar([nota()], [], [], [reg()])
     assert r.itens[0].lancamento_row is None
+
+
+def test_renew_aceita_valor_bruto_mesmo_com_desconto():
+    # Sieg bruto 10000, desconto 615 -> ajustado 9385. Se o Renew guardar o
+    # valor CHEIO (10000), ainda assim é a mesma nota (não diverge).
+    n = NotaSieg("100", "100", "11111111000111", "F", date(2026, 7, 3),
+                 10000.0, 9385.0, False, deducoes=615.0)
+    l = LancamentoSpData("100", "100", "11111111000111", "F", date(2026, 7, 3),
+                         9385.0, 9385.0)
+    r = conciliar([n], [], [l], [reg(valor=10000.0)])   # Renew com o bruto cheio
+    assert r.itens[0].arquivo.status == STATUS_OK

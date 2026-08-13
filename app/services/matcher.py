@@ -109,16 +109,18 @@ def _cmp_spdata(nota, c):
 
 
 def _cmp_renew(nota, c):
-    # O Renew guarda o valor de FACE (bruto) da nota, então comparamos com o
-    # Valor_Servico do Sieg (bruto), não com o líquido. A data do Renew é a de
-    # emissão de verdade, então aqui a data entra como conferência.
+    # O Renew guarda o valor de FACE (bruto) da nota. Não sabemos ao certo se o
+    # face do Renew já vem líquido do desconto ou não, então aceitamos qualquer
+    # um dos dois (com ou sem desconto) — assim uma nota com desconto não diverge
+    # à toa nesta frente. Ponto de calibração com dados reais.
     data_ok = bool(nota.emissao and c.emissao and nota.emissao == c.emissao)
-    valor_ok = valores_batem(nota.bruto_ajustado, c.valor)
+    valor_ok = (valores_batem(nota.bruto_ajustado, c.valor)
+                or valores_batem(nota.valor_servico, c.valor))
     partes = []
     if not data_ok:
         partes.append(f"data {_fmt_data(nota.emissao)}≠{_fmt_data(c.emissao)}")
     if not valor_ok:
-        partes.append(f"valor R$ {nota.bruto_ajustado:.2f}≠R$ {c.valor:.2f}")
+        partes.append(f"valor R$ {nota.valor_servico:.2f}≠R$ {c.valor:.2f}")
     return data_ok, valor_ok, "; ".join(partes)
 
 

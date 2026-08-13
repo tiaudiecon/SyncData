@@ -176,3 +176,4 @@ table.dense tr:hover td{background:var(--creme-soft)}
   background:var(--burdo-100); padding:1px 6px; border-radius:999px; vertical-align:middle}
 table.dense th.grp{text-align:center; background:var(--navy); color:var(--creme)}
 .dz{color:var(--alert); font-weight:700}
+table.dense tfoot .tot td{background:var(--surface-3); border-top:2px solid var(--line-2); font-weight:700; color:var(--ink)}

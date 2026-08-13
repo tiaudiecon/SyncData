@@ -15,7 +15,7 @@
   <div class="panel"><div class="empty">Nenhuma conciliação ainda. Vá em <strong>Conciliar</strong> para começar.</div></div>
 {% else %}
 <div class="toolbar">
-  <label class="chip on" id="chDiv"><input type="checkbox" onchange="soDiverg(this)" style="margin-right:6px">Só divergências</label>
+  <label class="chip" id="chDiv"><input type="checkbox" onchange="soDiverg(this)" style="margin-right:6px">Só divergências</label>
 </div>
 <div class="table-scroll">
   <table class="dense" id="tab">
@@ -44,6 +44,18 @@
       </tr>
     {% endfor %}
     </tbody>
+    {% if totais %}
+    <tfoot>
+      <tr class="tot">
+        <td class="bold">TOTAL</td><td></td>
+        {{ cel(totais.iss) }}{{ cel(totais.inss) }}{{ cel(totais.ir) }}{{ cel(totais.csrf) }}
+        <td class="mono right">{{ totais.descontos|moeda }}</td>
+        <td class="mono right">{{ totais.base|moeda }}</td>
+        <td class="right">—</td>
+        {{ cel(totais.total) }}
+      </tr>
+    </tfoot>
+    {% endif %}
   </table>
 </div>
 <script>

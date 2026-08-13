@@ -46,3 +46,28 @@ def test_faltou_lancar_lado_spdata_fica_none():
     assert it.imp_sieg == 100.0                  # lado Sieg segue preenchido
     assert json.loads(it.impostos_json)["spdata"] is None
     db.query(ConciliacaoItem).delete(); db.query(Conciliacao).delete(); db.commit(); db.close()
+
+
+def test_impostos_json_remap_por_campo():
+    Base.metadata.create_all(bind=engine)
+    n = NotaSieg("100", "100", "11111111000111", "F", date(2026, 7, 3), 1000.0, 800.0,
+                 False, iss=11.0, iss_retido=True, inss=22.0, ir=33.0,
+                 pis=1.0, cofins=2.0, csll=3.0, aliquota=5.0, base_calculo=900.0)
+    l = LancamentoSpData("100", "100", "11111111000111", "F", date(2026, 7, 3),
+                         1000.0, 800.0, issqn=11.0, inss_pj=20.0, inss_auton=2.0,
+                         irpj=30.0, ir_auton=3.0, ir_coop=0.0, csrf=6.0)
+    from app.services.parser_renew import RegistroRenew
+    reg = RegistroRenew("100", "100", "11111111000111", "F", date(2026, 7, 3), 1000.0)
+    res = conciliar([n], [], [l], [reg])
+    db = SessionLocal()
+    conc = salvar_conciliacao(db, "04541288000162",
+                              {"spdata": "a", "sieg": "b", "renew": "c"}, res)
+    it = db.query(ConciliacaoItem).filter_by(conciliacao_id=conc.id).first()
+    d = json.loads(it.impostos_json)
+    assert d["sieg"]["iss"] == 11.0 and d["spdata"]["iss"] == 11.0   # ISSQN -> "iss"
+    assert d["sieg"]["inss"] == 22.0 and d["spdata"]["inss"] == 22.0  # 20+2
+    assert d["sieg"]["ir"] == 33.0 and d["spdata"]["ir"] == 33.0      # 30+3
+    assert d["sieg"]["csrf"] == 6.0 and d["spdata"]["csrf"] == 6.0    # 1+2+3 = 6
+    assert d["sieg"]["base_calculo"] == 900.0 and d["sieg"]["aliquota"] == 5.0
+    assert d["sieg"]["iss_retido"] is True
+    db.query(ConciliacaoItem).delete(); db.query(Conciliacao).delete(); db.commit(); db.close()

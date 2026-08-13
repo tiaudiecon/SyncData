@@ -50,6 +50,18 @@ def _diverge(linha):
     return False
 
 
+def _totais(linhas):
+    def soma_par(chave, lado):
+        return round(sum((l[chave][lado] or 0) for l in linhas), 2)
+    tot = {}
+    for k in ("iss", "inss", "ir", "csrf", "total"):
+        s = soma_par(k, "sieg"); p = soma_par(k, "sp")
+        tot[k] = {"sieg": s, "sp": p, "delta": round(s - p, 2)}
+    tot["descontos"] = round(sum(l["descontos"] for l in linhas), 2)
+    tot["base"] = round(sum(l["base"] for l in linhas), 2)
+    return tot
+
+
 @router.get("/impostos")
 def mais_recente(request: Request, db: Session = Depends(get_db)):
     conc = db.query(Conciliacao).order_by(Conciliacao.data_hora.desc()).first()
@@ -71,5 +83,6 @@ def _render(request, db, conc):
     return templates.TemplateResponse(request, "impostos.html", {
         "ativo": "impostos", "conc": conc,
         "data_hora": formatar_dt(conc.data_hora) if conc else "",
-        "linhas": linhas, **contexto_cliente(db),
+        "linhas": linhas, "totais": _totais(linhas) if linhas else None,
+        **contexto_cliente(db),
     })

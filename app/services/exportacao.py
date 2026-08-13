@@ -111,6 +111,24 @@ def _aba_impostos(ws, itens):
                 cel.fill = _FILL_ZEBRA
             if c >= 3 and c != 13 and isinstance(v, (int, float)):   # 13 = Alíquota (não é moeda)
                 cel.number_format = _MOEDA
+
+    # linha de totais
+    total_r = 2 + len(itens)
+    ws.cell(total_r, 1, "TOTAL").font = Font(bold=True, color=_NAVY, size=10)
+    somas = {}
+    for it in itens:
+        s = (it.get("impostos") or {}).get("sieg") or {}
+        p = (it.get("impostos") or {}).get("spdata") or {}
+        for c, v in ((3, s.get("iss", 0)), (4, p.get("iss") or 0), (5, s.get("inss", 0)),
+                     (6, p.get("inss") or 0), (7, s.get("ir", 0)), (8, p.get("ir") or 0),
+                     (9, s.get("csrf", 0)), (10, p.get("csrf") or 0),
+                     (11, s.get("descontos", 0)), (12, s.get("base_calculo", 0)),
+                     (14, s.get("total", 0)), (15, p.get("total") or 0)):
+            somas[c] = round(somas.get(c, 0) + (v or 0), 2)
+    for c, v in somas.items():
+        cel = ws.cell(total_r, c, v)
+        cel.font = Font(bold=True, color=_TINTA, size=10)
+        cel.number_format = _MOEDA
     _largura(ws, CAB_IMP, [[c] for c in CAB_IMP])
 
 

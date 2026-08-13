@@ -23,6 +23,10 @@
   <div class="kpi alert"><div class="lbl">Faltou lançar</div><div class="val tnum">{{ resumo.qt_falta_lancar }}</div></div>
   <div class="kpi alert"><div class="lbl">Faltou arquivar</div><div class="val tnum">{{ resumo.qt_falta_arquivar }}</div></div>
 </div>
+<p class="sub" style="margin:-8px 0 16px">
+  {{ resumo.qt_canceladas }} nota(s) cancelada(s) ficam fora do universo (informativo).
+  “Faltou lançar/arquivar” são por frente e podem se sobrepor.
+</p>
 
 <div class="toolbar">
   <input id="busca" class="input" style="max-width:320px" placeholder="Buscar por nº, fornecedor ou valor…" oninput="filtrar()">
