@@ -17,10 +17,16 @@ def moeda(v) -> str:
     return "R$ " + s
 
 
+_LARGURA_MAX = 6   # teto: números compostos (13 díg.) não puxam todos pra 13 zeros
+
+
 def largura_numeros(numeros) -> int:
-    """Maior quantidade de dígitos entre os números (mínimo 1)."""
+    """Largura de padronização = maior quantidade de dígitos entre os números,
+    limitada a `_LARGURA_MAX` (mínimo 1). O teto evita que um número composto de
+    13 dígitos transforme '82' em '0000000000082' — fica '000082', e os compostos
+    (maiores que o teto) seguem inteiros via `pad_numero`."""
     larguras = [len(re.sub(r"\D", "", str(n))) for n in numeros if n]
-    return max(larguras) if larguras else 1
+    return min(_LARGURA_MAX, max(larguras)) if larguras else 1
 
 
 def pad_numero(numero, largura) -> str:

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block titulo %}Impostos · SyncData{% endblock %}
+{% block wrapclass %}wrap-wide{% endblock %}
 {% block content %}
 {% macro cel(p) %}
   {%- if p.sp is none -%}<td class="mono right">{{ p.sieg|moeda }}</td><td class="mono right">—</td><td class="right">—</td>

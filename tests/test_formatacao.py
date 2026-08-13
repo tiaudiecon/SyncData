@@ -29,3 +29,11 @@ def test_padronizacao_pelo_maior():
     assert pad_numero("18", L) == "000018"
     assert pad_numero("202069", L) == "202069"
     assert pad_numero("2600000002098", L) == "2600000002098"  # maior que L: inteiro
+
+
+def test_largura_tem_teto_com_numero_composto():
+    # Um composto de 13 dígitos NÃO pode puxar todos pra 13 zeros: o teto é 6.
+    L = largura_numeros(["82", "2026000000018"])
+    assert L == 6
+    assert pad_numero("82", L) == "000082"            # não "0000000000082"
+    assert pad_numero("2026000000018", L) == "2026000000018"  # composto fica inteiro

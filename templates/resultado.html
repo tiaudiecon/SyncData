@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block titulo %}Resultado · SyncData{% endblock %}
+{% block wrapclass %}wrap-wide{% endblock %}
 {% block content %}
 {% macro status(s) %}
   {%- if s == 'ok' -%}<span class="badge b-ok">OK</span>
@@ -70,7 +71,7 @@
             <a class="btn-mini" href="/pdf/{{ i.id }}" target="_blank" rel="noopener">Abrir</a>
           {% else %}<span style="color:var(--ink-3)">—</span>{% endif %}
         </td>
-        <td style="font-size:12px; color:var(--ink-3)">{{ i.detalhe }}</td>
+        <td class="col-detalhe">{{ i.detalhe }}</td>
       </tr>
     {% endfor %}
     </tbody>

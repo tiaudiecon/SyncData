@@ -59,6 +59,8 @@ a{color:inherit}
 
 .main{flex:1; padding:28px 40px; overflow-y:auto; width:100%}
 .wrap{max-width:1080px; margin:0 auto; width:100%}
+/* telas de tabela larga (Resultado, Impostos) aproveitam mais largura */
+.wrap-wide{max-width:1620px}
 
 /* ---------- Page head ---------- */
 .page-head{display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
@@ -112,8 +114,10 @@ a{color:inherit}
 .table-scroll{overflow-x:auto; border:1px solid var(--line); border-radius:var(--r-lg)}
 table.dense{width:100%; border-collapse:separate; border-spacing:0; font-size:13px; background:var(--surface-2)}
 table.dense th{text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3);
-  font-weight:600; padding:11px 14px; background:var(--surface-3); border-bottom:1px solid var(--line); white-space:nowrap}
-table.dense td{padding:11px 14px; border-bottom:1px solid var(--line); vertical-align:middle; color:var(--ink-2)}
+  font-weight:600; padding:10px 11px; background:var(--surface-3); border-bottom:1px solid var(--line); white-space:nowrap}
+table.dense td{padding:10px 11px; border-bottom:1px solid var(--line); vertical-align:middle; color:var(--ink-2)}
+/* coluna de divergências (texto): não estoura a largura da tabela */
+table.dense td.col-detalhe{font-size:12px; color:var(--ink-3); max-width:190px; white-space:normal}
 table.dense tr:last-child td{border-bottom:none}
 table.dense td.bold{color:var(--ink); font-weight:600}
 table.dense tr:hover td{background:var(--creme-soft)}
@@ -175,6 +179,11 @@ table.dense tr:hover td{background:var(--creme-soft)}
 .chip-desc{display:inline-block; font-size:10px; font-weight:700; color:var(--burdo);
   background:var(--burdo-100); padding:1px 6px; border-radius:999px; vertical-align:middle}
 table.dense th.grp{text-align:center; background:var(--navy); color:var(--creme)}
+table.dense th.grp + th.grp{border-left:2px solid var(--navy-900)}
+/* alinhamento à direita de números/moeda (a regra .right faltava no CSS) */
+table.dense td.right, table.dense th.right{text-align:right}
+/* valores mono (moeda, nº, data) não quebram em 2 linhas — evita desalinhar a linha */
+table.dense td.mono, table.dense th.right{white-space:nowrap}
 .dz{color:var(--alert); font-weight:700}
 table.dense tfoot .tot td{background:var(--surface-3); border-top:2px solid var(--line-2); font-weight:700; color:var(--ink)}
 
