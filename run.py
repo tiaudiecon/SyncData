@@ -17,6 +17,18 @@ def _diretorio_aplicacao():
     if getattr(sys, "frozen", False):
         pasta_exe = Path(sys.executable).resolve().parent
         os.environ.setdefault("SYNCDATA_DB", str(pasta_exe / "syncdata.db"))
+        # App empacotado SEM console (windowed): o Windows deixa sys.stdout/stderr
+        # como None, e uvicorn/print quebrariam ao escrever. Redireciona pra um log
+        # ao lado do .exe (também serve pra depurar sem a janela preta).
+        if sys.stdout is None or sys.stderr is None:
+            try:
+                _log = open(pasta_exe / "syncdata.log", "a", encoding="utf-8", buffering=1)
+                if sys.stdout is None:
+                    sys.stdout = _log
+                if sys.stderr is None:
+                    sys.stderr = _log
+            except Exception:
+                pass
         return Path(sys._MEIPASS)
     return Path(__file__).resolve().parent
 

@@ -29,6 +29,7 @@ def escolher_pasta() -> "str | None":
         r = subprocess.run(
             ["powershell", "-NoProfile", "-STA", "-Command", _PS],
             capture_output=True, encoding="utf-8", timeout=300,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
     except Exception:
         # Erro real (PowerShell ausente, timeout, etc.) — distinto de um

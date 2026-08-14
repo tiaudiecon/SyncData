@@ -49,7 +49,8 @@ def rodar_renew(pasta, comando=None, cwd=None, on_progress=None, intervalo=1.0) 
         cwd = cwd or str(exe.parent)
     with tempfile.TemporaryFile("w+b") as logf:
         proc = subprocess.Popen([*comando, str(pasta)], cwd=cwd,
-                                stdout=logf, stderr=subprocess.STDOUT)
+                                stdout=logf, stderr=subprocess.STDOUT,
+                                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         while proc.poll() is None:
             if on_progress:
                 on_progress(contar_renomeados(pasta), contar_pdfs(pasta))
