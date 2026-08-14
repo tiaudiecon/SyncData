@@ -2,11 +2,11 @@
 {% block titulo %}Impostos · SyncData{% endblock %}
 {% block wrapclass %}wrap-wide{% endblock %}
 {% block content %}
-{% macro dupla(p) %}
+{% macro linha_imp(nome, p) %}
   {%- set d = p.delta is not none and (p.delta > 0.05 or p.delta < -0.05) -%}
-  <span class="{% if d %}dz{% endif %}">{{ p.sieg|moeda }}</span>
-  <span class="det-sep">×</span>
-  <span class="{% if d %}dz{% endif %}">{{ p.sp|moeda if p.sp is not none else '—' }}</span>
+  <td class="det-nome">{{ nome }}</td>
+  <td class="mono right {% if d %}dz{% endif %}">{{ p.sieg|moeda }}</td>
+  <td class="mono right {% if d %}dz{% endif %}">{{ p.sp|moeda if p.sp is not none else '—' }}</td>
 {% endmacro %}
 <div class="page-head">
   <div><div class="crumb">{% if conc %}Conciliação · {{ data_hora }}{% endif %}</div><h1>Detalhamento de Impostos</h1></div>
@@ -42,15 +42,23 @@
         <td>{% if l.diverge %}<span class="badge b-warn">Divergência</span>{% else %}<span class="badge b-ok">OK</span>{% endif %}</td>
       </tr>
       <tr class="linha-det"><td></td><td colspan="5">
-        <div class="det-grid">
-          <div class="det-cel"><span class="det-k">ISS</span><span class="det-v">{{ dupla(l.iss) }}</span></div>
-          <div class="det-cel"><span class="det-k">INSS</span><span class="det-v">{{ dupla(l.inss) }}</span></div>
-          <div class="det-cel"><span class="det-k">IRRF</span><span class="det-v">{{ dupla(l.ir) }}</span></div>
-          <div class="det-cel"><span class="det-k">CSRF</span><span class="det-v">{{ dupla(l.csrf) }}</span></div>
-          <div class="det-cel"><span class="det-k">Total ret.</span><span class="det-v">{{ dupla(l.total) }}</span></div>
-          <div class="det-cel"><span class="det-k">Descontos <em>(Sieg)</em></span><span class="det-v mono">{{ l.descontos|moeda }}</span></div>
-          <div class="det-cel"><span class="det-k">Base cálc. <em>(Sieg)</em></span><span class="det-v mono">{{ l.base|moeda }}</span></div>
-          <div class="det-cel"><span class="det-k">Alíquota</span><span class="det-v mono">{{ '%.2f'|format(l.aliquota) }}%</span></div>
+        <div class="det-wrap">
+          <table class="det-tab">
+            <thead><tr><th class="det-nome">Imposto</th><th class="right">Sieg</th><th class="right">SPData</th></tr></thead>
+            <tbody>
+              <tr>{{ linha_imp('ISS', l.iss) }}</tr>
+              <tr>{{ linha_imp('INSS', l.inss) }}</tr>
+              <tr>{{ linha_imp('IRRF', l.ir) }}</tr>
+              <tr>{{ linha_imp('CSRF', l.csrf) }}</tr>
+              <tr class="det-total">{{ linha_imp('Total ret.', l.total) }}</tr>
+            </tbody>
+          </table>
+          <div class="det-extra">
+            <div class="det-extra-tit">Só no Sieg</div>
+            <div class="det-x"><span class="det-k">Descontos</span><span class="mono">{{ l.descontos|moeda }}</span></div>
+            <div class="det-x"><span class="det-k">Base de cálculo</span><span class="mono">{{ l.base|moeda }}</span></div>
+            <div class="det-x"><span class="det-k">Alíquota</span><span class="mono">{{ '%.2f'|format(l.aliquota) }}%</span></div>
+          </div>
         </div>
       </td></tr>
     {% endfor %}
