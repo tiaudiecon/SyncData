@@ -226,9 +226,12 @@ tr.linha-det > td{background:var(--surface-3); padding:0; border-bottom:1px soli
 .det-x{display:flex; justify-content:space-between; gap:16px; font-size:12px; padding:4px 0}
 .det-x .mono{font-family:'JetBrains Mono',monospace}
 .det-k{font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-3)}
-.det-diverg{font-size:12px; color:var(--alert); line-height:1.5}
-.det-obs{font-size:11.5px; color:var(--ink-3); line-height:1.5; margin-top:4px}
+.det-diverg{font-size:12px; color:var(--alert); line-height:1.4}
+.det-obs{font-size:11.5px; color:var(--ink-3); line-height:1.4}
 .det-ok{font-size:12px; color:var(--ok)}
+.det-situacao{min-width:300px}
+.det-frente{display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:4px 0}
+.det-frente .det-k{min-width:120px}
 table.dense tfoot .tot td{background:var(--surface-3); border-top:2px solid var(--line-2); font-weight:700; color:var(--ink)}
 
 .prog{height:12px; background:var(--surface-2); border:1px solid var(--line-2);
@@ -236,9 +239,10 @@ table.dense tfoot .tot td{background:var(--surface-3); border-top:2px solid var(
 .prog-fill{height:100%; background:var(--navy); border-radius:999px; transition:width .4s ease}
 
 td.center{text-align:center; white-space:nowrap}
-.btn-mini{display:inline-block; font-size:11.5px; font-weight:600; cursor:pointer;
-  border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink-2);
-  padding:3px 9px; border-radius:7px; text-decoration:none; margin:0 1px}
+.btn-mini{display:inline-flex; align-items:center; justify-content:center; height:24px;
+  min-width:52px; font-size:11.5px; font-weight:600; font-family:inherit; line-height:1;
+  cursor:pointer; border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink-2);
+  padding:0 10px; border-radius:7px; text-decoration:none; margin:0 1px; vertical-align:middle}
 .btn-mini:hover{border-color:var(--navy); color:var(--navy)}
 .pdf-panel{position:fixed; top:0; right:0; width:min(560px, 46vw); height:100vh;
   background:var(--surface-2); border-left:1px solid var(--line-2);

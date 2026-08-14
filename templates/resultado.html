@@ -12,6 +12,14 @@
   <td class="mono right {% if d %}dz{% endif %}">{{ sv|moeda }}</td>
   <td class="mono right {% if d %}dz{% endif %}">{{ pv|moeda if pv is not none else '—' }}</td>
 {% endmacro %}
+{% macro frente(rotulo, st, det, falta_txt) %}
+  <div class="det-frente">
+    <span class="det-k">{{ rotulo }}</span>{{ status(st) }}
+    {%- if st == 'ok' %}<span class="det-ok">confere</span>
+    {%- elif st == 'falta' %}<span class="det-obs">{{ falta_txt }}</span>
+    {%- else %}<span class="det-diverg">{{ det or 'valor/data divergem' }}</span>{% endif %}
+  </div>
+{% endmacro %}
 <div class="page-head">
   <div><div class="crumb">Resultado · {{ resumo.data_hora }}</div><h1>Conciliação</h1></div>
   <div class="actions">
@@ -83,10 +91,10 @@
               <tr><td class="det-nome">Impostos</td>{{ cmp(i.sieg_imp, i.sp_imp) }}</tr>
             </tbody>
           </table>
-          <div class="det-extra">
+          <div class="det-extra det-situacao">
             <div class="det-extra-tit">Situação</div>
-            {% if i.detalhe %}<div class="det-diverg">{{ i.detalhe }}</div>
-            {% else %}<div class="det-ok">Lançamento e arquivo conferem.</div>{% endif %}
+            {{ frente('Lançamento (SPData)', i.status_lancamento, i.detalhe_lancamento, 'não lançado no SPData') }}
+            {{ frente('Arquivo (Renew)', i.status_arquivo, i.detalhe_arquivo, 'não arquivado (Renew não encontrou)') }}
             {% if i.tem_desconto %}<div class="det-obs">Nota com desconto: o SPData lança líquido do desconto, então o Bruto difere de propósito (o confronto usa o valor ajustado).</div>{% endif %}
           </div>
         </div>

@@ -46,7 +46,10 @@ def montar_resumo_e_itens(conc):
             "sp_bruto": i.sp_valor_bruto, "sp_liquido": i.sp_valor_liquido,
             "sp_imp": i.imp_spdata,
             "status_lancamento": i.status_lancamento, "status_arquivo": i.status_arquivo,
-            "detalhe": detalhe, "veredito": i.veredito,
+            "detalhe": detalhe,
+            "detalhe_lancamento": i.detalhe_lancamento or "",
+            "detalhe_arquivo": i.detalhe_arquivo or "",
+            "veredito": i.veredito,
             "impostos": json.loads(i.impostos_json) if i.impostos_json else {},
             "arquivo_pdf": i.arquivo_pdf,
         })

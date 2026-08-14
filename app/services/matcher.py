@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from app.services.normalizacao import valores_batem
+from app.services.formatacao import moeda
 
 STATUS_OK = "ok"
 STATUS_DIVERG = "diverg"
@@ -103,9 +104,9 @@ def _cmp_spdata(nota, c):
     liq_ok = valores_batem(nota.valor_liquido, c.valor_liquido)
     partes = []
     if not bruto_ok:
-        partes.append(f"bruto R$ {nota.bruto_ajustado:.2f}≠R$ {c.valor_bruto:.2f}")
+        partes.append(f"bruto {moeda(nota.bruto_ajustado)} ≠ {moeda(c.valor_bruto)}")
     if not liq_ok:
-        partes.append(f"líquido R$ {nota.valor_liquido:.2f}≠R$ {c.valor_liquido:.2f}")
+        partes.append(f"líquido {moeda(nota.valor_liquido)} ≠ {moeda(c.valor_liquido)}")
     return True, (bruto_ok and liq_ok), "; ".join(partes)
 
 
@@ -120,9 +121,9 @@ def _cmp_renew(nota, c):
     valor_ok = valores_batem(nota.valor_servico, c.valor)
     partes = []
     if not data_ok:
-        partes.append(f"data {_fmt_data(nota.emissao)}≠{_fmt_data(c.emissao)}")
+        partes.append(f"data {_fmt_data(nota.emissao)} ≠ {_fmt_data(c.emissao)}")
     if not valor_ok:
-        partes.append(f"valor R$ {nota.valor_servico:.2f}≠R$ {c.valor:.2f}")
+        partes.append(f"valor {moeda(nota.valor_servico)} ≠ {moeda(c.valor)}")
     return data_ok, valor_ok, "; ".join(partes)
 
 
