@@ -2,14 +2,11 @@
 {% block titulo %}Impostos · SyncData{% endblock %}
 {% block wrapclass %}wrap-wide{% endblock %}
 {% block content %}
-{% macro cel(p) %}
-  {%- set diverge = p.delta is not none and (p.delta > 0.05 or p.delta < -0.05) -%}
-  {%- if p.sp is none -%}
-    <td class="mono right">{{ p.sieg|moeda }}</td><td class="mono right">—</td>
-  {%- else -%}
-    <td class="mono right {% if diverge %}dz{% endif %}">{{ p.sieg|moeda }}</td>
-    <td class="mono right {% if diverge %}dz{% endif %}">{{ p.sp|moeda }}</td>
-  {%- endif -%}
+{% macro dupla(p) %}
+  {%- set d = p.delta is not none and (p.delta > 0.05 or p.delta < -0.05) -%}
+  <span class="{% if d %}dz{% endif %}">{{ p.sieg|moeda }}</span>
+  <span class="det-sep">×</span>
+  <span class="{% if d %}dz{% endif %}">{{ p.sp|moeda if p.sp is not none else '—' }}</span>
 {% endmacro %}
 <div class="page-head">
   <div><div class="crumb">{% if conc %}Conciliação · {{ data_hora }}{% endif %}</div><h1>Detalhamento de Impostos</h1></div>
@@ -21,53 +18,68 @@
 {% else %}
 <div class="toolbar">
   <label class="chip" id="chDiv"><input type="checkbox" onchange="soDiverg(this)" style="margin-right:6px">Só divergências</label>
-  <span class="legenda"><span class="dz">valor em vermelho</span> = Sieg e SPData divergem</span>
+  <span class="legenda">Clique na nota para abrir a quebra dos impostos · <span class="dz">valor em vermelho</span> = Sieg e SPData divergem</span>
 </div>
 <div class="table-scroll">
-  <table class="dense" id="tab">
+  <table class="dense imp-resumo" id="tab">
     <thead>
       <tr>
-        <th rowspan="2">Nº</th><th rowspan="2">Fornecedor</th>
-        <th colspan="2" class="grp">ISS</th><th colspan="2" class="grp">INSS</th>
-        <th colspan="2" class="grp">IRRF</th><th colspan="2" class="grp">CSRF</th>
-        <th rowspan="2" class="right">Descontos</th><th rowspan="2" class="right">Base Cálc.</th>
-        <th rowspan="2" class="right">Alíq.</th>
-        <th colspan="2" class="grp">Total ret.</th>
-      </tr>
-      <tr>
-        {% for _ in range(5) %}<th class="right">Sieg</th><th class="right">SPData</th>{% endfor %}
+        <th style="width:30px"></th>
+        <th>Nº</th><th>Fornecedor</th>
+        <th class="right">Retenções Sieg</th><th class="right">Retenções SPData</th>
+        <th>Situação</th>
       </tr>
     </thead>
     <tbody>
     {% for l in linhas %}
-      <tr data-div="{{ '1' if l.diverge else '0' }}">
-        <td class="bold mono">{{ l.numero }}</td><td>{{ l.nome }}</td>
-        {{ cel(l.iss) }}{{ cel(l.inss) }}{{ cel(l.ir) }}{{ cel(l.csrf) }}
-        <td class="mono right">{{ l.descontos|moeda }}</td>
-        <td class="mono right">{{ l.base|moeda }}</td>
-        <td class="mono right">{{ '%.2f'|format(l.aliquota) }}</td>
-        {{ cel(l.total) }}
+      {%- set td = l.total.delta is not none and (l.total.delta > 0.05 or l.total.delta < -0.05) -%}
+      <tr class="linha-resumo" data-div="{{ '1' if l.diverge else '0' }}" onclick="toggleDet(this)">
+        <td class="center"><i class="chev">▸</i></td>
+        <td class="bold mono">{{ l.numero }}</td>
+        <td>{{ l.nome }}</td>
+        <td class="mono right {% if td %}dz{% endif %}">{{ l.total.sieg|moeda }}</td>
+        <td class="mono right {% if td %}dz{% endif %}">{{ l.total.sp|moeda if l.total.sp is not none else '—' }}</td>
+        <td>{% if l.diverge %}<span class="badge b-warn">Divergência</span>{% else %}<span class="badge b-ok">OK</span>{% endif %}</td>
       </tr>
+      <tr class="linha-det"><td></td><td colspan="5">
+        <div class="det-grid">
+          <div class="det-cel"><span class="det-k">ISS</span><span class="det-v">{{ dupla(l.iss) }}</span></div>
+          <div class="det-cel"><span class="det-k">INSS</span><span class="det-v">{{ dupla(l.inss) }}</span></div>
+          <div class="det-cel"><span class="det-k">IRRF</span><span class="det-v">{{ dupla(l.ir) }}</span></div>
+          <div class="det-cel"><span class="det-k">CSRF</span><span class="det-v">{{ dupla(l.csrf) }}</span></div>
+          <div class="det-cel"><span class="det-k">Total ret.</span><span class="det-v">{{ dupla(l.total) }}</span></div>
+          <div class="det-cel"><span class="det-k">Descontos <em>(Sieg)</em></span><span class="det-v mono">{{ l.descontos|moeda }}</span></div>
+          <div class="det-cel"><span class="det-k">Base cálc. <em>(Sieg)</em></span><span class="det-v mono">{{ l.base|moeda }}</span></div>
+          <div class="det-cel"><span class="det-k">Alíquota</span><span class="det-v mono">{{ '%.2f'|format(l.aliquota) }}%</span></div>
+        </div>
+      </td></tr>
     {% endfor %}
     </tbody>
     {% if totais %}
     <tfoot>
       <tr class="tot">
-        <td class="bold">TOTAL</td><td></td>
-        {{ cel(totais.iss) }}{{ cel(totais.inss) }}{{ cel(totais.ir) }}{{ cel(totais.csrf) }}
-        <td class="mono right">{{ totais.descontos|moeda }}</td>
-        <td class="mono right">{{ totais.base|moeda }}</td>
-        <td class="right">—</td>
-        {{ cel(totais.total) }}
+        <td></td><td class="bold">TOTAL</td><td></td>
+        <td class="mono right">{{ totais.total.sieg|moeda }}</td>
+        <td class="mono right">{{ totais.total.sp|moeda }}</td>
+        <td></td>
       </tr>
     </tfoot>
     {% endif %}
   </table>
 </div>
 <script>
+  function toggleDet(tr){
+    const det = tr.nextElementSibling;
+    if(!det || !det.classList.contains('linha-det')) return;
+    det.classList.toggle('aberto');
+    tr.classList.toggle('aberta');
+  }
   function soDiverg(chk){
-    document.querySelectorAll('#tab tbody tr').forEach(tr => {
-      tr.style.display = (!chk.checked || tr.dataset.div === '1') ? '' : 'none';
+    document.querySelectorAll('#tab tbody tr.linha-resumo').forEach(tr => {
+      const esconde = chk.checked && tr.dataset.div !== '1';
+      tr.classList.toggle('filtrada', esconde);
+      const det = tr.nextElementSibling;
+      if(det && det.classList.contains('linha-det')) det.classList.toggle('filtrada', esconde);
     });
   }
 </script>
