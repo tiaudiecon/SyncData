@@ -34,6 +34,8 @@ def _linhas(conc):
             return {"sieg": sv, "sp": pv, "delta": _delta(sv, pv)}
         linhas.append({
             "numero": pad_numero(i.numero, largura), "nome": i.nome_fornecedor,
+            # nota sem lançamento no SPData: não há o que comparar (não é OK)
+            "sem_spdata": p is None,
             "iss": par("iss"), "inss": par("inss"), "ir": par("ir"), "csrf": par("csrf"),
             # "Outras retenções" (só do Sieg) — entra no Total ret. mas não é um
             # dos 4 impostos; sem esta linha o discriminado não fecha com o total.

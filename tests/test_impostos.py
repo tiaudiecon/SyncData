@@ -53,6 +53,26 @@ def test_impostos_renderiza(client):
     assert "CSRF" in r.text
 
 
+def _spdata_nota_diferente():
+    # SPData com uma nota (999) que NÃO casa com a do Sieg (100) -> nota do Sieg
+    # fica sem lançamento no SPData ("faltou lançar").
+    cab = ("EMISSAO|ENTRADA|NOTA|CNPJ_CPF|FORNECEDOR|ORIGEM|VALOR_BRUTO|VALOR_LIQUIDO|"
+           "IR_COOP|IRPJ|IR_AUTON|CSRF|INSS_PJ|INSS_AUTON|ISSQN|GRUPO|DESC_GRUPO|"
+           "SUBGRUPO|DESC_SUBGRUPO|ITEM|DESC_ITEM")
+    linha = ("2026-07-03|2026-07-03|999|11111111000111|OUTRO|FIN|10.00|10.00|"
+             "0|0|0|0|0|0|0|103|MAT|1|SUB|2|IT")
+    return (cab + "\n" + linha + "\n").encode("cp1252")
+
+
+def test_nota_sem_spdata_mostra_sem_spdata_nao_ok(client):
+    client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
+    montar_conciliacao("04541288000162", _spdata_nota_diferente(),
+                       _sieg_xlsx("04541288000162"))
+    r = client.get("/impostos")
+    assert r.status_code == 200
+    assert "Sem SPData" in r.text   # não pode marcar OK sem dados do SPData
+
+
 def test_impostos_vazio_sem_conciliacao(client):
     client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
     r = client.get("/impostos")

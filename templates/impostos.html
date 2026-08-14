@@ -39,7 +39,11 @@
         <td>{{ l.nome }}</td>
         <td class="mono right {% if td %}dz{% endif %}">{{ l.total.sieg|moeda }}</td>
         <td class="mono right {% if td %}dz{% endif %}">{{ l.total.sp|moeda if l.total.sp is not none else '—' }}</td>
-        <td>{% if l.diverge %}<span class="badge b-warn">Divergência</span>{% else %}<span class="badge b-ok">OK</span>{% endif %}</td>
+        <td>
+          {%- if l.sem_spdata -%}<span class="badge b-neutral">Sem SPData</span>
+          {%- elif l.diverge -%}<span class="badge b-warn">Divergência</span>
+          {%- else -%}<span class="badge b-ok">OK</span>{%- endif -%}
+        </td>
       </tr>
       <tr class="linha-det"><td></td><td colspan="5">
         <div class="det-wrap">
