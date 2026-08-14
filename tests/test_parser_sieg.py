@@ -88,11 +88,14 @@ def test_captura_impostos_e_derivados():
     aut, _ = ler_sieg(buf, CLIENTE)
     n = aut[0]
     assert n.ir == 308.70
-    assert round(n.csrf, 2) == round(308.70 + 133.77 + 617.40, 2)   # CSLL+PIS+COFINS
     assert n.iss_retido is False
     assert n.aliquota == 2.0
     assert n.base_calculo == 20580
     assert n.descontos == 0.0
     assert n.bruto_ajustado == 20580.0
-    # total = INSS+IR+PIS+COFINS+CSLL+OutRet + (ISS se retido=False -> 0)
-    assert round(n.total_retencoes, 2) == round(308.70 + 308.70 + 133.77 + 617.40, 2)
+    # Total ret. = retenção REAL = Valor_Servico − Valor_Liquido (20580 − 19314,33)
+    assert round(n.total_retencoes, 2) == 1265.67
+    # CSRF derivado = total − IRRF − INSS − (ISS se retido) = 1265,67 − 308,70 = 956,97
+    # (= 4,65% de 20580 — o correto, vs os 1.059,87 das colunas cruas)
+    assert round(n.csrf, 2) == 956.97
+    assert round(n.ir + n.csrf, 2) == round(n.total_retencoes, 2)   # reconcilia

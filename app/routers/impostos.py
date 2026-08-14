@@ -37,9 +37,6 @@ def _linhas(conc):
             # nota sem lançamento no SPData: não há o que comparar (não é OK)
             "sem_spdata": p is None,
             "iss": par("iss"), "inss": par("inss"), "ir": par("ir"), "csrf": par("csrf"),
-            # "Outras retenções" (só do Sieg) — entra no Total ret. mas não é um
-            # dos 4 impostos; sem esta linha o discriminado não fecha com o total.
-            "outras": {"sieg": s.get("outret", 0.0), "sp": None, "delta": None},
             "total": par("total"),
             # o ISS só entra no Total ret. do Sieg quando é RETIDO; se não, é
             # informativo (destacado mas não retido) e não conta no total.

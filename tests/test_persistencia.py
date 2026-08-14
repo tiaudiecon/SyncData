@@ -67,7 +67,9 @@ def test_impostos_json_remap_por_campo():
     assert d["sieg"]["iss"] == 11.0 and d["spdata"]["iss"] == 11.0   # ISSQN -> "iss"
     assert d["sieg"]["inss"] == 22.0 and d["spdata"]["inss"] == 22.0  # 20+2
     assert d["sieg"]["ir"] == 33.0 and d["spdata"]["ir"] == 33.0      # 30+3
-    assert d["sieg"]["csrf"] == 6.0 and d["spdata"]["csrf"] == 6.0    # 1+2+3 = 6
+    # Sieg CSRF é DERIVADO: total(1000−800=200) − IR(33) − INSS(22) − ISS(11 retido) = 134
+    assert d["sieg"]["csrf"] == 134.0
+    assert d["spdata"]["csrf"] == 6.0                                 # SPData: campo CSRF direto
     assert d["sieg"]["base_calculo"] == 900.0 and d["sieg"]["aliquota"] == 5.0
     assert d["sieg"]["iss_retido"] is True
     db.query(ConciliacaoItem).delete(); db.query(Conciliacao).delete(); db.commit(); db.close()

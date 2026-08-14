@@ -9,7 +9,6 @@ def _fmt_data(d):
 def _impostos_json(n, sp):
     dados = {
         "sieg": {"iss": n.iss, "inss": n.inss, "ir": n.ir, "csrf": n.csrf,
-                 "outret": n.outret,
                  "descontos": n.descontos, "base_calculo": n.base_calculo,
                  "aliquota": n.aliquota, "iss_retido": n.iss_retido,
                  "total": n.total_retencoes},

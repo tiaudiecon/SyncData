@@ -33,18 +33,24 @@ class NotaSieg:
         return round(self.deducoes + self.desc_incondic + self.desc_condic, 2)
 
     @property
-    def csrf(self) -> float:
-        return round(self.pis + self.cofins + self.csll, 2)
-
-    @property
     def bruto_ajustado(self) -> float:
         return round(self.valor_servico - self.descontos, 2)
 
     @property
     def total_retencoes(self) -> float:
+        # Retenção REAL = Valor_Servico − Valor_Liquido (campo padrão da NFS-e: o
+        # quanto o prestador deixou de receber). É o número confiável. Neste export
+        # do Sieg as colunas individuais (IR/PIS/COFINS/CSLL) se sobrepõem ao
+        # OutRetencoes; somá-las inflava o total (contava em dobro qdo OutRet≠0).
+        return round(max(0.0, self.valor_servico - self.valor_liquido), 2)
+
+    @property
+    def csrf(self) -> float:
+        # PIS/COFINS/CSLL não são confiáveis isolados neste export (o CSLL guarda o
+        # CSRF cheio, 4,65%). Deriva do total real: CSRF = total − IRRF − INSS − (ISS
+        # se retido). Assim ISS(se retido)+INSS+IRRF+CSRF fecha com o Total ret.
         iss = self.iss if self.iss_retido else 0.0
-        return round(self.inss + self.ir + self.pis + self.cofins + self.csll
-                     + self.outret + iss, 2)
+        return round(max(0.0, self.total_retencoes - self.ir - self.inss - iss), 2)
 
 
 def _e_cancelada(dt_cancel, status) -> bool:
