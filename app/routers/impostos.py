@@ -35,7 +35,13 @@ def _linhas(conc):
         linhas.append({
             "numero": pad_numero(i.numero, largura), "nome": i.nome_fornecedor,
             "iss": par("iss"), "inss": par("inss"), "ir": par("ir"), "csrf": par("csrf"),
+            # "Outras retenções" (só do Sieg) — entra no Total ret. mas não é um
+            # dos 4 impostos; sem esta linha o discriminado não fecha com o total.
+            "outras": {"sieg": s.get("outret", 0.0), "sp": None, "delta": None},
             "total": par("total"),
+            # o ISS só entra no Total ret. do Sieg quando é RETIDO; se não, é
+            # informativo (destacado mas não retido) e não conta no total.
+            "iss_retido": bool(s.get("iss_retido")),
             "descontos": s.get("descontos", 0.0), "base": s.get("base_calculo", 0.0),
             "aliquota": s.get("aliquota", 0.0),
         })
@@ -44,6 +50,9 @@ def _linhas(conc):
 
 def _diverge(linha):
     for k in ("iss", "inss", "ir", "csrf", "total"):
+        # ISS não-retido é informativo (não é retenção) — não conta como divergência
+        if k == "iss" and not linha.get("iss_retido"):
+            continue
         d = linha[k]["delta"]
         if d is not None and abs(d) > _TOL:
             return True

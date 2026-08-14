@@ -18,7 +18,7 @@
 {% else %}
 <div class="toolbar">
   <label class="chip" id="chDiv"><input type="checkbox" onchange="soDiverg(this)" style="margin-right:6px">Só divergências</label>
-  <span class="legenda">Clique na nota para abrir a quebra dos impostos · <span class="dz">valor em vermelho</span> = Sieg e SPData divergem</span>
+  <span class="legenda">Clique na nota para abrir a quebra · <span class="dz">vermelho</span> = Sieg × SPData divergem · <em>ISS informativo</em> (não retido) não soma no total</span>
 </div>
 <div class="table-scroll">
   <table class="dense imp-resumo" id="tab">
@@ -46,10 +46,19 @@
           <table class="det-tab">
             <thead><tr><th class="det-nome">Imposto</th><th class="right">Sieg</th><th class="right">SPData</th></tr></thead>
             <tbody>
+              {% if l.iss_retido %}
               <tr>{{ linha_imp('ISS', l.iss) }}</tr>
+              {% else %}
+              <tr class="det-inform">
+                <td class="det-nome">ISS <em>informativo</em></td>
+                <td class="mono right">{{ l.iss.sieg|moeda }}</td>
+                <td class="mono right">{{ l.iss.sp|moeda if l.iss.sp is not none else '—' }}</td>
+              </tr>
+              {% endif %}
               <tr>{{ linha_imp('INSS', l.inss) }}</tr>
               <tr>{{ linha_imp('IRRF', l.ir) }}</tr>
               <tr>{{ linha_imp('CSRF', l.csrf) }}</tr>
+              <tr>{{ linha_imp('Outras ret.', l.outras) }}</tr>
               <tr class="det-total">{{ linha_imp('Total ret.', l.total) }}</tr>
             </tbody>
           </table>
