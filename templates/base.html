@@ -76,5 +76,17 @@
       localStorage.setItem(key, app.classList.contains('nav-collapsed') ? 'collapsed' : 'expanded');
     }
   </script>
+
+  <script>
+    // Sinal de vida p/ o servidor local: enquanto houver aba aberta, mandamos um
+    // "keepalive" a cada 10s. Quando o navegador/aba fecha, os sinais param e o
+    // .exe se encerra sozinho (não fica processo órfão no Gerenciador de Tarefas).
+    (function () {
+      function ping() { fetch('/keepalive', { cache: 'no-store' }).catch(function () {}); }
+      ping();
+      setInterval(ping, 10000);
+      document.addEventListener('visibilitychange', function () { if (!document.hidden) ping(); });
+    })();
+  </script>
 </body>
 </html>
