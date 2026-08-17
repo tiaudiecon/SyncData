@@ -85,10 +85,9 @@ table.dense thead th{vertical-align:bottom}
 .dv-pop{position:fixed; display:none; z-index:80; max-width:320px; padding:10px 12px;
   background:var(--surface); border:1px solid var(--line-2); border-radius:var(--r-md);
   box-shadow:0 10px 30px rgba(0,0,0,.16); font-size:11.5px; color:var(--ink-2); line-height:1.4}
-.dv-pop .dv-row{display:block; padding:3px 0}
-.dv-pop .dv-row + .dv-row{border-top:1px solid var(--line); margin-top:3px}
-.dv-pop .dv-row span{display:inline-block; min-width:78px; color:var(--ink-3); font-weight:600;
-  text-transform:uppercase; font-size:9.5px; letter-spacing:.06em; margin-right:6px}
+.dv-pop .dv-grp + .dv-grp{border-top:1px solid var(--line); margin-top:7px; padding-top:7px}
+.dv-pop .dv-tit{font-weight:700; color:var(--ink); margin-bottom:3px}
+.dv-pop .dv-item{color:var(--ink-2); padding:1px 0}
 /* célula de valor divergente (Sieg×SPData) — vence o color base de table.dense td */
 .wrap-wide table.dense td.dz{color:var(--alert); font-weight:700; background:var(--alert-bg)}
 .linha-cancelada td{color:var(--ink-4); background:var(--surface-3)}

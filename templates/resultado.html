@@ -134,11 +134,22 @@
 
   // Popover de divergência (sobreposto, position:fixed — não é recortado pela tabela)
   const dvpop = document.getElementById('dvpop');
+  function rotularItem(parte){
+    // "bruto R$ x ≠ R$ y" -> "Bruto: R$ x ≠ R$ y" (1ª letra maiúscula + dois-pontos)
+    return parte.replace(/^(\S+)\s+/, function (_m, w) {
+      return w.charAt(0).toUpperCase() + w.slice(1) + ': ';
+    });
+  }
+  function grupoDv(titulo, texto){
+    if (!texto) return '';
+    var itens = texto.split('; ').map(function (p) {
+      return '<div class="dv-item">' + escapeHtml(rotularItem(p)) + '</div>';
+    }).join('');
+    return '<div class="dv-grp"><div class="dv-tit">' + titulo + '</div>' + itens + '</div>';
+  }
   function mostrarDv(el){
     const lanc = el.dataset.lanc, arq = el.dataset.arq;
-    let h = '';
-    if (lanc) h += '<div class="dv-row"><span>Lançamento</span>' + escapeHtml(lanc) + '</div>';
-    if (arq)  h += '<div class="dv-row"><span>Arquivo</span>' + escapeHtml(arq) + '</div>';
+    const h = grupoDv('Lançamento', lanc) + grupoDv('Arquivo', arq);
     if (!h) return;
     dvpop.innerHTML = h;
     dvpop.style.display = 'block';
