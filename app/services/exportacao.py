@@ -25,21 +25,40 @@ _CENTRO = Alignment(vertical="center")
 
 _MOEDA = 'R$ #,##0.00'
 CABECALHOS = ["Nº NF", "Fornecedor", "Emissão",
-              "Bruto (Sieg)", "Líq (Sieg)", "Imp (Sieg)",
-              "Bruto (SPData)", "Líq (SPData)", "Imp (SPData)",
-              "Desc?", "Lançamento", "Arquivo", "Divergências", "Veredito"]
+              "Bruto (Sieg)", "Líquido (Sieg)", "Impostos (Sieg)",
+              "Bruto (SPData)", "Líquido (SPData)", "Impostos (SPData)",
+              "Tem desconto", "Lançamento", "Arquivo", "Divergências", "Veredito"]
 _COLS_MOEDA = (4, 5, 6, 7, 8, 9)          # 1-based: as 6 colunas de valor
 _COL_STATUS = (11, 12)                     # Lançamento, Arquivo
+_COL_DIVERG = 13                           # Divergências (texto multi-linha)
+
+
+def _cap_componente(parte):
+    """'bruto R$ x ≠ R$ y' -> 'Bruto: R$ x ≠ R$ y' (mesma cara do popover)."""
+    cabeca, _sep, resto = parte.partition(" ")
+    return (cabeca.capitalize() + ": " + resto) if resto else parte.capitalize()
+
+
+def _divergencias(it):
+    """Texto das divergências igual às telas de Resultado: por frente
+    (Lançamento/Arquivo), um componente por linha."""
+    linhas = []
+    for titulo, det in (("Lançamento", it.get("detalhe_lancamento")),
+                        ("Arquivo", it.get("detalhe_arquivo"))):
+        if det:
+            linhas.append(titulo + ":")
+            linhas.extend(_cap_componente(p) for p in det.split("; "))
+    return "\n".join(linhas)
 
 
 def _linha_item(it):
     return [it["numero"], it["nome_fornecedor"], it["data_emissao"],
             it.get("sieg_bruto", 0.0), it.get("sieg_liquido", 0.0), it.get("sieg_imp", 0.0),
             it.get("sp_bruto"), it.get("sp_liquido"), it.get("sp_imp"),
-            "Sim" if it.get("tem_desconto") else "",
+            "Sim" if it.get("tem_desconto") else "—",
             _ROTULO_STATUS.get(it["status_lancamento"], it["status_lancamento"]),
             _ROTULO_STATUS.get(it["status_arquivo"], it["status_arquivo"]),
-            it.get("detalhe", ""), it["veredito"].capitalize()]
+            _divergencias(it), it["veredito"].capitalize()]
 
 
 def _largura(ws, cabecalhos, linhas):
@@ -77,6 +96,9 @@ def _escrever_aba(ws, itens, com_totais=None):
                 cel.fill = _FILL_ZEBRA
             if c in _COLS_MOEDA and isinstance(valor, (int, float)):
                 cel.number_format = _MOEDA
+            if c == _COL_DIVERG:
+                cel.font = Font(color="FFA8331C", size=9.5)   # vermelho, como na tela
+                cel.alignment = Alignment(wrap_text=True, vertical="top")
         for col, chave in ((_COL_STATUS[0], it["status_lancamento"]),
                            (_COL_STATUS[1], it["status_arquivo"])):
             fill, fonte = _FILL_STATUS.get(chave, (None, _FONTE_DADO))
@@ -84,12 +106,17 @@ def _escrever_aba(ws, itens, com_totais=None):
                 ws.cell(r, col).fill = fill
                 ws.cell(r, col).font = fonte
     _largura(ws, CABECALHOS, [[""] * len(CABECALHOS)] + linhas)
+    ws.column_dimensions[get_column_letter(_COL_DIVERG)].width = 46   # texto multi-linha
+    if itens:   # filtro no cabeçalho p/ conferência
+        ult = get_column_letter(len(CABECALHOS))
+        ws.auto_filter.ref = f"A{linha_atual}:{ult}{primeira_dado + len(itens) - 1}"
 
 
 CAB_IMP = ["Nº NF", "Fornecedor",
-           "ISS Sieg", "ISS SP", "INSS Sieg", "INSS SP", "IRRF Sieg", "IRRF SP",
-           "CSRF Sieg", "CSRF SP", "Descontos", "Base Cálc.", "Alíquota",
-           "Total Sieg", "Total SP"]
+           "ISS (Sieg)", "ISS (SPData)", "INSS (Sieg)", "INSS (SPData)",
+           "IRRF (Sieg)", "IRRF (SPData)", "CSRF (Sieg)", "CSRF (SPData)",
+           "Descontos", "Base de cálculo", "Alíquota",
+           "Total (Sieg)", "Total (SPData)"]
 
 
 def _aba_impostos(ws, itens):
