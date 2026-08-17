@@ -22,9 +22,10 @@ def _delta(a, b):
 
 
 def _linhas(conc):
-    largura = largura_numeros([i.numero for i in conc.itens])
+    itens = [i for i in conc.itens if not i.cancelada]   # canceladas ficam fora
+    largura = largura_numeros([i.numero for i in itens])
     linhas = []
-    for i in conc.itens:
+    for i in itens:
         dados = json.loads(i.impostos_json) if i.impostos_json else {}
         s = dados.get("sieg") or {}
         p = dados.get("spdata")

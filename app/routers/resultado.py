@@ -49,7 +49,7 @@ def montar_resumo_e_itens(conc):
             "detalhe": detalhe,
             "detalhe_lancamento": i.detalhe_lancamento or "",
             "detalhe_arquivo": i.detalhe_arquivo or "",
-            "veredito": i.veredito,
+            "veredito": i.veredito, "cancelada": bool(i.cancelada),
             "impostos": json.loads(i.impostos_json) if i.impostos_json else {},
             "arquivo_pdf": i.arquivo_pdf,
         })

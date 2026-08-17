@@ -17,6 +17,13 @@ def moeda(v) -> str:
     return "R$ " + s
 
 
+def num_br(v) -> str:
+    """Igual a `moeda`, sem o prefixo 'R$ ' — p/ colunas cujo cabeçalho já
+    indica que são valores (Bruto/Líq). '' se não for número."""
+    s = moeda(v)
+    return s[3:] if s.startswith("R$ ") else s
+
+
 def largura_numeros(numeros) -> int:
     """Largura de padronização = maior quantidade de dígitos entre os números
     (mínimo 1). Todos recebem zeros à esquerda até essa largura, para ficarem
@@ -34,5 +41,6 @@ def pad_numero(numero, largura) -> str:
 
 
 def registrar_filtros(templates):
-    """Registra o filtro `moeda` no ambiente Jinja dos templates."""
+    """Registra os filtros de formatação no ambiente Jinja dos templates."""
     templates.env.filters["moeda"] = moeda
+    templates.env.filters["num_br"] = num_br

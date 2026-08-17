@@ -4,21 +4,8 @@
 {% block content %}
 {% macro status(s) %}
   {%- if s == 'ok' -%}<span class="badge b-ok">OK</span>
-  {%- elif s == 'diverg' -%}<span class="badge b-warn">Divergência</span>
+  {%- elif s == 'diverg' -%}<span class="badge b-warn">Diverg.</span>
   {%- else -%}<span class="badge b-alert">Faltou</span>{%- endif -%}
-{% endmacro %}
-{% macro cmp(sv, pv, skip=False) %}
-  {%- set d = (pv is not none) and (not skip) and ((sv - pv)|abs > 0.05) -%}
-  <td class="mono right {% if d %}dz{% endif %}">{{ sv|moeda }}</td>
-  <td class="mono right {% if d %}dz{% endif %}">{{ pv|moeda if pv is not none else '—' }}</td>
-{% endmacro %}
-{% macro frente(rotulo, st, det, falta_txt) %}
-  <div class="det-frente">
-    <span class="det-k">{{ rotulo }}</span>{{ status(st) }}
-    {%- if st == 'ok' %}<span class="det-ok">confere</span>
-    {%- elif st == 'falta' %}<span class="det-obs">{{ falta_txt }}</span>
-    {%- else %}<span class="det-diverg">{{ det or 'valor/data divergem' }}</span>{% endif %}
-  </div>
 {% endmacro %}
 <div class="page-head">
   <div><div class="crumb">Resultado · {{ resumo.data_hora }}</div><h1>Conciliação</h1></div>
@@ -38,8 +25,8 @@
   <div class="kpi alert"><div class="lbl">Faltou arquivar</div><div class="val tnum">{{ resumo.qt_falta_arquivar }}</div></div>
 </div>
 <p class="sub" style="margin:-8px 0 16px">
-  {{ resumo.qt_canceladas }} nota(s) cancelada(s) ficam fora do universo (informativo).
-  Clique numa nota para ver os valores (Sieg × SPData) e as divergências.
+  {{ resumo.qt_canceladas }} nota(s) cancelada(s) ficam fora do universo — veja no filtro <strong>Canceladas</strong>.
+  Valores em <span class="dz">vermelho</span> = Sieg e SPData divergem.
 </p>
 
 <div class="toolbar">
@@ -49,56 +36,59 @@
     <button class="chip" data-f="gerenciada" onclick="setFiltro(this)">Gerenciadas</button>
     <button class="chip" data-f="ressalva" onclick="setFiltro(this)">Ressalva</button>
     <button class="chip" data-f="pendente" onclick="setFiltro(this)">Pendentes</button>
+    <button class="chip" data-f="canceladas" onclick="setFiltro(this)">Canceladas</button>
   </div>
 </div>
 
 <div class="table-scroll">
-  <table class="dense" id="tab">
+  <table class="dense compacta" id="tab">
     <thead>
       <tr>
-        <th style="width:30px"></th>
-        <th>Nº NF</th><th>Fornecedor</th><th>Emissão</th>
-        <th class="right">Valor</th>
-        <th>Lançam.</th><th>Arquivo</th><th>PDF</th>
+        <th rowspan="2">Nº NF</th><th rowspan="2">Fornecedor</th><th rowspan="2">Emissão</th>
+        <th colspan="3" class="grp">Sieg (R$)</th><th colspan="3" class="grp">SPData (R$)</th>
+        <th rowspan="2">Lançam.</th><th rowspan="2">Arquivo</th>
+        <th rowspan="2" class="col-flag" title="Passe o mouse no ⚠ para ver o detalhe">Div.</th>
+        <th rowspan="2">PDF</th>
       </tr>
+      <tr><th class="right">Bruto</th><th class="right">Líq</th><th class="right">Imp</th>
+          <th class="right">Bruto</th><th class="right">Líq</th><th class="right">Imp</th></tr>
     </thead>
     <tbody>
     {% for i in itens %}
-      <tr class="linha-resumo" data-v="{{ i.veredito }}"
+      {% set bruto_dz = (i.sp_bruto is not none) and (not i.tem_desconto) and ((i.sieg_bruto - i.sp_bruto)|abs > 0.05) %}
+      {% set liq_dz = (i.sp_liquido is not none) and ((i.sieg_liquido - i.sp_liquido)|abs > 0.05) %}
+      {% set imp_dz = (i.sp_imp is not none) and ((i.sieg_imp - i.sp_imp)|abs > 0.05) %}
+      <tr data-v="{{ i.veredito }}" data-cancelada="{{ '1' if i.cancelada else '0' }}"
           data-busca="{{ (i.numero ~ ' ' ~ i.nome_fornecedor ~ ' ' ~ i.sieg_bruto)|lower }}"
-          onclick="toggleDet(this)">
-        <td class="center"><i class="chev">▸</i></td>
+          {% if i.cancelada %}class="linha-cancelada"{% endif %}>
         <td class="bold mono">{{ i.numero }}</td>
-        <td>{{ i.nome_fornecedor }}{% if i.tem_desconto %} <span class="chip-desc">• desc</span>{% endif %}</td>
+        <td class="col-forn" title="{{ i.nome_fornecedor }}">{{ i.nome_fornecedor }}{% if i.tem_desconto %} <span class="chip-desc">• desc</span>{% endif %}</td>
         <td class="mono">{{ i.data_emissao }}</td>
-        <td class="mono right">{{ i.sieg_bruto|moeda }}</td>
+        <td class="mono right {% if bruto_dz %}dz{% endif %}">{{ i.sieg_bruto|num_br }}</td>
+        <td class="mono right {% if liq_dz %}dz{% endif %}">{{ i.sieg_liquido|num_br }}</td>
+        <td class="mono right {% if imp_dz %}dz{% endif %}">{{ i.sieg_imp|num_br }}</td>
+        <td class="mono right {% if bruto_dz %}dz{% endif %}">{{ i.sp_bruto|num_br if i.sp_bruto is not none else '—' }}</td>
+        <td class="mono right {% if liq_dz %}dz{% endif %}">{{ i.sp_liquido|num_br if i.sp_liquido is not none else '—' }}</td>
+        <td class="mono right {% if imp_dz %}dz{% endif %}">{{ i.sp_imp|num_br if i.sp_imp is not none else '—' }}</td>
+        {% if i.cancelada %}
+        <td colspan="3" class="center"><span class="badge b-neutral">Cancelada</span></td>
+        {% else %}
         <td>{{ status(i.status_lancamento) }}</td>
         <td>{{ status(i.status_arquivo) }}</td>
-        <td class="center" onclick="event.stopPropagation()">
+        <td class="col-flag">
+          {%- if i.detalhe_lancamento or i.detalhe_arquivo -%}
+          <span class="dv-flag" tabindex="0" role="button" aria-label="Ver divergência"
+                data-lanc="{{ i.detalhe_lancamento }}" data-arq="{{ i.detalhe_arquivo }}">⚠</span>
+          {%- endif -%}
+        </td>
+        {% endif %}
+        <td class="center">
           {% if i.arquivo_pdf %}
             <button type="button" class="btn-mini" onclick="verPdf({{ i.id }}, '{{ i.numero }}')">Ver</button>
             <a class="btn-mini" href="/pdf/{{ i.id }}" target="_blank" rel="noopener">Abrir</a>
-          {% else %}<span style="color:var(--ink-3)">—</span>{% endif %}
+          {% else %}<span class="mut">—</span>{% endif %}
         </td>
       </tr>
-      <tr class="linha-det"><td></td><td colspan="7">
-        <div class="det-wrap">
-          <table class="det-tab">
-            <thead><tr><th class="det-nome">Valor</th><th class="right">Sieg</th><th class="right">SPData</th></tr></thead>
-            <tbody>
-              <tr><td class="det-nome">Bruto</td>{{ cmp(i.sieg_bruto, i.sp_bruto, i.tem_desconto) }}</tr>
-              <tr><td class="det-nome">Líquido</td>{{ cmp(i.sieg_liquido, i.sp_liquido) }}</tr>
-              <tr><td class="det-nome">Impostos</td>{{ cmp(i.sieg_imp, i.sp_imp) }}</tr>
-            </tbody>
-          </table>
-          <div class="det-extra det-situacao">
-            <div class="det-extra-tit">Situação</div>
-            {{ frente('Lançamento (SPData)', i.status_lancamento, i.detalhe_lancamento, 'não lançado no SPData') }}
-            {{ frente('Arquivo (Renew)', i.status_arquivo, i.detalhe_arquivo, 'não arquivado (Renew não encontrou)') }}
-            {% if i.tem_desconto %}<div class="det-obs">Nota com desconto: o SPData lança líquido do desconto, então o Bruto difere de propósito (o confronto usa o valor ajustado).</div>{% endif %}
-          </div>
-        </div>
-      </td></tr>
     {% endfor %}
     </tbody>
   </table>
@@ -112,27 +102,24 @@
   <iframe id="pdfFrame" title="Pré-visualização do PDF"></iframe>
 </aside>
 
+<div id="dvpop" class="dv-pop" role="tooltip"></div>
+
 <script>
   let filtroStatus = 'todas';
-  function toggleDet(tr){
-    const det = tr.nextElementSibling;
-    if(!det || !det.classList.contains('linha-det')) return;
-    det.classList.toggle('aberto');
-    tr.classList.toggle('aberta');
-  }
   function setFiltro(btn){
     document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
     btn.classList.add('on'); filtroStatus = btn.dataset.f; filtrar();
   }
   function filtrar(){
     const q = (document.getElementById('busca').value || '').toLowerCase();
-    document.querySelectorAll('#tab tbody tr.linha-resumo').forEach(tr => {
-      const okS = filtroStatus === 'todas' || tr.dataset.v === filtroStatus;
+    document.querySelectorAll('#tab tbody tr').forEach(tr => {
+      const canc = tr.dataset.cancelada === '1';
+      let okS;
+      if (filtroStatus === 'canceladas') okS = canc;
+      else if (filtroStatus === 'todas') okS = !canc;
+      else okS = !canc && tr.dataset.v === filtroStatus;
       const okB = !q || (tr.dataset.busca || '').includes(q);
-      const mostra = okS && okB;
-      tr.classList.toggle('filtrada', !mostra);
-      const det = tr.nextElementSibling;
-      if(det && det.classList.contains('linha-det')) det.classList.toggle('filtrada', !mostra);
+      tr.style.display = (okS && okB) ? '' : 'none';
     });
   }
   function verPdf(id, numero){
@@ -144,5 +131,42 @@
     document.getElementById('pdfPanel').style.display = 'none';
     document.getElementById('pdfFrame').src = 'about:blank';
   }
+
+  // Popover de divergência (sobreposto, position:fixed — não é recortado pela tabela)
+  const dvpop = document.getElementById('dvpop');
+  function mostrarDv(el){
+    const lanc = el.dataset.lanc, arq = el.dataset.arq;
+    let h = '';
+    if (lanc) h += '<div class="dv-row"><span>Lançamento</span>' + escapeHtml(lanc) + '</div>';
+    if (arq)  h += '<div class="dv-row"><span>Arquivo</span>' + escapeHtml(arq) + '</div>';
+    if (!h) return;
+    dvpop.innerHTML = h;
+    dvpop.style.display = 'block';
+    const r = el.getBoundingClientRect();
+    const pw = dvpop.offsetWidth, ph = dvpop.offsetHeight;
+    let left = r.left + r.width / 2 - pw / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - pw - 8));
+    let top = r.bottom + 6;
+    if (top + ph > window.innerHeight - 8) top = r.top - ph - 6;   // abre pra cima se não couber
+    dvpop.style.left = left + 'px';
+    dvpop.style.top = top + 'px';
+  }
+  function ocultarDv(){ dvpop.style.display = 'none'; }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  }
+  document.addEventListener('mouseover', e => {
+    const f = e.target.closest('.dv-flag'); if (f) mostrarDv(f);
+  });
+  document.addEventListener('mouseout', e => {
+    if (e.target.closest('.dv-flag')) ocultarDv();
+  });
+  document.addEventListener('focusin', e => {
+    const f = e.target.closest('.dv-flag'); if (f) mostrarDv(f);
+  });
+  document.addEventListener('focusout', e => {
+    if (e.target.closest('.dv-flag')) ocultarDv();
+  });
+  window.addEventListener('scroll', ocultarDv, true);
 </script>
 {% endblock %}

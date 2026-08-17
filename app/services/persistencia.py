@@ -62,6 +62,23 @@ def salvar_conciliacao(db, cnpj, nomes, resultado):
             veredito=item.veredito,
             cancelada=False,
         ))
+
+    # notas canceladas (ficam fora do universo/totais, mas gravadas p/ consulta)
+    for n in resultado.canceladas:
+        db.add(ConciliacaoItem(
+            conciliacao_id=conc.id,
+            numero=n.numero,
+            cnpj_fornecedor=n.cnpj_prestador,
+            nome_fornecedor=n.nome_prestador,
+            data_emissao=_fmt_data(n.emissao),
+            valor_bruto=n.valor_servico,
+            valor_liquido=n.valor_liquido,
+            imp_sieg=n.total_retencoes,
+            impostos_json=_impostos_json(n, None),
+            status_lancamento="", status_arquivo="",
+            veredito="cancelada",
+            cancelada=True,
+        ))
     db.commit()
     db.refresh(conc)
     return conc
