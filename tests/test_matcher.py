@@ -169,6 +169,33 @@ def test_desconto_nao_gera_divergencia():
     assert item.veredito == "gerenciada"
 
 
+def test_imposto_diverge_vira_ressalva():
+    # bruto e líquido batem, mas as RETENÇÕES não (o SPData registrou imposto
+    # diferente do que o Sieg reteve) → divergência de lançamento citada como
+    # "impostos" (antes passava batido).
+    n = NotaSieg("100", "100", "11111111000111", "F", date(2026, 7, 3),
+                 200.0, 180.0, False)                    # retenção Sieg = 20
+    l = LancamentoSpData("100", "100", "11111111000111", "F", date(2026, 7, 3),
+                         200.0, 180.0, issqn=5.0)          # retenção SPData = 5
+    r = conciliar([n], [], [l], [reg(valor=200.0)])
+    item = r.itens[0]
+    assert item.lancamento.status == STATUS_DIVERG
+    assert "impostos" in item.lancamento.detalhe.lower()
+    assert item.arquivo.status == STATUS_OK
+    assert item.veredito == "ressalva"
+
+
+def test_imposto_bate_nao_gera_divergencia():
+    # bruto, líquido e retenções conferem → gerenciada (sem falso positivo).
+    n = NotaSieg("100", "100", "11111111000111", "F", date(2026, 7, 3),
+                 200.0, 180.0, False)                    # retenção Sieg = 20
+    l = LancamentoSpData("100", "100", "11111111000111", "F", date(2026, 7, 3),
+                         200.0, 180.0, issqn=20.0)         # retenção SPData = 20
+    r = conciliar([n], [], [l], [reg(valor=200.0)])
+    assert r.itens[0].lancamento.status == STATUS_OK
+    assert r.itens[0].veredito == "gerenciada"
+
+
 def test_item_carrega_linha_spdata_casada():
     r = conciliar([nota()], [], [lanc()], [reg()])
     assert r.itens[0].lancamento_row is not None

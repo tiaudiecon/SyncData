@@ -67,10 +67,12 @@ def _casa_numero(a, b):
 
 def _avaliar(nota, candidatos_cnpj, comparar):
     """`candidatos_cnpj` = itens do MESMO CNPJ do fornecedor. Casa por número: o
-    número exato tem prioridade (aí valor/data entram como conferência → 🟢/🟡);
-    sem número exato, tenta o número composto por sufixo (`_casa_numero`), que só
-    vale como a mesma nota quando o VALOR bate (guarda contra falso-positivo).
-    `comparar(nota, cand) -> (data_ok, valores_ok, detalhe)`.
+    número exato tem prioridade (aí valor/data/impostos entram como conferência →
+    🟢/🟡); sem número exato, tenta o número composto por sufixo (`_casa_numero`),
+    que só vale como a mesma nota quando a IDENTIDADE bate (bruto+líquido; guarda
+    contra falso-positivo) — aí impostos/data ainda podem gerar divergência.
+    `comparar(nota, cand) -> (data_ok, ident_ok, full_ok, detalhe)`, onde
+    `ident_ok` = é a mesma nota (bruto+líquido/valor) e `full_ok` = tudo confere.
     Devolve (Frente, candidato_casado_ou_None)."""
     if not candidatos_cnpj:
         return Frente(STATUS_FALTA, ""), None
@@ -80,34 +82,44 @@ def _avaliar(nota, candidatos_cnpj, comparar):
     if exatos:
         melhor = None
         for c in exatos:
-            data_ok, valores_ok, detalhe = comparar(nota, c)
-            if data_ok and valores_ok:
+            data_ok, _ident_ok, full_ok, detalhe = comparar(nota, c)
+            if data_ok and full_ok:
                 return Frente(STATUS_OK, ""), c
-            acertos = int(data_ok) + int(valores_ok)
+            acertos = int(data_ok) + int(full_ok)
             if melhor is None or acertos > melhor[0]:
                 melhor = (acertos, detalhe, c)
         return Frente(STATUS_DIVERG, melhor[1]), melhor[2]
 
     for c in candidatos_cnpj:
         if _casa_numero(nota.numero_norm, c.numero_norm):
-            _, valores_ok, _ = comparar(nota, c)
-            if valores_ok:
-                return Frente(STATUS_OK, ""), c
+            data_ok, ident_ok, full_ok, detalhe = comparar(nota, c)
+            if ident_ok:   # número composto + identidade forte = a mesma nota
+                if data_ok and full_ok:
+                    return Frente(STATUS_OK, ""), c
+                return Frente(STATUS_DIVERG, detalhe), c
     return Frente(STATUS_FALTA, ""), None
 
 
 def _cmp_spdata(nota, c):
     # A data do SpData é a de LANÇAMENTO (= coluna ENTRADA), não a de emissão da
-    # NF, então NÃO comparamos data nesta frente — só os valores (bruto e
-    # líquido). data_ok=True sempre: o veredito 🟢 sai quando os valores batem.
+    # NF, então NÃO comparamos data nesta frente (data_ok=True sempre). Comparamos
+    # bruto, líquido e IMPOSTOS (retenções). Bruto+líquido definem a IDENTIDADE da
+    # nota; os impostos entram como conferência adicional (divergência, não
+    # "faltou"). A retenção do Sieg é base−líquido (base = bruto já sem desconto),
+    # pois o DESCONTO não é retenção — só assim uma nota com desconto não diverge.
     bruto_ok = valores_batem(nota.bruto_ajustado, c.valor_bruto)
     liq_ok = valores_batem(nota.valor_liquido, c.valor_liquido)
+    ret_sieg = round(max(0.0, nota.bruto_ajustado - nota.valor_liquido), 2)
+    imp_ok = valores_batem(ret_sieg, c.total_retencoes)
     partes = []
     if not bruto_ok:
         partes.append(f"bruto {moeda(nota.bruto_ajustado)} ≠ {moeda(c.valor_bruto)}")
     if not liq_ok:
         partes.append(f"líquido {moeda(nota.valor_liquido)} ≠ {moeda(c.valor_liquido)}")
-    return True, (bruto_ok and liq_ok), "; ".join(partes)
+    if not imp_ok:
+        partes.append(f"impostos {moeda(ret_sieg)} ≠ {moeda(c.total_retencoes)}")
+    ident_ok = bruto_ok and liq_ok
+    return True, ident_ok, (ident_ok and imp_ok), "; ".join(partes)
 
 
 def _cmp_renew(nota, c):
@@ -124,7 +136,8 @@ def _cmp_renew(nota, c):
         partes.append(f"data {_fmt_data(nota.emissao)} ≠ {_fmt_data(c.emissao)}")
     if not valor_ok:
         partes.append(f"valor {moeda(nota.valor_servico)} ≠ {moeda(c.valor)}")
-    return data_ok, valor_ok, "; ".join(partes)
+    # a identidade do arquivo é o VALOR (o número já casou); a data é conferência.
+    return data_ok, valor_ok, valor_ok, "; ".join(partes)
 
 
 def _veredito(lanc, arq):
