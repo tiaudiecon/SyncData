@@ -1,8 +1,11 @@
 import os
 import sys
 import time
+import shutil
 import socket
+import tempfile
 import threading
+import subprocess
 import webbrowser
 from pathlib import Path
 
@@ -39,25 +42,87 @@ import uvicorn
 from app.main import app
 
 
-def _abrir_navegador(port):
-    alvo = "127.0.0.1"
-    for _ in range(240):
+def _rodar_servidor(host, port):
+    """Roda o uvicorn numa thread. `install_signal_handlers` é neutralizado
+    porque só funciona na thread principal (aqui a principal fica com a janela)."""
+    config = uvicorn.Config(app, host=host, port=port, log_level="warning")
+    servidor = uvicorn.Server(config)
+    servidor.install_signal_handlers = lambda: None
+    servidor.run()
+
+
+def _esperar_porta(host, port, tentativas=240):
+    for _ in range(tentativas):
         try:
-            with socket.create_connection((alvo, port), timeout=0.5):
-                break
+            with socket.create_connection((host, port), timeout=0.5):
+                return True
         except OSError:
             time.sleep(0.25)
-    else:
-        return
+    return False
+
+
+# Edge/Chrome em "modo app" (--app): janela própria, sem abas nem barra de
+# endereço. Com um --user-data-dir dedicado, o processo do navegador vive só
+# por essa janela — quando o usuário fecha, o processo termina e nós encerramos
+# o servidor. É o que dá o comportamento de "aplicativo" sem runtime extra.
+_NAVEGADORES = [
+    r"%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe",
+    r"%ProgramFiles%\Microsoft\Edge\Application\msedge.exe",
+    r"%ProgramFiles%\Google\Chrome\Application\chrome.exe",
+    r"%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe",
+    r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe",
+]
+
+
+def _localizar_navegador():
+    for candidato in _NAVEGADORES:
+        caminho = os.path.expandvars(candidato)
+        if os.path.exists(caminho):
+            return caminho
+    return None
+
+
+def _abrir_janela_app(url):
+    """Abre a janela do app. Devolve (processo, pasta_perfil) ou None."""
+    navegador = _localizar_navegador()
+    if not navegador:
+        return None
+    perfil = tempfile.mkdtemp(prefix="syncdata_app_")
     try:
-        webbrowser.open(f"http://{alvo}:{port}")
+        proc = subprocess.Popen([
+            navegador, "--app=" + url, "--user-data-dir=" + perfil,
+            "--window-size=1360,860", "--no-first-run", "--no-default-browser-check",
+        ])
     except Exception:
-        pass
+        shutil.rmtree(perfil, ignore_errors=True)
+        return None
+    return proc, perfil
 
 
 if __name__ == "__main__":
     host = os.getenv("SYNCDATA_HOST", "127.0.0.1")
     port = int(os.getenv("SYNCDATA_PORT", "8000"))
-    if os.getenv("SYNCDATA_ABRIR_NAVEGADOR", "1") != "0":
-        threading.Thread(target=_abrir_navegador, args=(port,), daemon=True).start()
-    uvicorn.run(app, host=host, port=port)
+    abrir_janela = os.getenv("SYNCDATA_ABRIR_NAVEGADOR", "1") != "0"
+
+    threading.Thread(target=_rodar_servidor, args=(host, port), daemon=True).start()
+    if not _esperar_porta(host, port):
+        sys.exit(1)
+
+    janela = _abrir_janela_app(f"http://{host}:{port}") if abrir_janela else None
+    if janela:
+        processo, perfil = janela
+        try:
+            processo.wait()          # bloqueia até a JANELA do app ser fechada
+        finally:
+            shutil.rmtree(perfil, ignore_errors=True)
+        os._exit(0)                  # encerra o processo inteiro (servidor na thread daemon)
+    else:
+        # Sem Edge/Chrome (ou janela desativada): tenta o navegador padrão e mantém
+        # o servidor no ar (não encerra sozinho — fallback raro).
+        if abrir_janela:
+            try:
+                webbrowser.open(f"http://{host}:{port}")
+            except Exception:
+                pass
+        while True:
+            time.sleep(3600)
