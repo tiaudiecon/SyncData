@@ -13,6 +13,9 @@ venv/
 build/
 dist/
 *.spec.bak
+release/
+*.zip
+Logo.ico.bak
 
 # Banco local (inclui os sidecars do modo WAL)
 *.db
