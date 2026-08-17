@@ -13,11 +13,15 @@ hiddenimports = ['uvicorn', 'uvicorn.logging', 'uvicorn.loops', 'uvicorn.loops.a
 # pydantic_core traz uma extensão compilada (Rust) que o PyInstaller não acha
 # sozinho — sem coletar, o .exe compila mas quebra ao rodar com
 # "No module named 'pydantic_core._pydantic_core'". collect_all pega o binário.
-for _pkg in ('pydantic', 'pydantic_core'):
+for _pkg in ('pydantic', 'pydantic_core', 'webview'):
     _d, _b, _h = collect_all(_pkg)
     datas += _d
     binaries += _b
     hiddenimports += _h
+
+# pywebview (janela nativa) usa o backend EdgeChromium via pythonnet (clr).
+hiddenimports += ['clr', 'clr_loader', 'proxy_tools',
+                  'webview.platforms.winforms', 'webview.platforms.edgechromium']
 
 # collect_submodules varre só .py, então a extensão compilada (o .pyd) é copiada
 # como binário mas NÃO registrada como módulo. Sem isto, o .exe quebra ao rodar

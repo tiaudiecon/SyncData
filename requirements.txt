@@ -5,3 +5,4 @@ SQLAlchemy==2.0.50
 openpyxl==3.1.5
 python-multipart==0.0.20
 python-dotenv==1.0.1
+pywebview==6.2.1

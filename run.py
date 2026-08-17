@@ -99,6 +99,23 @@ def _abrir_janela_app(url):
     return proc, perfil
 
 
+_TITULO = "Conciliação de Fornecedores — SyncData"
+
+
+def _janela_pywebview(url):
+    """Janela NATIVA via pywebview (WebView2). Bloqueia até o usuário fechar.
+    Devolve True se abriu/rodou; False se o backend não está disponível (aí
+    caímos no Edge/Chrome --app)."""
+    try:
+        import webview
+        webview.create_window(_TITULO, url, width=1360, height=860)
+        webview.start()              # bloqueia até a janela fechar
+        return True
+    except Exception:
+        print("[janela] pywebview indisponível, usando navegador em modo app", flush=True)
+        return False
+
+
 if __name__ == "__main__":
     host = os.getenv("SYNCDATA_HOST", "127.0.0.1")
     port = int(os.getenv("SYNCDATA_PORT", "8000"))
@@ -108,7 +125,14 @@ if __name__ == "__main__":
     if not _esperar_porta(host, port):
         sys.exit(1)
 
-    janela = _abrir_janela_app(f"http://{host}:{port}") if abrir_janela else None
+    url = f"http://{host}:{port}"
+
+    # 1) Janela nativa (pywebview/WebView2) — o ideal.
+    if abrir_janela and _janela_pywebview(url):
+        os._exit(0)
+
+    # 2) Fallback: Edge/Chrome em modo --app (janela dedicada).
+    janela = _abrir_janela_app(url) if abrir_janela else None
     if janela:
         processo, perfil = janela
         try:
@@ -117,11 +141,10 @@ if __name__ == "__main__":
             shutil.rmtree(perfil, ignore_errors=True)
         os._exit(0)                  # encerra o processo inteiro (servidor na thread daemon)
     else:
-        # Sem Edge/Chrome (ou janela desativada): tenta o navegador padrão e mantém
-        # o servidor no ar (não encerra sozinho — fallback raro).
+        # 3) Último recurso: navegador padrão; mantém o servidor no ar.
         if abrir_janela:
             try:
-                webbrowser.open(f"http://{host}:{port}")
+                webbrowser.open(url)
             except Exception:
                 pass
         while True:
