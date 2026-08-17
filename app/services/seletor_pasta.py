@@ -6,11 +6,36 @@ log = logging.getLogger(__name__)
 _PS = r'''
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 Add-Type -AssemblyName System.Windows.Forms
-$dlg = New-Object System.Windows.Forms.FolderBrowserDialog
-$dlg.Description = "Selecione a pasta com os PDFs das notas"
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class _Fg {
+  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+  [DllImport("user32.dll")] public static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
+}
+"@
+# Janela-dona invisível, TopMost e em foreground: assim a caixa de seleção
+# aparece SOBRE as demais janelas (antes ficava escondida atrás). O toque no
+# ALT destrava o "foreground lock" do Windows p/ o SetForegroundWindow valer.
 $dono = New-Object System.Windows.Forms.Form
 $dono.TopMost = $true
-if ($dlg.ShowDialog($dono) -eq [System.Windows.Forms.DialogResult]::OK) {
+$dono.ShowInTaskbar = $false
+$dono.FormBorderStyle = 'None'
+$dono.Size = New-Object System.Drawing.Size(1, 1)
+$dono.StartPosition = 'Manual'
+$dono.Location = New-Object System.Drawing.Point(-3000, -3000)
+$dono.Show()
+[_Fg]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero)     # ALT down
+[_Fg]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)     # ALT up
+[_Fg]::SetForegroundWindow($dono.Handle) | Out-Null
+$dono.Activate()
+[System.Windows.Forms.Application]::DoEvents()
+
+$dlg = New-Object System.Windows.Forms.FolderBrowserDialog
+$dlg.Description = "Selecione a pasta com os PDFs das notas"
+$res = $dlg.ShowDialog($dono)
+$dono.Close()
+if ($res -eq [System.Windows.Forms.DialogResult]::OK) {
     Write-Output $dlg.SelectedPath
 }
 '''
