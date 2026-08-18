@@ -160,6 +160,19 @@ def _aba_impostos(ws, itens):
     _largura(ws, CAB_IMP, [[c] for c in CAB_IMP])
 
 
+def gerar_xlsx_impostos(itens: list) -> bytes:
+    """REL-02: planilha só com o Detalhamento de Impostos (quebra por tributo,
+    comparativo SIEG × SP Data)."""
+    itens = [it for it in itens if not it.get("cancelada") and not it.get("sp_extra")]
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Impostos"
+    _aba_impostos(ws, itens)
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
 def gerar_xlsx(resumo: dict, itens: list) -> bytes:
     itens = [it for it in itens if not it.get("cancelada") and not it.get("sp_extra")]   # canceladas/SP-extra fora
     wb = openpyxl.Workbook()

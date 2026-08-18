@@ -76,6 +76,15 @@ def test_faltou_arquivar_contem_so_notas_com_status_arquivo_falta():
     assert "102" not in valores
 
 
+def test_rel02_export_impostos_do_detalhamento():
+    from app.services.exportacao import gerar_xlsx_impostos
+    conteudo = gerar_xlsx_impostos(_itens_ricos())
+    wb = openpyxl.load_workbook(io.BytesIO(conteudo))
+    assert wb.sheetnames == ["Impostos"]
+    cab = [c.value for c in wb["Impostos"][1] if c.value]
+    assert "IRPJ 1708 (Sieg)" in cab and "PIS/COFINS/CSLL 5952 (Sieg)" in cab
+
+
 def test_item_com_divergencia_e_exportado_na_aba_conciliacao():
     conteudo = gerar_xlsx(_resumo(), _itens())
     wb = openpyxl.load_workbook(io.BytesIO(conteudo))

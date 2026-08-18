@@ -1,9 +1,14 @@
+import io
 import json
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Conciliacao
+from app.services.exportacao import gerar_xlsx_impostos
+
+_XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 from app.services.tempo import formatar_dt
 from app.services.configuracao import contexto_cliente
 from app.services.formatacao import registrar_filtros, largura_numeros, pad_numero
@@ -33,7 +38,9 @@ def _data_iso(data_br):
 
 
 def _linhas(conc, tabelas):
-    itens = [i for i in conc.itens if not i.cancelada]   # canceladas ficam fora
+    # fora: canceladas e as notas só-do-SP-Data (confronto inverso não tem impostos Sieg)
+    itens = [i for i in conc.itens
+             if not i.cancelada and i.veredito not in ("sp_sem_sieg", "sp_duplicada")]
     largura = largura_numeros([i.numero for i in itens])
     linhas = []
     for i in itens:
@@ -49,7 +56,7 @@ def _linhas(conc, tabelas):
         aliq = serv_aliquotas.vigente_na_lista(tabelas, _data_iso(i.data_emissao))
         pend, pend_itens = pendencia_sieg(s, i.valor_bruto, aliq)
         linhas.append({
-            "numero": pad_numero(i.numero, largura), "nome": i.nome_fornecedor,
+            "id": i.id, "numero": pad_numero(i.numero, largura), "nome": i.nome_fornecedor,
             # nota sem lançamento no SPData: não há o que comparar (não é OK)
             "sem_spdata": p is None,
             "iss": par("iss"), "inss": par("inss"), "ir": par("ir"), "csrf": par("csrf"),
@@ -61,6 +68,11 @@ def _linhas(conc, tabelas):
             "aliquota": s.get("aliquota", 0.0),
             "optante_sn": bool(s.get("optante_sn")),          # DET-02
             "pendencia": pend, "pendencia_itens": pend_itens,  # REG-01
+            "arquivo_pdf": i.arquivo_pdf,                      # DET-01
+            # DET-03: dados da nota
+            "emissao": i.data_emissao, "bruto": i.valor_bruto, "liquido": i.valor_liquido,
+            "data_lancamento": (p or {}).get("data_lancamento", ""),
+            "fornecedor_sp": (p or {}).get("fornecedor", ""),
         })
     return linhas
 
@@ -92,6 +104,19 @@ def _totais(linhas):
 def mais_recente(request: Request, db: Session = Depends(get_db)):
     conc = db.query(Conciliacao).order_by(Conciliacao.data_hora.desc()).first()
     return _render(request, db, conc)
+
+
+@router.get("/impostos/{conciliacao_id}/planilha.xlsx")
+def baixar_impostos(conciliacao_id: int, db: Session = Depends(get_db)):
+    conc = db.query(Conciliacao).filter(Conciliacao.id == conciliacao_id).first()
+    if not conc:
+        raise HTTPException(status_code=404, detail="Conciliação não encontrada")
+    from app.routers.resultado import montar_resumo_e_itens   # evita import circular
+    _, itens = montar_resumo_e_itens(conc, serv_aliquotas.listar(db))
+    conteudo = gerar_xlsx_impostos(itens)
+    nome = f"SyncData_Impostos_{conc.cnpj}_{conc.id}.xlsx"
+    return StreamingResponse(io.BytesIO(conteudo), media_type=_XLSX,
+        headers={"Content-Disposition": f'attachment; filename="{nome}"'})
 
 
 @router.get("/impostos/{conciliacao_id}")
