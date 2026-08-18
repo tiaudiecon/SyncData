@@ -93,6 +93,9 @@ table.dense thead th{vertical-align:bottom}
 .linha-cancelada td{color:var(--ink-4); background:var(--surface-3)}
 .linha-cancelada .bold.mono{text-decoration:line-through}
 .mut{color:var(--ink-4)}
+/* código do tributo (ex.: 1708, 5952) ao lado do nome no Detalhamento */
+.cod-trib{font-size:9.5px; color:var(--ink-4); font-weight:400; margin-left:4px;
+  background:var(--surface-3); border-radius:4px; padding:1px 5px; letter-spacing:.03em}
 
 /* ---------- Page head ---------- */
 .page-head{display:flex; align-items:flex-end; justify-content:space-between; gap:16px;

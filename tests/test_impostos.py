@@ -49,7 +49,8 @@ def test_impostos_renderiza(client):
     r = client.get("/impostos")
     assert r.status_code == 200
     assert "Detalhamento de Impostos" in r.text
-    assert "CSRF" in r.text
+    assert "PIS/COFINS/CSLL" in r.text   # nomenclatura DET-04 (era "CSRF")
+    assert "IRPJ" in r.text               # DET-04 (era "IRRF")
 
 
 def _spdata_nota_diferente():

@@ -114,7 +114,8 @@ def _escrever_aba(ws, itens, com_totais=None):
 
 CAB_IMP = ["Nº NF", "Fornecedor",
            "ISS (Sieg)", "ISS (SPData)", "INSS (Sieg)", "INSS (SPData)",
-           "IRRF (Sieg)", "IRRF (SPData)", "CSRF (Sieg)", "CSRF (SPData)",
+           "IRPJ 1708 (Sieg)", "IRPJ 1708 (SPData)",
+           "PIS/COFINS/CSLL 5952 (Sieg)", "PIS/COFINS/CSLL 5952 (SPData)",
            "Descontos", "Base de cálculo", "Alíquota",
            "Total (Sieg)", "Total (SPData)"]
 

@@ -59,7 +59,8 @@
       {% set liq_dz = (i.sp_liquido is not none) and ((i.sieg_liquido - i.sp_liquido)|abs > 0.05) %}
       {% set imp_dz = (i.sp_imp is not none) and ((i.sieg_imp - i.sp_imp)|abs > 0.05) %}
       <tr data-v="{{ i.veredito }}" data-cancelada="{{ '1' if i.cancelada else '0' }}"
-          data-busca="{{ (i.numero ~ ' ' ~ i.nome_fornecedor ~ ' ' ~ i.sieg_bruto)|lower }}"
+          data-busca="{{ (i.numero ~ ' ' ~ i.nome_fornecedor)|lower }}"
+          data-valores="{{ (i.sieg_bruto*100)|round|int }} {{ (i.sieg_liquido*100)|round|int }} {{ (i.sieg_imp*100)|round|int }}{% if i.sp_bruto is not none %} {{ (i.sp_bruto*100)|round|int }}{% endif %}{% if i.sp_liquido is not none %} {{ (i.sp_liquido*100)|round|int }}{% endif %}{% if i.sp_imp is not none %} {{ (i.sp_imp*100)|round|int }}{% endif %}"
           {% if i.cancelada %}class="linha-cancelada"{% endif %}>
         <td class="bold mono">{{ i.numero }}</td>
         <td class="col-forn" title="{{ i.nome_fornecedor }}">{{ i.nome_fornecedor }}{% if i.tem_desconto %} <span class="chip-desc">• desc</span>{% endif %}</td>
@@ -111,14 +112,18 @@
     btn.classList.add('on'); filtroStatus = btn.dataset.f; filtrar();
   }
   function filtrar(){
-    const q = (document.getElementById('busca').value || '').toLowerCase();
+    const raw = (document.getElementById('busca').value || '').trim();
+    const q = raw.toLowerCase();
+    const qDig = raw.replace(/\D/g, '');   // só dígitos: aceita 14263, 14263,00 e 14.263,00
     document.querySelectorAll('#tab tbody tr').forEach(tr => {
       const canc = tr.dataset.cancelada === '1';
       let okS;
       if (filtroStatus === 'canceladas') okS = canc;
       else if (filtroStatus === 'todas') okS = !canc;
       else okS = !canc && tr.dataset.v === filtroStatus;
-      const okB = !q || (tr.dataset.busca || '').includes(q);
+      const okTexto = (tr.dataset.busca || '').includes(q);
+      const okNum = qDig !== '' && (tr.dataset.valores || '').split(' ').some(v => v.includes(qDig));
+      const okB = raw === '' || okTexto || okNum;
       tr.style.display = (okS && okB) ? '' : 'none';
     });
   }

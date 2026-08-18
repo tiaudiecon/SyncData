@@ -2,9 +2,9 @@
 {% block titulo %}Impostos · SyncData{% endblock %}
 {% block wrapclass %}wrap-wide{% endblock %}
 {% block content %}
-{% macro linha_imp(nome, p) %}
+{% macro linha_imp(nome, p, codigo='') %}
   {%- set d = p.delta is not none and (p.delta > 0.05 or p.delta < -0.05) -%}
-  <td class="det-nome">{{ nome }}</td>
+  <td class="det-nome">{{ nome }}{% if codigo %} <span class="cod-trib">{{ codigo }}</span>{% endif %}</td>
   <td class="mono right {% if d %}dz{% endif %}">{{ p.sieg|moeda }}</td>
   <td class="mono right {% if d %}dz{% endif %}">{{ p.sp|moeda if p.sp is not none else '—' }}</td>
 {% endmacro %}
@@ -60,8 +60,8 @@
               </tr>
               {% endif %}
               <tr>{{ linha_imp('INSS', l.inss) }}</tr>
-              <tr>{{ linha_imp('IRRF', l.ir) }}</tr>
-              <tr>{{ linha_imp('CSRF', l.csrf) }}</tr>
+              <tr>{{ linha_imp('IRPJ', l.ir, '1708') }}</tr>
+              <tr>{{ linha_imp('PIS/COFINS/CSLL', l.csrf, '5952') }}</tr>
               <tr class="det-total">{{ linha_imp('Total ret.', l.total) }}</tr>
             </tbody>
           </table>
@@ -69,7 +69,6 @@
             <div class="det-extra-tit">Só no Sieg</div>
             <div class="det-x"><span class="det-k">Descontos</span><span class="mono">{{ l.descontos|moeda }}</span></div>
             <div class="det-x"><span class="det-k">Base de cálculo</span><span class="mono">{{ l.base|moeda }}</span></div>
-            <div class="det-x"><span class="det-k">Alíquota</span><span class="mono">{{ '%.2f'|format(l.aliquota) }}%</span></div>
           </div>
         </div>
       </td></tr>
