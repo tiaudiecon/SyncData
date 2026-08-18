@@ -29,6 +29,12 @@
         <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         Conciliar
       </a>
+      {% if conciliacao_atual %}
+      <a href="/resultado/{{ conciliacao_atual }}" class="sb-item {% if ativo == 'resultado' %}active{% endif %}">
+        <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6"/><rect x="12" y="7" width="3" height="10"/><rect x="17" y="13" width="3" height="4"/></svg>
+        Resultado
+      </a>
+      {% endif %}
       <a href="/impostos" class="sb-item {% if ativo == 'impostos' %}active{% endif %}">
         <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         Impostos

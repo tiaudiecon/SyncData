@@ -1,4 +1,4 @@
-from app.models import Config
+from app.models import Config, Conciliacao
 from app.services.normalizacao import so_digitos
 
 
@@ -36,9 +36,15 @@ def formatar_cnpj(cnpj):
 
 
 def contexto_cliente(db):
-    """Dados do cliente ativo para o rodapé da barra lateral (base.html)."""
+    """Dados do cliente ativo + conciliação atual para a barra lateral (base.html).
+    `conciliacao_atual` alimenta o item "Resultado" do menu — assim voltar pelo
+    menu lateral leva ao resultado processado (não à tela de importação)."""
     cfg = obter_config(db)
+    ultima = (db.query(Conciliacao.id)
+                .order_by(Conciliacao.data_hora.desc(), Conciliacao.id.desc())
+                .first())
     return {
         "cliente_nome": cfg.razao_social or "Cliente",
         "cliente_cnpj": formatar_cnpj(cfg.cnpj_cliente),
+        "conciliacao_atual": ultima[0] if ultima else None,
     }

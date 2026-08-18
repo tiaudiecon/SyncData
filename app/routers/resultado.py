@@ -61,7 +61,7 @@ def ver(conciliacao_id: int, request: Request, db: Session = Depends(get_db)):
     conc = _carregar(db, conciliacao_id)
     resumo, itens = montar_resumo_e_itens(conc)
     return templates.TemplateResponse(request, "resultado.html", {
-        "ativo": "conciliar", "c": conc,
+        "ativo": "resultado", "c": conc,
         "resumo": resumo, "itens": itens, **contexto_cliente(db),
     })
 

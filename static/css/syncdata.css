@@ -146,7 +146,11 @@ table.dense thead th{vertical-align:bottom}
 .kpi .sub{font-size:11px; color:var(--ink-3); margin-top:7px}
 
 /* ---------- Tables ---------- */
-.table-scroll{overflow-x:auto; border:1px solid var(--line); border-radius:var(--r-lg)}
+.table-scroll{overflow:auto; max-height:calc(100vh - 250px); border:1px solid var(--line); border-radius:var(--r-lg)}
+/* NAV-02: cabeçalho fixo enquanto os dados rolam */
+.wrap-wide table.dense thead th{position:sticky; top:0; z-index:3; background:var(--surface-2)}
+.wrap-wide table.dense thead th.grp{background:var(--navy)}
+.wrap-wide table.dense.compacta thead tr:nth-child(2) th{top:24px}
 table.dense{width:100%; border-collapse:separate; border-spacing:0; font-size:13px; background:var(--surface-2)}
 table.dense th{text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3);
   font-weight:600; padding:10px 11px; background:var(--surface-3); border-bottom:1px solid var(--line); white-space:nowrap}
