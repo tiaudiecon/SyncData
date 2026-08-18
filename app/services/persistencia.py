@@ -13,9 +13,17 @@ def _impostos_json(n, sp):
                  "aliquota": n.aliquota, "iss_retido": n.iss_retido,
                  "optante_sn": n.optante_sn, "total": n.total_retencoes},
         "spdata": ({"iss": sp.issqn, "inss": sp.inss, "ir": sp.ir, "csrf": sp.csrf,
-                    "total": sp.total_retencoes} if sp else None),
+                    "total": sp.total_retencoes,
+                    "data_lancamento": _fmt_data(sp.emissao)} if sp else None),  # CON-01
     }
     return json.dumps(dados)
+
+
+def _impostos_json_sp(sp):
+    """impostos_json p/ notas que só existem no SP Data (CON-02/04)."""
+    return json.dumps({"sieg": None, "spdata": {
+        "iss": sp.issqn, "inss": sp.inss, "ir": sp.ir, "csrf": sp.csrf,
+        "total": sp.total_retencoes, "data_lancamento": _fmt_data(sp.emissao)}})
 
 
 def salvar_conciliacao(db, cnpj, nomes, resultado):
@@ -79,6 +87,23 @@ def salvar_conciliacao(db, cnpj, nomes, resultado):
             veredito="cancelada",
             cancelada=True,
         ))
+
+    # CON-02/03/04: notas do SP Data sem SIEG e duplicadas (fora do universo,
+    # gravadas p/ o confronto inverso). Guardamos só os dados do SP Data.
+    def _add_sp(sp, veredito):
+        db.add(ConciliacaoItem(
+            conciliacao_id=conc.id, numero=sp.numero, cnpj_fornecedor=sp.cnpj,
+            nome_fornecedor=sp.fornecedor, data_emissao="",
+            valor_bruto=0.0, valor_liquido=0.0,
+            sp_valor_bruto=sp.valor_bruto, sp_valor_liquido=sp.valor_liquido,
+            imp_sieg=0.0, imp_spdata=sp.total_retencoes,
+            impostos_json=_impostos_json_sp(sp),
+            status_lancamento="", status_arquivo="", veredito=veredito, cancelada=False))
+
+    for sp in resultado.sp_sem_sieg:
+        _add_sp(sp, "sp_sem_sieg")
+    for sp in resultado.sp_duplicadas:
+        _add_sp(sp, "sp_duplicada")
     db.commit()
     db.refresh(conc)
     return conc

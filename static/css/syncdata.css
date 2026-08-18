@@ -92,6 +92,9 @@ table.dense thead th{vertical-align:bottom}
 .wrap-wide table.dense td.dz{color:var(--alert); font-weight:700; background:var(--alert-bg)}
 .linha-cancelada td{color:var(--ink-4); background:var(--surface-3)}
 .linha-cancelada .bold.mono{text-decoration:line-through}
+/* CON: linhas do confronto inverso (só no SP Data) + data de lançamento */
+.linha-spextra td{background:var(--info-bg)}
+.sub-lanc{font-size:9px; color:var(--ink-4); line-height:1.2; margin-top:1px}
 .mut{color:var(--ink-4)}
 /* código do tributo (ex.: 1708, 5952) ao lado do nome no Detalhamento */
 .cod-trib{font-size:9.5px; color:var(--ink-4); font-weight:400; margin-left:4px;

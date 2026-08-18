@@ -196,6 +196,28 @@ def test_imposto_bate_nao_gera_divergencia():
     assert r.itens[0].veredito == "gerenciada"
 
 
+def test_con02_sp_sem_sieg():
+    # SP Data tem a nota 200 que não existe no SIEG (só a 100) -> confronto inverso
+    r = conciliar([nota(numero="100")], [], [lanc(numero="100"), lanc(numero="200")], [reg()])
+    numeros = [sp.numero for sp in r.sp_sem_sieg]
+    assert "200" in numeros and "100" not in numeros
+    assert r.qt_sp_sem_sieg == 1
+
+
+def test_con04_duplicidade_no_sp_data():
+    # duas notas 100 do mesmo CNPJ no SP Data -> duplicidade (ambas sinalizadas)
+    r = conciliar([nota(numero="100")], [], [lanc(numero="100"), lanc(numero="100")], [reg()])
+    assert r.qt_sp_duplicadas == 2
+    assert all(sp.numero == "100" for sp in r.sp_duplicadas)
+
+
+def test_sp_de_nota_cancelada_consta_no_sieg():
+    # SP Data lança a 900, que está CANCELADA no SIEG -> consta (não é "sem SIEG")
+    r = conciliar([nota(numero="100")], [nota(numero="900", cancelada=True)],
+                  [lanc(numero="900")], [reg()])
+    assert all(sp.numero != "900" for sp in r.sp_sem_sieg)
+
+
 def test_item_carrega_linha_spdata_casada():
     r = conciliar([nota()], [], [lanc()], [reg()])
     assert r.itens[0].lancamento_row is not None

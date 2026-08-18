@@ -27,6 +27,8 @@ class ItemConciliacao:
 class ResultadoConciliacao:
     itens: list = field(default_factory=list)
     canceladas: list = field(default_factory=list)
+    sp_sem_sieg: list = field(default_factory=list)     # CON-02/03: no SP Data, sem SIEG
+    sp_duplicadas: list = field(default_factory=list)   # CON-04: duplicadas no SP Data
     total_universo: int = 0
     valor_total: float = 0.0
     qt_gerenciadas: int = 0
@@ -34,6 +36,8 @@ class ResultadoConciliacao:
     qt_falta_lancar: int = 0
     qt_falta_arquivar: int = 0
     qt_canceladas: int = 0
+    qt_sp_sem_sieg: int = 0
+    qt_sp_duplicadas: int = 0
 
 
 def _fmt_data(d):
@@ -171,4 +175,29 @@ def conciliar(autorizadas, canceladas, spdata, renew):
     res.total_universo = len(res.itens)
     res.valor_total = round(sum(i.nota.valor_servico for i in res.itens), 2)
     res.qt_canceladas = len(res.canceladas)
+
+    # CON-02/03: confronto inverso — lançamentos do SP Data que NÃO constam do
+    # SIEG (nem nas autorizadas, nem nas canceladas). "Consta" = mesmo CNPJ e
+    # número (exato ou composto por sufixo); valor não importa aqui.
+    idx_sieg = _indexar_por_cnpj(list(autorizadas) + list(canceladas),
+                                 lambda n: n.cnpj_prestador)
+
+    def _consta_no_sieg(sp):
+        for n in idx_sieg.get(sp.cnpj, []):
+            if n.numero_norm == sp.numero_norm or _casa_numero(sp.numero_norm, n.numero_norm):
+                return True
+        return False
+
+    res.sp_sem_sieg = [sp for sp in spdata
+                       if sp.numero_norm and not _consta_no_sieg(sp)]
+
+    # CON-04: duplicidades no SP Data — mesmo CNPJ + número aparecendo >1 vez.
+    grupos = {}
+    for sp in spdata:
+        if sp.numero_norm:
+            grupos.setdefault((sp.cnpj, sp.numero_norm), []).append(sp)
+    res.sp_duplicadas = [sp for g in grupos.values() if len(g) > 1 for sp in g]
+
+    res.qt_sp_sem_sieg = len(res.sp_sem_sieg)
+    res.qt_sp_duplicadas = len(res.sp_duplicadas)
     return res

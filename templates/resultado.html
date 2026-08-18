@@ -25,8 +25,8 @@
   <div class="kpi alert"><div class="lbl">Faltou arquivar</div><div class="val tnum">{{ resumo.qt_falta_arquivar }}</div></div>
 </div>
 <p class="sub" style="margin:-8px 0 16px">
-  {{ resumo.qt_canceladas }} nota(s) cancelada(s) ficam fora do universo — veja no filtro <strong>Canceladas</strong>.
-  Valores em <span class="dz">vermelho</span> = Sieg e SPData divergem.
+  {{ resumo.qt_canceladas }} cancelada(s) fora do universo. Valores em <span class="dz">vermelho</span> = Sieg × SPData divergem.
+  Confronto inverso (SP Data): <strong>{{ resumo.qt_sp_sem_sieg }}</strong> sem SIEG · <strong>{{ resumo.qt_sp_duplicadas }}</strong> duplicada(s).
 </p>
 
 <div class="toolbar">
@@ -36,7 +36,10 @@
     <button class="chip" data-f="gerenciada" onclick="setFiltro(this)">Gerenciadas</button>
     <button class="chip" data-f="ressalva" onclick="setFiltro(this)">Ressalva</button>
     <button class="chip" data-f="pendente" onclick="setFiltro(this)">Pendentes</button>
+    <button class="chip" data-f="pendencia_sieg" onclick="setFiltro(this)">Pendência SIEG</button>
     <button class="chip" data-f="canceladas" onclick="setFiltro(this)">Canceladas</button>
+    <button class="chip" data-f="sp_sem_sieg" onclick="setFiltro(this)">SP sem SIEG</button>
+    <button class="chip" data-f="sp_duplicada" onclick="setFiltro(this)">Duplicadas SP</button>
   </div>
 </div>
 
@@ -55,26 +58,32 @@
     </thead>
     <tbody>
     {% for i in itens %}
-      {% set bruto_dz = (i.sp_bruto is not none) and (not i.tem_desconto) and ((i.sieg_bruto - i.sp_bruto)|abs > 0.05) %}
-      {% set liq_dz = (i.sp_liquido is not none) and ((i.sieg_liquido - i.sp_liquido)|abs > 0.05) %}
-      {% set imp_dz = (i.sp_imp is not none) and ((i.sieg_imp - i.sp_imp)|abs > 0.05) %}
+      {% set bruto_dz = (not i.sp_extra) and (i.sp_bruto is not none) and (not i.tem_desconto) and ((i.sieg_bruto - i.sp_bruto)|abs > 0.05) %}
+      {% set liq_dz = (not i.sp_extra) and (i.sp_liquido is not none) and ((i.sieg_liquido - i.sp_liquido)|abs > 0.05) %}
+      {% set imp_dz = (not i.sp_extra) and (i.sp_imp is not none) and ((i.sieg_imp - i.sp_imp)|abs > 0.05) %}
       <tr data-v="{{ i.veredito }}" data-cancelada="{{ '1' if i.cancelada else '0' }}"
+          data-pend="{{ '1' if i.pendencia_sieg else '0' }}"
           data-busca="{{ (i.numero ~ ' ' ~ i.nome_fornecedor)|lower }}"
           data-valores="{{ (i.sieg_bruto*100)|round|int }} {{ (i.sieg_liquido*100)|round|int }} {{ (i.sieg_imp*100)|round|int }}{% if i.sp_bruto is not none %} {{ (i.sp_bruto*100)|round|int }}{% endif %}{% if i.sp_liquido is not none %} {{ (i.sp_liquido*100)|round|int }}{% endif %}{% if i.sp_imp is not none %} {{ (i.sp_imp*100)|round|int }}{% endif %}"
-          {% if i.cancelada %}class="linha-cancelada"{% endif %}>
+          class="{% if i.cancelada %}linha-cancelada{% elif i.sp_extra %}linha-spextra{% endif %}">
         <td class="bold mono">{{ i.numero }}</td>
         <td class="col-forn" title="{{ i.nome_fornecedor }}">{{ i.nome_fornecedor }}{% if i.tem_desconto %} <span class="chip-desc">• desc</span>{% endif %}</td>
-        <td class="mono">{{ i.data_emissao }}</td>
-        <td class="mono right {% if bruto_dz %}dz{% endif %}">{{ i.sieg_bruto|num_br }}</td>
-        <td class="mono right {% if liq_dz %}dz{% endif %}">{{ i.sieg_liquido|num_br }}</td>
-        <td class="mono right {% if imp_dz %}dz{% endif %}">{{ i.sieg_imp|num_br }}</td>
+        <td class="mono">{% if i.sp_extra %}<span class="mut">—</span>{% else %}{{ i.data_emissao }}{% endif %}{% if i.sp_data_lancamento %}<div class="sub-lanc">lanç: {{ i.sp_data_lancamento }}</div>{% endif %}</td>
+        <td class="mono right {% if bruto_dz %}dz{% endif %}">{{ '—' if i.sp_extra else i.sieg_bruto|num_br }}</td>
+        <td class="mono right {% if liq_dz %}dz{% endif %}">{{ '—' if i.sp_extra else i.sieg_liquido|num_br }}</td>
+        <td class="mono right {% if imp_dz %}dz{% endif %}">{{ '—' if i.sp_extra else i.sieg_imp|num_br }}</td>
         <td class="mono right {% if bruto_dz %}dz{% endif %}">{{ i.sp_bruto|num_br if i.sp_bruto is not none else '—' }}</td>
         <td class="mono right {% if liq_dz %}dz{% endif %}">{{ i.sp_liquido|num_br if i.sp_liquido is not none else '—' }}</td>
         <td class="mono right {% if imp_dz %}dz{% endif %}">{{ i.sp_imp|num_br if i.sp_imp is not none else '—' }}</td>
         {% if i.cancelada %}
         <td colspan="3" class="center"><span class="badge b-neutral">Cancelada</span></td>
+        {% elif i.sp_extra %}
+        <td colspan="3" class="center">
+          {%- if i.veredito == 'sp_duplicada' -%}<span class="badge b-warn">Duplicada no SP Data</span>
+          {%- else -%}<span class="badge b-alert">Lançada, sem SIEG</span>{%- endif -%}
+        </td>
         {% else %}
-        <td>{{ status(i.status_lancamento) }}</td>
+        <td>{{ status(i.status_lancamento) }}{% if i.pendencia_sieg %} <span class="badge b-alert" title="Recálculo diverge do SIEG — analisar">SIEG?</span>{% endif %}</td>
         <td>{{ status(i.status_arquivo) }}</td>
         <td class="col-flag">
           {%- if i.detalhe_lancamento or i.detalhe_arquivo -%}
@@ -116,11 +125,19 @@
     const q = raw.toLowerCase();
     const qDig = raw.replace(/\D/g, '');   // só dígitos: aceita 14263, 14263,00 e 14.263,00
     document.querySelectorAll('#tab tbody tr').forEach(tr => {
+      const v = tr.dataset.v;
       const canc = tr.dataset.cancelada === '1';
+      const spextra = (v === 'sp_sem_sieg' || v === 'sp_duplicada');
+      const principal = !canc && !spextra;
       let okS;
-      if (filtroStatus === 'canceladas') okS = canc;
-      else if (filtroStatus === 'todas') okS = !canc;
-      else okS = !canc && tr.dataset.v === filtroStatus;
+      switch (filtroStatus) {
+        case 'todas': okS = principal; break;
+        case 'canceladas': okS = canc; break;
+        case 'sp_sem_sieg': okS = v === 'sp_sem_sieg'; break;
+        case 'sp_duplicada': okS = v === 'sp_duplicada'; break;
+        case 'pendencia_sieg': okS = principal && tr.dataset.pend === '1'; break;
+        default: okS = principal && v === filtroStatus;   // gerenciada/ressalva/pendente
+      }
       const okTexto = (tr.dataset.busca || '').includes(q);
       const okNum = qDig !== '' && (tr.dataset.valores || '').split(' ').some(v => v.includes(qDig));
       const okB = raw === '' || okTexto || okNum;

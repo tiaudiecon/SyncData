@@ -161,7 +161,7 @@ def _aba_impostos(ws, itens):
 
 
 def gerar_xlsx(resumo: dict, itens: list) -> bytes:
-    itens = [it for it in itens if not it.get("cancelada")]   # canceladas ficam fora das abas
+    itens = [it for it in itens if not it.get("cancelada") and not it.get("sp_extra")]   # canceladas/SP-extra fora
     wb = openpyxl.Workbook()
     ws1 = wb.active
     ws1.title = "Conciliação"
