@@ -20,24 +20,32 @@ def listar(db):
               .order_by(TabelaAliquota.vigencia_inicio.desc()).all())
 
 
-def vigente(db, data_ref=None):
-    """Tabela vigente na data (aaaa-mm-dd); a mais recente ≤ data. Se nenhuma
-    for anterior, usa a mais antiga; se não houver nenhuma, devolve o PADRAO."""
-    ref = data_ref or date.today().isoformat()
-    t = (db.query(TabelaAliquota)
-           .filter(TabelaAliquota.vigencia_inicio <= ref)
-           .order_by(TabelaAliquota.vigencia_inicio.desc()).first())
-    if t is None:
-        todas = listar(db)
-        t = todas[-1] if todas else None
-    if t is None:
-        return dict(PADRAO, vigencia_inicio=_VIGENCIA_PADRAO, consolidado=round(
-            PADRAO["pis"] + PADRAO["cofins"] + PADRAO["csll"], 2))
+def _to_dict(t):
     return {
         "vigencia_inicio": t.vigencia_inicio, "irpj": t.irpj, "pis": t.pis,
         "cofins": t.cofins, "csll": t.csll,
         "consolidado": round((t.pis or 0) + (t.cofins or 0) + (t.csll or 0), 2),
     }
+
+
+def _padrao_dict():
+    return dict(PADRAO, vigencia_inicio=_VIGENCIA_PADRAO,
+                consolidado=round(PADRAO["pis"] + PADRAO["cofins"] + PADRAO["csll"], 2))
+
+
+def vigente_na_lista(tabelas, data_ref):
+    """Escolhe a vigente numa lista já carregada (ordenada desc por vigência),
+    evitando uma query por nota. `data_ref` = 'aaaa-mm-dd' ou None."""
+    ref = data_ref or date.today().isoformat()
+    for t in tabelas:
+        if t.vigencia_inicio <= ref:
+            return _to_dict(t)
+    return _to_dict(tabelas[-1]) if tabelas else _padrao_dict()
+
+
+def vigente(db, data_ref=None):
+    """Tabela vigente na data (aaaa-mm-dd); a mais recente ≤ data."""
+    return vigente_na_lista(listar(db), data_ref)
 
 
 def salvar_vigencia(db, vigencia_inicio, irpj, pis, cofins, csll):

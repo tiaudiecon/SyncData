@@ -17,8 +17,11 @@
   <div class="panel"><div class="empty">Nenhuma conciliação ainda. Vá em <strong>Conciliar</strong> para começar.</div></div>
 {% else %}
 <div class="toolbar">
-  <label class="chip" id="chDiv"><input type="checkbox" onchange="soDiverg(this)" style="margin-right:6px">Só divergências</label>
-  <span class="legenda">Clique na nota para abrir a quebra · <span class="dz">vermelho</span> = Sieg × SPData divergem · <em>ISS informativo</em> (não retido) não soma no total</span>
+  <label class="chip" id="chDiv"><input type="checkbox" onchange="aplicarFiltros()" style="margin-right:6px">Só divergências</label>
+  {% if qt_pendencia %}
+  <label class="chip" id="chPend"><input type="checkbox" onchange="aplicarFiltros()" style="margin-right:6px">Só pendências SIEG ({{ qt_pendencia }})</label>
+  {% endif %}
+  <span class="legenda">Clique na nota para abrir a quebra · <span class="dz">vermelho</span> = Sieg × SPData divergem · <em>ISS informativo</em> não soma · <span class="badge b-alert" style="padding:1px 6px">Pendência SIEG</span> = recálculo diverge (analisar)</span>
 </div>
 <div class="table-scroll">
   <table class="dense imp-resumo" id="tab">
@@ -33,16 +36,17 @@
     <tbody>
     {% for l in linhas %}
       {%- set td = l.total.delta is not none and (l.total.delta > 0.05 or l.total.delta < -0.05) -%}
-      <tr class="linha-resumo" data-div="{{ '1' if l.diverge else '0' }}" onclick="toggleDet(this)">
+      <tr class="linha-resumo" data-div="{{ '1' if l.diverge else '0' }}" data-pend="{{ '1' if l.pendencia else '0' }}" onclick="toggleDet(this)">
         <td class="center"><i class="chev">▸</i></td>
         <td class="bold mono">{{ l.numero }}</td>
-        <td>{{ l.nome }}</td>
+        <td>{{ l.nome }}{% if l.optante_sn %} <span class="tag-sn" title="Optante pelo Simples Nacional — dispensado de retenção">Simples</span>{% endif %}</td>
         <td class="mono right {% if td %}dz{% endif %}">{{ l.total.sieg|moeda }}</td>
         <td class="mono right {% if td %}dz{% endif %}">{{ l.total.sp|moeda if l.total.sp is not none else '—' }}</td>
         <td>
           {%- if l.sem_spdata -%}<span class="badge b-neutral">Sem SPData</span>
           {%- elif l.diverge -%}<span class="badge b-warn">Divergência</span>
           {%- else -%}<span class="badge b-ok">OK</span>{%- endif -%}
+          {% if l.pendencia %} <span class="badge b-alert" title="SIEG diverge da alíquota base — analisar">Pendência SIEG</span>{% endif %}
         </td>
       </tr>
       <tr class="linha-det"><td></td><td colspan="5">
@@ -70,6 +74,16 @@
             <div class="det-x"><span class="det-k">Descontos</span><span class="mono">{{ l.descontos|moeda }}</span></div>
             <div class="det-x"><span class="det-k">Base de cálculo</span><span class="mono">{{ l.base|moeda }}</span></div>
           </div>
+          {% if l.pendencia %}
+          <div class="det-extra det-pend">
+            <div class="det-extra-tit">Recálculo (base × alíquota)</div>
+            {% for it in l.pendencia_itens %}
+            <div class="det-x"><span class="det-k">{{ it.nome }} <span class="cod-trib">{{ it.codigo }}</span></span>
+              <span class="mono">esperado {{ it.esperado|moeda }} · SIEG {{ it.apurado|moeda }}</span></div>
+            {% endfor %}
+            <div class="det-pend-obs">O SIEG pode estar incorreto — sinalizado para análise (não reprova).</div>
+          </div>
+          {% endif %}
         </div>
       </td></tr>
     {% endfor %}
@@ -93,9 +107,12 @@
     det.classList.toggle('aberto');
     tr.classList.toggle('aberta');
   }
-  function soDiverg(chk){
+  function aplicarFiltros(){
+    const soDiv = document.querySelector('#chDiv input').checked;
+    const pendEl = document.querySelector('#chPend input');
+    const soPend = pendEl ? pendEl.checked : false;
     document.querySelectorAll('#tab tbody tr.linha-resumo').forEach(tr => {
-      const esconde = chk.checked && tr.dataset.div !== '1';
+      const esconde = (soDiv && tr.dataset.div !== '1') || (soPend && tr.dataset.pend !== '1');
       tr.classList.toggle('filtrada', esconde);
       const det = tr.nextElementSibling;
       if(det && det.classList.contains('linha-det')) det.classList.toggle('filtrada', esconde);

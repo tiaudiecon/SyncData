@@ -7,6 +7,8 @@ from app.models import Conciliacao
 from app.services.tempo import formatar_dt
 from app.services.configuracao import contexto_cliente
 from app.services.formatacao import registrar_filtros, largura_numeros, pad_numero
+from app.services import aliquotas as serv_aliquotas
+from app.services.recalculo import pendencia_sieg
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -21,7 +23,16 @@ def _delta(a, b):
     return round(a - b, 2)
 
 
-def _linhas(conc):
+def _data_iso(data_br):
+    """'dd/mm/aaaa' -> 'aaaa-mm-dd' (p/ escolher a alíquota vigente)."""
+    try:
+        d, m, a = (data_br or "").split("/")
+        return f"{a}-{m.zfill(2)}-{d.zfill(2)}"
+    except ValueError:
+        return None
+
+
+def _linhas(conc, tabelas):
     itens = [i for i in conc.itens if not i.cancelada]   # canceladas ficam fora
     largura = largura_numeros([i.numero for i in itens])
     linhas = []
@@ -33,6 +44,10 @@ def _linhas(conc):
             sv = s.get(chave, 0.0)
             pv = (p or {}).get(chave) if p else None
             return {"sieg": sv, "sp": pv, "delta": _delta(sv, pv)}
+        # REG-01: recalcula as retenções esperadas pela alíquota base vigente e
+        # sinaliza PENDÊNCIA quando o SIEG diverge (só sinaliza, não reprova).
+        aliq = serv_aliquotas.vigente_na_lista(tabelas, _data_iso(i.data_emissao))
+        pend, pend_itens = pendencia_sieg(s, i.valor_bruto, aliq)
         linhas.append({
             "numero": pad_numero(i.numero, largura), "nome": i.nome_fornecedor,
             # nota sem lançamento no SPData: não há o que comparar (não é OK)
@@ -44,6 +59,8 @@ def _linhas(conc):
             "iss_retido": bool(s.get("iss_retido")),
             "descontos": s.get("descontos", 0.0), "base": s.get("base_calculo", 0.0),
             "aliquota": s.get("aliquota", 0.0),
+            "optante_sn": bool(s.get("optante_sn")),          # DET-02
+            "pendencia": pend, "pendencia_itens": pend_itens,  # REG-01
         })
     return linhas
 
@@ -86,12 +103,14 @@ def por_id(conciliacao_id: int, request: Request, db: Session = Depends(get_db))
 
 
 def _render(request, db, conc):
-    linhas = _linhas(conc) if conc else []
+    tabelas = serv_aliquotas.listar(db)
+    linhas = _linhas(conc, tabelas) if conc else []
     for l in linhas:
         l["diverge"] = _diverge(l)
     return templates.TemplateResponse(request, "impostos.html", {
         "ativo": "impostos", "conc": conc,
         "data_hora": formatar_dt(conc.data_hora) if conc else "",
         "linhas": linhas, "totais": _totais(linhas) if linhas else None,
+        "qt_pendencia": sum(1 for l in linhas if l.get("pendencia")),
         **contexto_cliente(db),
     })

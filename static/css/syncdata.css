@@ -96,6 +96,12 @@ table.dense thead th{vertical-align:bottom}
 /* código do tributo (ex.: 1708, 5952) ao lado do nome no Detalhamento */
 .cod-trib{font-size:9.5px; color:var(--ink-4); font-weight:400; margin-left:4px;
   background:var(--surface-3); border-radius:4px; padding:1px 5px; letter-spacing:.03em}
+/* DET-02: tag Simples Nacional · REG-01: bloco de recálculo (pendência) */
+.tag-sn{background:var(--ok-bg); color:var(--ok); font-size:9.5px; font-weight:600;
+  padding:1px 6px; border-radius:4px; margin-left:6px; letter-spacing:.02em}
+.det-pend .det-extra-tit{color:var(--alert)}
+.det-pend .mono{color:var(--alert)}
+.det-pend-obs{font-size:10.5px; color:var(--ink-3); font-style:italic; margin-top:6px; max-width:240px}
 
 /* ---------- Page head ---------- */
 .page-head{display:flex; align-items:flex-end; justify-content:space-between; gap:16px;

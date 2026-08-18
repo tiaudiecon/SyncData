@@ -11,7 +11,7 @@ def _impostos_json(n, sp):
         "sieg": {"iss": n.iss, "inss": n.inss, "ir": n.ir, "csrf": n.csrf,
                  "descontos": n.descontos, "base_calculo": n.base_calculo,
                  "aliquota": n.aliquota, "iss_retido": n.iss_retido,
-                 "total": n.total_retencoes},
+                 "optante_sn": n.optante_sn, "total": n.total_retencoes},
         "spdata": ({"iss": sp.issqn, "inss": sp.inss, "ir": sp.ir, "csrf": sp.csrf,
                     "total": sp.total_retencoes} if sp else None),
     }

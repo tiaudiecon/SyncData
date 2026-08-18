@@ -27,6 +27,7 @@ class NotaSieg:
     outret: float = 0.0
     aliquota: float = 0.0
     base_calculo: float = 0.0
+    optante_sn: bool = False        # Optante_SN: 1=Simples Nacional, 2=normal
 
     @property
     def descontos(self) -> float:
@@ -86,7 +87,7 @@ def ler_sieg(arquivo, cnpj_cliente: str):
     i_inss = indice(mapa, "INSS"); i_ded = indice(mapa, "Deducoes")
     i_di = indice(mapa, "Desconto_Incondic"); i_dc = indice(mapa, "Desconto_Condic")
     i_out = indice(mapa, "OutRetencoes"); i_aliq = indice(mapa, "Aliquota")
-    i_base = indice(mapa, "Base_Calculo")
+    i_base = indice(mapa, "Base_Calculo"); i_optsn = indice(mapa, "Optante_SN")
 
     exigir_colunas(
         {"Numero": i_num, "Dt_Emissao": i_emi, "Prestador": i_prest,
@@ -126,6 +127,7 @@ def ler_sieg(arquivo, cnpj_cliente: str):
             deducoes=moeda(row, i_ded), desc_incondic=moeda(row, i_di),
             desc_condic=moeda(row, i_dc), outret=moeda(row, i_out),
             aliquota=moeda(row, i_aliq), base_calculo=moeda(row, i_base),
+            optante_sn=(str(val(row, i_optsn) or "").strip() == "1"),
         )
         (canceladas if cancelada else autorizadas).append(nota)
     return autorizadas, canceladas
