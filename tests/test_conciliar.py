@@ -53,7 +53,7 @@ def test_fluxo_conciliar_gerenciada(client, monkeypatch):
     monkeypatch.setattr(renew_runner, "rodar_renew", fake_runner)
     client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
     resp = client.post("/conciliar",
-                       data={"pasta": pasta_com_pdf()},
+                       data={"pasta": pasta_com_pdf(), "competencia": "2026-07"},
                        files={"spdata": ("SpData.txt", _spdata_txt(), "text/plain"),
                               "sieg": ("sieg.xlsx", _sieg_xlsx("04541288000162"),
                                        "application/octet-stream")})
@@ -63,12 +63,26 @@ def test_fluxo_conciliar_gerenciada(client, monkeypatch):
     s = _poll(client, m.group(1))
     assert s["fase"] == "pronto"
     assert client.get(f"/resultado/{s['conciliacao_id']}").status_code == 200
+    # INI-02: a competência informada aparece no resultado e no histórico.
+    assert "jul/2026" in client.get(f"/resultado/{s['conciliacao_id']}").text
+    assert "jul/2026" in client.get("/historico").text
+
+
+def test_ini02_conciliar_sem_competencia_avisa(client):
+    client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
+    resp = client.post("/conciliar",
+                       data={"pasta": pasta_com_pdf()},   # sem competência
+                       files={"spdata": ("SpData.txt", _spdata_txt(), "text/plain"),
+                              "sieg": ("sieg.xlsx", _sieg_xlsx("04541288000162"),
+                                       "application/octet-stream")})
+    assert resp.status_code == 200
+    assert "competência" in resp.text.lower()
 
 
 def test_arquivo_trocado_no_campo_sieg_mostra_erro_claro(client):
     client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
     resp = client.post("/conciliar",
-                       data={"pasta": pasta_com_pdf()},
+                       data={"pasta": pasta_com_pdf(), "competencia": "2026-07"},
                        files={"spdata": ("SpData.txt", _spdata_txt(), "text/plain"),
                               "sieg": ("renew.xlsx", _renew_xlsx(),  # arquivo errado
                                        "application/octet-stream")})
@@ -79,7 +93,7 @@ def test_arquivo_trocado_no_campo_sieg_mostra_erro_claro(client):
 def test_pasta_inexistente_avisa(client):
     client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
     resp = client.post("/conciliar",
-                       data={"pasta": r"C:\pasta\que\nao\existe"},
+                       data={"pasta": r"C:\pasta\que\nao\existe", "competencia": "2026-07"},
                        files={"spdata": ("SpData.txt", _spdata_txt(), "text/plain"),
                               "sieg": ("sieg.xlsx", _sieg_xlsx("04541288000162"),
                                        "application/octet-stream")})

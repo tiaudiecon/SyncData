@@ -1,5 +1,6 @@
 import io
 import os
+import re
 import threading
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import RedirectResponse
@@ -31,11 +32,17 @@ def _erro(request, db, msg):
     })
 
 
+_RX_COMPETENCIA = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
+
+
 @router.post("/conciliar")
 async def executar(request: Request, db: Session = Depends(get_db),
                    spdata: UploadFile = File(...), sieg: UploadFile = File(...),
-                   pasta: str = Form(...)):
+                   pasta: str = Form(...), competencia: str = Form("")):
     cfg = obter_config(db)
+    competencia = (competencia or "").strip()
+    if not _RX_COMPETENCIA.match(competencia):   # INI-02: mês/ano do período
+        return _erro(request, db, "Informe a competência (mês/ano) do período.")
     pasta_lim = (pasta or "").strip()
     if not pasta_lim or not os.path.isdir(pasta_lim):
         return _erro(request, db, "Selecione a pasta dos PDFs — o caminho informado não existe.")
@@ -49,7 +56,7 @@ async def executar(request: Request, db: Session = Depends(get_db),
         return _erro(request, db, f"Não consegui ler um dos arquivos: {exc}")
 
     jid = criar_job(total=n_pdfs)
-    nomes = {"spdata": spdata.filename, "sieg": sieg.filename}
+    nomes = {"spdata": spdata.filename, "sieg": sieg.filename, "competencia": competencia}
     threading.Thread(
         target=processar_pasta,
         args=(jid, pasta_lim, autorizadas, canceladas, lancamentos, cfg.cnpj_cliente, nomes),

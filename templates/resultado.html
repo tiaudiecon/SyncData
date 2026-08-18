@@ -8,7 +8,7 @@
   {%- else -%}<span class="badge b-alert">Faltou</span>{%- endif -%}
 {% endmacro %}
 <div class="page-head">
-  <div><div class="crumb">Resultado · {{ resumo.data_hora }}</div><h1>Conciliação</h1></div>
+  <div><div class="crumb">Resultado{% if resumo.competencia %} · Competência {{ resumo.competencia }}{% endif %} · {{ resumo.data_hora }}</div><h1>Conciliação</h1></div>
   <div class="actions">
     <a class="btn btn-ghost" href="/impostos/{{ c.id }}">Ver impostos</a>
     <a class="btn btn-primary" href="/resultado/{{ c.id }}/planilha.xlsx">

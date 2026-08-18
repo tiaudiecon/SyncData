@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Conciliacao
 from app.services.exportacao import gerar_xlsx
-from app.services.tempo import formatar_dt
+from app.services.tempo import formatar_dt, formatar_competencia
 from app.services.configuracao import contexto_cliente
 
 router = APIRouter()
@@ -40,6 +40,7 @@ def montar_resumo_e_itens(conc, tabelas=None):
     tabelas = tabelas or []
     resumo = {
         "cnpj": conc.cnpj, "data_hora": formatar_dt(conc.data_hora),
+        "competencia": formatar_competencia(conc.competencia),
         "total_universo": conc.total_universo, "valor_total": conc.valor_total,
         "qt_gerenciadas": conc.qt_gerenciadas, "qt_ressalva": conc.qt_ressalva,
         "qt_falta_lancar": conc.qt_falta_lancar,

@@ -18,6 +18,7 @@ class Conciliacao(Base):
     __tablename__ = "conciliacao"
     id = Column(Integer, primary_key=True)
     data_hora = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    competencia = Column(String, nullable=True, index=True)   # INI-02: "aaaa-mm"
     cnpj = Column(String, nullable=False)
     arquivo_spdata_nome = Column(String, nullable=True)
     arquivo_sieg_nome = Column(String, nullable=True)

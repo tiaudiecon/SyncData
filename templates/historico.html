@@ -12,14 +12,15 @@
   <table class="dense">
     <thead>
       <tr>
-        <th>Quando</th><th class="right">Notas</th><th class="right">Gerenciadas</th>
+        <th>Competência</th><th>Quando</th><th class="right">Notas</th><th class="right">Gerenciadas</th>
         <th class="right">Faltou lançar</th><th class="right">Faltou arquivar</th><th></th>
       </tr>
     </thead>
     <tbody>
     {% for l in linhas %}
       <tr>
-        <td class="bold mono">{{ l.quando }}</td>
+        <td class="bold">{{ l.competencia or '—' }}</td>
+        <td class="mono">{{ l.quando }}</td>
         <td class="mono right">{{ l.total }}</td>
         <td class="mono right">{{ l.gerenciadas }}</td>
         <td class="mono right">{{ l.falta_lancar }}</td>
@@ -27,7 +28,7 @@
         <td class="right"><a class="btn btn-ghost btn-lg" style="height:30px; padding:0 12px; font-size:12px" href="/resultado/{{ l.id }}">Abrir</a></td>
       </tr>
     {% else %}
-      <tr><td colspan="6" class="empty">Nenhuma conciliação ainda. Vá em <strong>Conciliar</strong> para começar.</td></tr>
+      <tr><td colspan="7" class="empty">Nenhuma conciliação ainda. Vá em <strong>Conciliar</strong> para começar.</td></tr>
     {% endfor %}
     </tbody>
   </table>

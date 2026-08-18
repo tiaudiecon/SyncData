@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from app.database import Base, engine, SessionLocal
 from app import models  # noqa: F401
 from app.services.aliquotas import garantir_padrao
+from app.services.migracao import garantir_colunas
 from app.routers import setup
 from app.routers import conciliar
 from app.routers import resultado
@@ -13,6 +14,7 @@ from app.routers import processar
 from app.routers import pdf
 
 Base.metadata.create_all(bind=engine)
+garantir_colunas(engine)   # INI-02: adiciona colunas novas em bancos antigos
 
 # Semeia a tabela de alíquotas padrão (REG-02), idempotente.
 _db = SessionLocal()

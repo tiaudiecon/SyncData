@@ -31,6 +31,7 @@ def salvar_conciliacao(db, cnpj, nomes, resultado):
     """Grava a conciliação (cabeçalho + itens) e devolve o registro."""
     conc = Conciliacao(
         cnpj=cnpj,
+        competencia=nomes.get("competencia"),   # INI-02
         arquivo_spdata_nome=nomes.get("spdata"),
         arquivo_sieg_nome=nomes.get("sieg"),
         arquivo_renew_nome=nomes.get("renew"),

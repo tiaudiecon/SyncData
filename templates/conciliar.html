@@ -12,6 +12,11 @@
     <div class="panel-head"><h3>Envie os arquivos do período</h3></div>
     <div class="panel-body">
       <div class="upload">
+        <div class="num">0</div>
+        <div class="meta"><div class="t">Competência</div><div class="h">Mês/ano do período conciliado · organiza o histórico</div></div>
+        <input type="month" id="competencia" name="competencia" class="input" style="max-width:200px" required>
+      </div>
+      <div class="upload">
         <div class="num">1</div>
         <div class="meta"><div class="t">SpData</div><div class="h">Lançamentos do cliente · arquivo .txt</div></div>
         <input type="file" name="spdata" accept=".txt" required>
@@ -48,6 +53,12 @@
   const campoPasta = document.getElementById('pasta');
   const ultimo = localStorage.getItem('syncdata_pasta');
   if (ultimo) { campoPasta.value = ultimo; }
+  // INI-02: pré-preenche a competência com o mês corrente (aaaa-mm).
+  const campoComp = document.getElementById('competencia');
+  if (campoComp && !campoComp.value) {
+    const h = new Date();
+    campoComp.value = h.getFullYear() + '-' + String(h.getMonth() + 1).padStart(2, '0');
+  }
   async function procurarPasta(){
     try{
       const r = await fetch('/procurar-pasta');
