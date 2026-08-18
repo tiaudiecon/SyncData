@@ -1,8 +1,9 @@
 import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from app.database import Base, engine
+from app.database import Base, engine, SessionLocal
 from app import models  # noqa: F401
+from app.services.aliquotas import garantir_padrao
 from app.routers import setup
 from app.routers import conciliar
 from app.routers import resultado
@@ -12,6 +13,13 @@ from app.routers import processar
 from app.routers import pdf
 
 Base.metadata.create_all(bind=engine)
+
+# Semeia a tabela de alíquotas padrão (REG-02), idempotente.
+_db = SessionLocal()
+try:
+    garantir_padrao(_db)
+finally:
+    _db.close()
 
 app = FastAPI(title="SyncData")
 

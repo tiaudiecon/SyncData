@@ -18,9 +18,23 @@ def client():
     c = TestClient(app)
     yield c
     # limpa as tabelas entre os testes (mesmo banco, isolamento por linhas)
-    from app.models import Config, Conciliacao, ConciliacaoItem
+    from app.models import Config, Conciliacao, ConciliacaoItem, TabelaAliquota
     db = SessionLocal()
-    for modelo in (ConciliacaoItem, Conciliacao, Config):
+    for modelo in (ConciliacaoItem, Conciliacao, Config, TabelaAliquota):
         db.query(modelo).delete()
     db.commit()
     db.close()
+
+
+@pytest.fixture()
+def db_limpo():
+    """Zera a tabela de alíquotas antes do teste (isolamento p/ REG-02)."""
+    from app.database import Base, engine, SessionLocal
+    from app import models  # noqa: F401
+    from app.models import TabelaAliquota
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    db.query(TabelaAliquota).delete()
+    db.commit()
+    db.close()
+    yield

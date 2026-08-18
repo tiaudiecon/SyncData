@@ -61,3 +61,16 @@ class ConciliacaoItem(Base):
     arquivo_pdf = Column(String, nullable=True)
 
     conciliacao = relationship("Conciliacao", back_populates="itens")
+
+
+class TabelaAliquota(Base):
+    """Alíquotas base de retenção (REG-02), parametrizáveis com vigência por
+    período. A tabela vigente p/ uma nota é a de maior `vigencia_inicio` ≤ data.
+    Consolidado PIS/COFINS/CSLL (cód 5952) = pis + cofins + csll (derivado)."""
+    __tablename__ = "tabela_aliquota"
+    id = Column(Integer, primary_key=True)
+    vigencia_inicio = Column(String, nullable=False)   # "aaaa-mm-dd"
+    irpj = Column(Float, default=1.50)                 # % (cód 1708)
+    pis = Column(Float, default=0.65)
+    cofins = Column(Float, default=3.00)
+    csll = Column(Float, default=1.00)

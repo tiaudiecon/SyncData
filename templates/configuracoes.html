@@ -25,4 +25,50 @@
     </form>
   </div>
 </div>
+
+<div class="panel" style="max-width:720px; margin-top:20px">
+  <div class="panel-head"><h3>Alíquotas base de retenção</h3></div>
+  <div class="panel-body">
+    <p class="sub" style="margin-bottom:18px">Percentuais usados para recalcular as retenções do Sieg (REG). Ficam com
+      <strong>vigência por período</strong> — informe a data de início; a mais recente até a data da nota é a aplicada.
+      Consolidado PIS/COFINS/CSLL (cód. 5952) = PIS + COFINS + CSLL.</p>
+    {% set atual = aliquotas[0] if aliquotas else None %}
+    <form method="post" action="/configuracoes/aliquotas">
+      <div style="display:flex; flex-wrap:wrap; gap:14px">
+        <div class="field" style="flex:1 1 150px"><label>Vigência a partir de</label>
+          <input class="input" type="date" name="vigencia_inicio" value="{{ hoje }}" required></div>
+        <div class="field" style="flex:1 1 110px"><label>IRPJ (1708) %</label>
+          <input class="input mono" type="text" name="irpj" value="{{ '%.2f'|format(atual.irpj if atual else 1.50) }}" required></div>
+        <div class="field" style="flex:1 1 110px"><label>PIS %</label>
+          <input class="input mono" type="text" name="pis" value="{{ '%.2f'|format(atual.pis if atual else 0.65) }}" required></div>
+        <div class="field" style="flex:1 1 110px"><label>COFINS %</label>
+          <input class="input mono" type="text" name="cofins" value="{{ '%.2f'|format(atual.cofins if atual else 3.00) }}" required></div>
+        <div class="field" style="flex:1 1 110px"><label>CSLL %</label>
+          <input class="input mono" type="text" name="csll" value="{{ '%.2f'|format(atual.csll if atual else 1.00) }}" required></div>
+      </div>
+      <div style="margin-top:6px"><button class="btn btn-accent" type="submit">Salvar vigência</button></div>
+    </form>
+
+    {% if aliquotas %}
+    <table class="dense" style="margin-top:22px; width:100%">
+      <thead><tr>
+        <th>Vigência</th><th class="right">IRPJ (1708)</th><th class="right">PIS</th>
+        <th class="right">COFINS</th><th class="right">CSLL</th><th class="right">Consolidado (5952)</th>
+      </tr></thead>
+      <tbody>
+      {% for a in aliquotas %}
+        <tr>
+          <td class="mono">{{ a.vigencia_inicio }}</td>
+          <td class="mono right">{{ '%.2f'|format(a.irpj) }}%</td>
+          <td class="mono right">{{ '%.2f'|format(a.pis) }}%</td>
+          <td class="mono right">{{ '%.2f'|format(a.cofins) }}%</td>
+          <td class="mono right">{{ '%.2f'|format(a.csll) }}%</td>
+          <td class="mono right bold">{{ '%.2f'|format(a.pis + a.cofins + a.csll) }}%</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}
