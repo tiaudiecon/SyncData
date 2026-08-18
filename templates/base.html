@@ -81,6 +81,38 @@
       const key = mobile ? 'syncdata.sidebar.mobile' : 'syncdata.sidebar';
       localStorage.setItem(key, app.classList.contains('nav-collapsed') ? 'collapsed' : 'expanded');
     }
+
+    // NAV-01: ordenação por clique no cabeçalho (th com data-col = índice da coluna).
+    function _valorCelula(g, col) {
+      const cel = g[0].cells[col];
+      const txt = cel ? cel.textContent.trim() : '';
+      const md = txt.match(/^(\d{2})\/(\d{2})\/(\d{4})/);          // datas dd/mm/aaaa
+      if (md) return { num: +(md[3] + md[2] + md[1]), ehNum: true, txt: txt };
+      const n = parseFloat(txt.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.'));
+      return { num: n, ehNum: txt !== '' && txt !== '—' && !isNaN(n), txt: txt };
+    }
+    function ordenar(th) {
+      const tabela = th.closest('table');
+      const col = parseInt(th.dataset.col, 10);
+      const asc = th.dataset.dir !== 'asc';
+      tabela.querySelectorAll('th[data-col]').forEach(t => {
+        t.removeAttribute('data-dir'); t.classList.remove('sorted-asc', 'sorted-desc');
+      });
+      th.dataset.dir = asc ? 'asc' : 'desc';
+      th.classList.add(asc ? 'sorted-asc' : 'sorted-desc');
+      const tbody = tabela.tBodies[0];
+      const grupos = [];   // mantém pares linha-resumo + linha-det juntos
+      [...tbody.rows].forEach(r => {
+        if (r.classList.contains('linha-det') && grupos.length) grupos[grupos.length - 1].push(r);
+        else grupos.push([r]);
+      });
+      grupos.sort((a, b) => {
+        const va = _valorCelula(a, col), vb = _valorCelula(b, col);
+        const cmp = (va.ehNum && vb.ehNum) ? va.num - vb.num : va.txt.localeCompare(vb.txt, 'pt-BR');
+        return asc ? cmp : -cmp;
+      });
+      grupos.forEach(g => g.forEach(r => tbody.appendChild(r)));
+    }
   </script>
 </body>
 </html>

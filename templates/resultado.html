@@ -47,14 +47,20 @@
   <table class="dense compacta" id="tab">
     <thead>
       <tr>
-        <th rowspan="2">Nº NF</th><th rowspan="2">Fornecedor</th><th rowspan="2">Emissão</th>
+        <th rowspan="2" class="ord" data-col="0" onclick="ordenar(this)">Nº NF</th>
+        <th rowspan="2" class="ord" data-col="1" onclick="ordenar(this)">Fornecedor</th>
+        <th rowspan="2" class="ord" data-col="2" onclick="ordenar(this)">Emissão</th>
         <th colspan="3" class="grp">Sieg (R$)</th><th colspan="3" class="grp">SPData (R$)</th>
         <th rowspan="2">Lançam.</th><th rowspan="2">Arquivo</th>
         <th rowspan="2" class="col-flag" title="Passe o mouse no ⚠ para ver o detalhe">Div.</th>
         <th rowspan="2">PDF</th>
       </tr>
-      <tr><th class="right">Bruto</th><th class="right">Líq</th><th class="right">Imp</th>
-          <th class="right">Bruto</th><th class="right">Líq</th><th class="right">Imp</th></tr>
+      <tr><th class="right ord" data-col="3" onclick="ordenar(this)">Bruto</th>
+          <th class="right ord" data-col="4" onclick="ordenar(this)">Líq</th>
+          <th class="right ord" data-col="5" onclick="ordenar(this)">Imp</th>
+          <th class="right ord" data-col="6" onclick="ordenar(this)">Bruto</th>
+          <th class="right ord" data-col="7" onclick="ordenar(this)">Líq</th>
+          <th class="right ord" data-col="8" onclick="ordenar(this)">Imp</th></tr>
     </thead>
     <tbody>
     {% for i in itens %}

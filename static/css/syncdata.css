@@ -160,6 +160,12 @@ table.dense thead th{vertical-align:bottom}
 .wrap-wide table.dense thead th{position:sticky; top:0; z-index:3; background:var(--surface-2)}
 .wrap-wide table.dense thead th.grp{background:var(--navy)}
 .wrap-wide table.dense.compacta thead tr:nth-child(2) th{top:24px}
+/* NAV-01: ordenação por clique no cabeçalho */
+th.ord{cursor:pointer; user-select:none}
+th.ord:hover{color:var(--navy)}
+th.ord::after{content:"⇅"; opacity:.3; margin-left:5px; font-size:.9em}
+th.ord.sorted-asc::after{content:"▲"; opacity:1; color:var(--navy)}
+th.ord.sorted-desc::after{content:"▼"; opacity:1; color:var(--navy)}
 table.dense{width:100%; border-collapse:separate; border-spacing:0; font-size:13px; background:var(--surface-2)}
 table.dense th{text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3);
   font-weight:600; padding:10px 11px; background:var(--surface-3); border-bottom:1px solid var(--line); white-space:nowrap}
