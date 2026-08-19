@@ -23,6 +23,10 @@
 <div class="page-head">
   <div><div class="crumb">Resultado{% if resumo.competencia %} · Competência {{ resumo.competencia }}{% endif %} · {{ resumo.data_hora }}</div><h1>Conciliação</h1></div>
   <div class="actions">
+    <button type="button" class="btn btn-ghost" id="btnSalvar" onclick="salvarHistorico(this)"
+            title="A conciliação é salva automaticamente ao processar — clique para confirmar / ver no histórico">
+      <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Salvar</button>
     <a class="btn btn-primary" href="/resultado/{{ c.id }}/planilha.xlsx">
       <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Exportar .xlsx</a>
@@ -226,6 +230,12 @@
     if(!det || !det.classList.contains('linha-det')) return;
     det.classList.toggle('aberto');
     tr.classList.toggle('aberta');
+  }
+  function salvarHistorico(btn){
+    // A conciliação já é persistida ao processar; aqui confirmamos e abrimos o histórico.
+    btn.innerHTML = '✓ Salvo no histórico';
+    btn.disabled = true;
+    setTimeout(function(){ window.location.href = '/historico'; }, 800);
   }
 
   // Popover de divergência (sobreposto, position:fixed — não é recortado pela tabela)
