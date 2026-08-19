@@ -46,7 +46,15 @@
         <div class="field" style="flex:1 1 110px"><label>CSLL %</label>
           <input class="input mono" type="text" name="csll" value="{{ '%.2f'|format(atual.csll if atual else 1.00) }}" required></div>
       </div>
-      <div style="margin-top:6px"><button class="btn btn-accent" type="submit">Salvar vigência</button></div>
+      <p class="sub" style="margin:14px 0 8px"><strong>Reforma tributária</strong> — ainda <strong>não efetivado</strong>.
+        Deixe em 0,00 até entrar em vigor; quando o CBS e o IBS forem efetivados, é só preencher aqui.</p>
+      <div style="display:flex; flex-wrap:wrap; gap:14px">
+        <div class="field" style="flex:1 1 110px"><label>CBS %</label>
+          <input class="input mono" type="text" name="cbs" value="{{ '%.2f'|format((atual.cbs or 0.0) if atual else 0.0) }}"></div>
+        <div class="field" style="flex:1 1 110px"><label>IBS %</label>
+          <input class="input mono" type="text" name="ibs" value="{{ '%.2f'|format((atual.ibs or 0.0) if atual else 0.0) }}"></div>
+      </div>
+      <div style="margin-top:12px"><button class="btn btn-accent" type="submit">Salvar vigência</button></div>
     </form>
 
     {% if aliquotas %}
@@ -54,6 +62,7 @@
       <thead><tr>
         <th>Vigência</th><th class="right">IRPJ (1708)</th><th class="right">PIS</th>
         <th class="right">COFINS</th><th class="right">CSLL</th><th class="right">Consolidado (5952)</th>
+        <th class="right">CBS</th><th class="right">IBS</th>
       </tr></thead>
       <tbody>
       {% for a in aliquotas %}
@@ -64,6 +73,8 @@
           <td class="mono right">{{ '%.2f'|format(a.cofins) }}%</td>
           <td class="mono right">{{ '%.2f'|format(a.csll) }}%</td>
           <td class="mono right bold">{{ '%.2f'|format(a.pis + a.cofins + a.csll) }}%</td>
+          <td class="mono right">{{ '%.2f'|format(a.cbs or 0.0) }}%</td>
+          <td class="mono right">{{ '%.2f'|format(a.ibs or 0.0) }}%</td>
         </tr>
       {% endfor %}
       </tbody>

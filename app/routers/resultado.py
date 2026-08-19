@@ -5,9 +5,10 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Conciliacao
+import re
 from app.services.exportacao import gerar_xlsx
 from app.services.tempo import formatar_dt, formatar_competencia
-from app.services.configuracao import contexto_cliente
+from app.services.configuracao import contexto_cliente, obter_config
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -118,11 +119,21 @@ def ver(conciliacao_id: int, request: Request, db: Session = Depends(get_db)):
     })
 
 
+def _nome_arquivo(razao, competencia, conc):
+    """SyncData_{empresa}_{competência|data}.xlsx (item 2)."""
+    base = re.sub(r"[^A-Za-z0-9]+", "_", (razao or "").strip()).strip("_") or "Cliente"
+    quando = competencia or (conc.data_hora.strftime("%Y-%m-%d") if conc.data_hora else "")
+    nome = f"SyncData_{base}_{quando}".rstrip("_")
+    return nome + ".xlsx"
+
+
 @router.get("/resultado/{conciliacao_id}/planilha.xlsx")
 def baixar(conciliacao_id: int, db: Session = Depends(get_db)):
     conc = _carregar(db, conciliacao_id)
     resumo, itens = montar_resumo_e_itens(conc, serv_aliquotas.listar(db))
+    cfg = obter_config(db)
+    resumo["razao_social"] = cfg.razao_social or ""      # cabeçalho do relatório
     conteudo = gerar_xlsx(resumo, itens)
-    nome = f"SyncData_{conc.cnpj}_{conc.id}.xlsx"
+    nome = _nome_arquivo(cfg.razao_social, conc.competencia, conc)
     return StreamingResponse(io.BytesIO(conteudo), media_type=_XLSX,
         headers={"Content-Disposition": f'attachment; filename="{nome}"'})

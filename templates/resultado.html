@@ -63,9 +63,10 @@
         <th rowspan="2" class="ord" data-col="0" onclick="ordenar(this)">Nº NF</th>
         <th rowspan="2" class="ord" data-col="1" onclick="ordenar(this)">Fornecedor</th>
         <th rowspan="2" class="ord" data-col="2" onclick="ordenar(this)">Emissão</th>
-        <th rowspan="2" class="center" title="Optante pelo Simples Nacional">SN</th>
+        <th rowspan="2" class="center ord" data-col="3" onclick="ordenar(this)" title="Optante pelo Simples Nacional">SN</th>
         <th colspan="3" class="grp">Sieg (R$)</th><th colspan="3" class="grp">SPData (R$)</th>
-        <th rowspan="2">Lançam.</th><th rowspan="2">Arquivo</th>
+        <th rowspan="2" class="ord" data-col="10" onclick="ordenar(this)">Lançam.</th>
+        <th rowspan="2" class="ord" data-col="11" onclick="ordenar(this)">Arquivo</th>
         <th rowspan="2">PDF</th>
       </tr>
       <tr><th class="right ord" data-col="4" onclick="ordenar(this)">Bruto</th>
@@ -146,10 +147,12 @@
           {% if i.pendencia_sieg %}
           <div class="det-extra det-pend">
             <div class="det-extra-tit">Recálculo (base × alíquota)</div>
+            <div class="det-pend-grid">
             {% for it in i.pendencia_itens %}
-            <div class="det-x"><span class="det-k">{{ it.nome }} <span class="cod-trib">{{ it.codigo }}</span></span>
-              <span class="mono">Esperado {{ it.esperado|moeda }} · SIEG {{ it.apurado|moeda }}</span></div>
+              <span class="det-k">{{ it.nome }} <span class="cod-trib">{{ it.codigo }}</span></span>
+              <span class="mono">Esperado {{ it.esperado|moeda }} · SIEG {{ it.apurado|moeda }}</span>
             {% endfor %}
+            </div>
           </div>
           {% endif %}
         </div>

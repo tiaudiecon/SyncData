@@ -8,13 +8,16 @@ _BRANCO = "FFFFFFFF"
 _CREME = "FFF4F0E5"
 _LINHA = "FFD9D4C6"
 _TINTA = "FF15182B"
+# Cores de status — UM verde, UM amarelo, UM vermelho, UM cinza (item 4).
+_VERDE = "FF1A6E4A"
+_AMARELO = "FFB0791E"
+_VERMELHO = "FFA8331C"
+_CINZA = "FF9CA0B5"
 
-_FILL_STATUS = {
-    "ok": (PatternFill("solid", fgColor="FFE4F1EA"), Font(color="FF1A6E4A", size=10)),
-    "diverg": (PatternFill("solid", fgColor="FFF8EED7"), Font(color="FFB0791E", size=10)),
-    "falta": (PatternFill("solid", fgColor="FFF6E0DA"), Font(color="FFA8331C", size=10)),
-}
-_ROTULO_STATUS = {"ok": "OK", "diverg": "Divergência", "falta": "Não encontrada"}
+_FILL_OK = (PatternFill("solid", fgColor="FFE4F1EA"), Font(color=_VERDE, size=10))
+_FILL_WARN = (PatternFill("solid", fgColor="FFF8EED7"), Font(color=_AMARELO, size=10))
+_FILL_ALERT = (PatternFill("solid", fgColor="FFF6E0DA"), Font(color=_VERMELHO, size=10))
+_FILL_NEUTRO = (None, Font(color=_CINZA, size=10))
 
 _FONTE_CAB = Font(bold=True, color=_BRANCO, size=11)
 _FILL_CAB = PatternFill("solid", fgColor=_NAVY)
@@ -22,26 +25,35 @@ _FILL_ZEBRA = PatternFill("solid", fgColor=_CREME)
 _FONTE_DADO = Font(color=_TINTA, size=10)
 _BORDA = Border(bottom=Side(style="thin", color=_LINHA))
 _CENTRO = Alignment(vertical="center")
-
 _MOEDA = 'R$ #,##0.00'
-CABECALHOS = ["Nº NF", "Fornecedor", "Emissão",
+_TRACO = "—"
+
+# veredito -> texto legível (mesma leitura da tela de Resultado)
+_SITUACAO = {
+    "gerenciada": "Gerenciada", "ressalva": "Ressalva", "pendente": "Faltou lançar",
+    "cancelada": "Cancelada", "sp_sem_sieg": "SP Data sem SIEG",
+    "sp_duplicada": "Duplicada no SP Data",
+}
+_ROTULO_ARQ = {"ok": "OK", "diverg": "Divergência", "falta": "Não encontrada"}
+
+# Relatório espelha a tela: SN, presença SP Data × SIEG, arquivo, situação.
+CABECALHOS = ["Nº NF", "Fornecedor", "SN", "Emissão", "Lançam. (SP Data)",
               "Bruto (Sieg)", "Líquido (Sieg)", "Impostos (Sieg)",
               "Bruto (SPData)", "Líquido (SPData)", "Impostos (SPData)",
-              "Tem desconto", "Lançamento", "Arquivo", "Divergências", "Veredito"]
-_COLS_MOEDA = (4, 5, 6, 7, 8, 9)          # 1-based: as 6 colunas de valor
-_COL_STATUS = (11, 12)                     # Lançamento, Arquivo
-_COL_DIVERG = 13                           # Divergências (texto multi-linha)
+              "SP Data", "SIEG", "Arquivo", "Divergências", "Situação"]
+_COLS_MOEDA = (6, 7, 8, 9, 10, 11)          # 1-based: as 6 colunas de valor
+_COLS_STATUS = (12, 13, 14, 16)             # SP Data, SIEG, Arquivo, Situação
+_COL_DIVERG = 15
 
 
 def _cap_componente(parte):
-    """'bruto R$ x ≠ R$ y' -> 'Bruto: R$ x ≠ R$ y' (mesma cara do popover)."""
+    """'bruto R$ x ≠ R$ y' -> 'Bruto: R$ x ≠ R$ y' (mesma cara da tela)."""
     cabeca, _sep, resto = parte.partition(" ")
     return (cabeca.capitalize() + ": " + resto) if resto else parte.capitalize()
 
 
 def _divergencias(it):
-    """Texto das divergências igual às telas de Resultado: por frente
-    (Lançamento/Arquivo), um componente por linha."""
+    """Texto das divergências igual à tela: por frente, um componente por linha."""
     linhas = []
     for titulo, det in (("Lançamento", it.get("detalhe_lancamento")),
                         ("Arquivo", it.get("detalhe_arquivo"))):
@@ -51,14 +63,41 @@ def _divergencias(it):
     return "\n".join(linhas)
 
 
+def _estilo_por_texto(txt):
+    """Fill/fonte da célula de status conforme o texto (verde/amarelo/vermelho/cinza)."""
+    t = str(txt)
+    if t in ("OK", "Gerenciada"):
+        return _FILL_OK
+    if t in ("Divergência", "Ressalva"):
+        return _FILL_WARN
+    if t in ("Faltou", "Não encontrada", "Faltou lançar",
+             "SP Data sem SIEG", "Duplicada no SP Data"):
+        return _FILL_ALERT
+    if t in (_TRACO, "Cancelada"):
+        return _FILL_NEUTRO
+    return None
+
+
 def _linha_item(it):
-    return [it["numero"], it["nome_fornecedor"], it["data_emissao"],
-            it.get("sieg_bruto", 0.0), it.get("sieg_liquido", 0.0), it.get("sieg_imp", 0.0),
-            it.get("sp_bruto"), it.get("sp_liquido"), it.get("sp_imp"),
-            "Sim" if it.get("tem_desconto") else "—",
-            _ROTULO_STATUS.get(it["status_lancamento"], it["status_lancamento"]),
-            _ROTULO_STATUS.get(it["status_arquivo"], it["status_arquivo"]),
-            _divergencias(it), it["veredito"].capitalize()]
+    spx = it.get("sp_extra")
+    canc = it.get("cancelada")
+    return [
+        it["numero"], it["nome_fornecedor"],
+        "Sim" if it.get("optante_sn") else _TRACO,                       # SN (item 3)
+        _TRACO if spx else it["data_emissao"],
+        it.get("sp_data_lancamento") or "",
+        _TRACO if spx else it.get("sieg_bruto", 0.0),
+        _TRACO if spx else it.get("sieg_liquido", 0.0),
+        _TRACO if spx else it.get("sieg_imp", 0.0),
+        it["sp_bruto"] if it.get("sp_bruto") is not None else _TRACO,
+        it["sp_liquido"] if it.get("sp_liquido") is not None else _TRACO,
+        it["sp_imp"] if it.get("sp_imp") is not None else _TRACO,
+        _TRACO if canc else ("OK" if it.get("consta_spdata") else "Faltou"),   # SP Data
+        "OK" if it.get("consta_sieg") else "Faltou",                          # SIEG
+        _TRACO if (canc or spx) else _ROTULO_ARQ.get(it["status_arquivo"], it["status_arquivo"]),
+        _divergencias(it),
+        _SITUACAO.get(it["veredito"], it["veredito"].capitalize()),           # Situação
+    ]
 
 
 def _largura(ws, cabecalhos, linhas):
@@ -86,7 +125,7 @@ def _escrever_aba(ws, itens, com_totais=None):
     primeira_dado = linha_atual + 1
 
     linhas = [_linha_item(it) for it in itens]
-    for offset, (it, linha) in enumerate(zip(itens, linhas)):
+    for offset, linha in enumerate(linhas):
         r = primeira_dado + offset
         for c, valor in enumerate(linha, start=1):
             cel = ws.cell(r, c, valor)
@@ -97,14 +136,15 @@ def _escrever_aba(ws, itens, com_totais=None):
             if c in _COLS_MOEDA and isinstance(valor, (int, float)):
                 cel.number_format = _MOEDA
             if c == _COL_DIVERG:
-                cel.font = Font(color="FFA8331C", size=9.5)   # vermelho, como na tela
+                cel.font = Font(color=_VERMELHO, size=9.5)     # UM vermelho (item 4)
                 cel.alignment = Alignment(wrap_text=True, vertical="top")
-        for col, chave in ((_COL_STATUS[0], it["status_lancamento"]),
-                           (_COL_STATUS[1], it["status_arquivo"])):
-            fill, fonte = _FILL_STATUS.get(chave, (None, _FONTE_DADO))
-            if fill:
-                ws.cell(r, col).fill = fill
-                ws.cell(r, col).font = fonte
+            if c in _COLS_STATUS:
+                estilo = _estilo_por_texto(valor)
+                if estilo:
+                    fill, fonte = estilo
+                    if fill:
+                        cel.fill = fill
+                    cel.font = fonte
     _largura(ws, CABECALHOS, [[""] * len(CABECALHOS)] + linhas)
     ws.column_dimensions[get_column_letter(_COL_DIVERG)].width = 46   # texto multi-linha
     if itens:   # filtro no cabeçalho p/ conferência
@@ -160,26 +200,29 @@ def _aba_impostos(ws, itens):
     _largura(ws, CAB_IMP, [[c] for c in CAB_IMP])
 
 
+def _principais(itens):
+    return [i for i in itens if not i.get("cancelada") and not i.get("sp_extra")]
+
+
 def gerar_xlsx_impostos(itens: list) -> bytes:
-    """REL-02: planilha só com o Detalhamento de Impostos (quebra por tributo,
-    comparativo SIEG × SP Data)."""
-    itens = [it for it in itens if not it.get("cancelada") and not it.get("sp_extra")]
+    """Planilha só com o Detalhamento de Impostos (quebra por tributo)."""
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Impostos"
-    _aba_impostos(ws, itens)
+    _aba_impostos(ws, _principais(itens))
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()
 
 
 def gerar_xlsx(resumo: dict, itens: list) -> bytes:
-    itens = [it for it in itens if not it.get("cancelada") and not it.get("sp_extra")]   # canceladas/SP-extra fora
     wb = openpyxl.Workbook()
     ws1 = wb.active
-    ws1.title = "Conciliação"
+    ws1.title = "Resultado"
     totais = [
-        ("CNPJ do cliente", resumo["cnpj"]),
+        ("Cliente", resumo.get("razao_social") or resumo["cnpj"]),
+        ("CNPJ", resumo["cnpj"]),
+        ("Competência", resumo.get("competencia") or _TRACO),
         ("Gerado em", resumo["data_hora"]),
         ("Total de notas (Sieg)", resumo["total_universo"]),
         ("Valor total (bruto)", resumo["valor_total"]),
@@ -188,13 +231,17 @@ def gerar_xlsx(resumo: dict, itens: list) -> bytes:
         ("Faltou lançar", resumo["qt_falta_lancar"]),
         ("Faltou arquivar", resumo["qt_falta_arquivar"]),
         ("Canceladas (informativo)", resumo["qt_canceladas"]),
+        ("SP Data sem SIEG", resumo.get("qt_sp_sem_sieg", 0)),
+        ("Duplicadas no SP Data", resumo.get("qt_sp_duplicadas", 0)),
     ]
+    # Aba principal com TODAS as notas (inclui o confronto inverso) — espelha a tela.
     _escrever_aba(ws1, itens, com_totais=totais)
+    prin = _principais(itens)
     _escrever_aba(wb.create_sheet("Faltou Lançar"),
-                  [i for i in itens if i["status_lancamento"] == "falta"])
+                  [i for i in prin if i["status_lancamento"] == "falta"])
     _escrever_aba(wb.create_sheet("Faltou Arquivar"),
-                  [i for i in itens if i["status_arquivo"] == "falta"])
-    _aba_impostos(wb.create_sheet("Impostos"), itens)
+                  [i for i in prin if i["status_arquivo"] == "falta"])
+    _aba_impostos(wb.create_sheet("Impostos"), prin)
 
     buf = io.BytesIO()
     wb.save(buf)

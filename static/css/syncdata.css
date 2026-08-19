@@ -105,6 +105,9 @@ table.dense thead th{vertical-align:bottom}
 /* Recálculo: cartão de fundo branco, tudo em amarelo (atenção) */
 .det-pend{background:var(--surface-2); border-radius:var(--r-md); padding:10px 14px}
 .det-pend .det-extra-tit, .det-pend .det-k, .det-pend .mono, .det-pend .cod-trib{color:var(--warn)}
+/* item 6: grid alinha "Esperado" entre as linhas (label auto + valor auto) */
+.det-pend-grid{display:grid; grid-template-columns:auto auto; gap:4px 16px; align-items:baseline}
+.det-pend-grid .mono{white-space:nowrap}
 
 /* ---------- Page head ---------- */
 .page-head{display:flex; align-items:flex-end; justify-content:space-between; gap:16px;

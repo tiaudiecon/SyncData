@@ -75,3 +75,6 @@ class TabelaAliquota(Base):
     pis = Column(Float, default=0.65)
     cofins = Column(Float, default=3.00)
     csll = Column(Float, default=1.00)
+    # Reforma tributária — ainda NÃO efetivado; deixado preparado (default 0).
+    cbs = Column(Float, default=0.0)
+    ibs = Column(Float, default=0.0)

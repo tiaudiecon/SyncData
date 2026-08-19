@@ -44,7 +44,7 @@ def test_export_tem_aba_impostos_e_moeda_numerica():
     conteudo = gerar_xlsx(_resumo(), _itens_ricos())
     wb = openpyxl.load_workbook(io.BytesIO(conteudo))
     assert "Impostos" in wb.sheetnames
-    ws = wb["Conciliação"]
+    ws = wb["Resultado"]
     # acha uma célula de valor (Bruto Sieg) e confirma que é número com formato moeda
     achou = False
     for row in ws.iter_rows():
@@ -57,7 +57,7 @@ def test_export_tem_aba_impostos_e_moeda_numerica():
 def test_gera_tres_abas_com_conteudo():
     conteudo = gerar_xlsx(_resumo(), _itens())
     wb = openpyxl.load_workbook(io.BytesIO(conteudo))
-    assert wb.sheetnames == ["Conciliação", "Faltou Lançar", "Faltou Arquivar", "Impostos"]
+    assert wb.sheetnames == ["Resultado", "Faltou Lançar", "Faltou Arquivar", "Impostos"]
     # a aba "Faltou Lançar" tem só a nota 101 (1 cabeçalho + 1 linha)
     aba = wb["Faltou Lançar"]
     valores = [c.value for c in aba["A"] if c.value is not None]
@@ -88,6 +88,6 @@ def test_rel02_export_impostos_do_detalhamento():
 def test_item_com_divergencia_e_exportado_na_aba_conciliacao():
     conteudo = gerar_xlsx(_resumo(), _itens())
     wb = openpyxl.load_workbook(io.BytesIO(conteudo))
-    aba = wb["Conciliação"]
+    aba = wb["Resultado"]
     valores = [str(c.value) for c in aba["A"] if c.value is not None]
     assert "102" in valores

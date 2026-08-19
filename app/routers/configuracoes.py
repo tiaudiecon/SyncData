@@ -34,8 +34,10 @@ def salvar(cnpj: str = Form(...), razao_social: str = Form(""),
 @router.post("/configuracoes/aliquotas")
 def salvar_aliquotas(vigencia_inicio: str = Form(...), irpj: str = Form(...),
                      pis: str = Form(...), cofins: str = Form(...),
-                     csll: str = Form(...), db: Session = Depends(get_db)):
+                     csll: str = Form(...), cbs: str = Form("0"),
+                     ibs: str = Form("0"), db: Session = Depends(get_db)):
     serv_aliquotas.salvar_vigencia(
         db, vigencia_inicio.strip(),
-        limpar_moeda(irpj), limpar_moeda(pis), limpar_moeda(cofins), limpar_moeda(csll))
+        limpar_moeda(irpj), limpar_moeda(pis), limpar_moeda(cofins), limpar_moeda(csll),
+        limpar_moeda(cbs), limpar_moeda(ibs))       # reforma tributária (prep)
     return RedirectResponse(url="/configuracoes", status_code=303)

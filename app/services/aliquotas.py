@@ -24,6 +24,7 @@ def _to_dict(t):
     return {
         "vigencia_inicio": t.vigencia_inicio, "irpj": t.irpj, "pis": t.pis,
         "cofins": t.cofins, "csll": t.csll,
+        "cbs": (t.cbs or 0.0), "ibs": (t.ibs or 0.0),   # reforma tributária (prep)
         "consolidado": round((t.pis or 0) + (t.cofins or 0) + (t.csll or 0), 2),
     }
 
@@ -48,14 +49,15 @@ def vigente(db, data_ref=None):
     return vigente_na_lista(listar(db), data_ref)
 
 
-def salvar_vigencia(db, vigencia_inicio, irpj, pis, cofins, csll):
+def salvar_vigencia(db, vigencia_inicio, irpj, pis, cofins, csll, cbs=0.0, ibs=0.0):
     """Cria ou atualiza a tabela daquela vigência."""
     existente = (db.query(TabelaAliquota)
                    .filter_by(vigencia_inicio=vigencia_inicio).first())
     if existente:
         existente.irpj, existente.pis = irpj, pis
         existente.cofins, existente.csll = cofins, csll
+        existente.cbs, existente.ibs = cbs, ibs
     else:
         db.add(TabelaAliquota(vigencia_inicio=vigencia_inicio, irpj=irpj,
-                              pis=pis, cofins=cofins, csll=csll))
+                              pis=pis, cofins=cofins, csll=csll, cbs=cbs, ibs=ibs))
     db.commit()

@@ -62,7 +62,7 @@ def test_export_xlsx_do_resultado_funciona(client):
     assert r.status_code == 200
     assert "spreadsheetml" in r.headers["content-type"]
     wb = openpyxl.load_workbook(io.BytesIO(r.content))
-    assert "Conciliação" in wb.sheetnames
+    assert "Resultado" in wb.sheetnames
 
 
 def test_run_habilita_downloads_no_webview():
@@ -113,4 +113,4 @@ def test_resultado_e_export(client):
     planilha = client.get(destino + "/planilha.xlsx")
     assert planilha.status_code == 200
     wb = openpyxl.load_workbook(io.BytesIO(planilha.content))
-    assert wb.sheetnames == ["Conciliação", "Faltou Lançar", "Faltou Arquivar", "Impostos"]
+    assert wb.sheetnames == ["Resultado", "Faltou Lançar", "Faltou Arquivar", "Impostos"]
