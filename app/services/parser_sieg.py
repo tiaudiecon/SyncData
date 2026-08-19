@@ -39,11 +39,12 @@ class NotaSieg:
 
     @property
     def total_retencoes(self) -> float:
-        # Retenção REAL = Valor_Servico − Valor_Liquido (campo padrão da NFS-e: o
-        # quanto o prestador deixou de receber). É o número confiável. Neste export
-        # do Sieg as colunas individuais (IR/PIS/COFINS/CSLL) se sobrepõem ao
-        # OutRetencoes; somá-las inflava o total (contava em dobro qdo OutRet≠0).
-        return round(max(0.0, self.valor_servico - self.valor_liquido), 2)
+        # Retenção REAL = bruto_ajustado − Valor_Liquido (subtrai os descontos). Usar
+        # Valor_Servico − Valor_Liquido incluiria o DESCONTO no total, inflando o CSRF
+        # derivado e gerando falso positivo no recálculo em notas com desconto. Fica
+        # consistente com o matcher (_cmp_spdata usa bruto_ajustado). Sem desconto o
+        # resultado é idêntico ao Valor_Servico − Valor_Liquido.
+        return round(max(0.0, self.bruto_ajustado - self.valor_liquido), 2)
 
     @property
     def csrf(self) -> float:
@@ -61,7 +62,15 @@ def _e_cancelada(dt_cancel, status) -> bool:
 
 
 def _e_retido(v) -> bool:
-    return str(v or "").strip().lower().startswith("s")
+    # aceita "Sim"/"S"/"1"/"true"; "Não"/"N"/"0"/"" = não retido
+    t = str(v or "").strip().lower()
+    return t.startswith("s") or t in ("1", "true")
+
+
+def _e_optante_sn(v) -> bool:
+    # Optante_SN: "1" = Simples Nacional, "2" = normal; aceita também "Sim"/"S".
+    t = str(v or "").strip().lower()
+    return t == "1" or t.startswith("s")
 
 
 def ler_sieg(arquivo, cnpj_cliente: str):
@@ -127,7 +136,7 @@ def ler_sieg(arquivo, cnpj_cliente: str):
             deducoes=moeda(row, i_ded), desc_incondic=moeda(row, i_di),
             desc_condic=moeda(row, i_dc), outret=moeda(row, i_out),
             aliquota=moeda(row, i_aliq), base_calculo=moeda(row, i_base),
-            optante_sn=(str(val(row, i_optsn) or "").strip() == "1"),
+            optante_sn=_e_optante_sn(val(row, i_optsn)),
         )
         (canceladas if cancelada else autorizadas).append(nota)
     return autorizadas, canceladas

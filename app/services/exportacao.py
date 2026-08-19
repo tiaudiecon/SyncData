@@ -116,7 +116,10 @@ def _escrever_aba(ws, itens, com_totais=None):
     if com_totais:
         for rotulo, valor in com_totais:
             ws.cell(linha_atual, 1, rotulo).font = Font(bold=True, color=_NAVY, size=10)
-            ws.cell(linha_atual, 2, valor).font = _FONTE_DADO
+            cel_v = ws.cell(linha_atual, 2, valor)
+            cel_v.font = _FONTE_DADO
+            if isinstance(valor, float):                 # ex.: Valor total (bruto)
+                cel_v.number_format = _MOEDA
             linha_atual += 1
         linha_atual += 1  # linha em branco
 
@@ -190,6 +193,7 @@ def _aba_impostos(ws, itens):
     for c, t in enumerate(CAB_IMP, start=1):
         cel = ws.cell(1, c, t); cel.font = _FONTE_CAB; cel.fill = _FILL_CAB; cel.alignment = _CENTRO
     ws.freeze_panes = "A2"
+    linhas_dados = []
     for off, it in enumerate(itens):
         s = (it.get("impostos") or {}).get("sieg") or {}
         p = (it.get("impostos") or {}).get("spdata") or {}
@@ -198,6 +202,7 @@ def _aba_impostos(ws, itens):
                 s.get("ir", 0), p.get("ir"), s.get("csrf", 0), p.get("csrf"),
                 s.get("descontos", 0), s.get("base_calculo", 0), s.get("aliquota", 0),
                 s.get("total", 0), p.get("total"), _texto_recalc(it)]
+        linhas_dados.append(vals)
         r = 2 + off
         pend = bool(it.get("pendencia_sieg"))
         cods_div = {str(x.get("codigo")) for x in (it.get("pendencia_itens") or [])}
@@ -235,7 +240,7 @@ def _aba_impostos(ws, itens):
         cel = ws.cell(total_r, c, v)
         cel.font = Font(bold=True, color=_TINTA, size=10)
         cel.number_format = _MOEDA
-    _largura(ws, CAB_IMP, [[c] for c in CAB_IMP])
+    _largura(ws, CAB_IMP, [[""] * len(CAB_IMP)] + linhas_dados)   # largura pelos valores reais
     ws.column_dimensions[get_column_letter(_COL_RECALC)].width = 52   # texto do recálculo
 
 

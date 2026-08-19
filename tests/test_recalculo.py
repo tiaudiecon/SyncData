@@ -3,6 +3,21 @@ from app.services.recalculo import pendencia_sieg, esperado
 ALIQ = {"irpj": 1.50, "consolidado": 4.65}
 
 
+def test_nota_com_desconto_nao_gera_falso_positivo():
+    # AUDITORIA: em nota com desconto, o total_retencoes/csrf NÃO pode incluir o
+    # desconto (senão o recálculo do 5952 acusa divergência que não existe).
+    from app.services.parser_sieg import NotaSieg
+    # bruto 10.000, desconto incondicionado 615, retenções reais IR 150 + CSRF 465
+    # líquido a receber = 10.000 − 615(desc) − 615(ret) = 8.770
+    n = NotaSieg("100", "100", "c", "F", None, 10000.0, 8770.0, False,
+                 ir=150.0, iss=0.0, iss_retido=False, inss=0.0, desc_incondic=615.0)
+    assert round(n.total_retencoes, 2) == 615.0    # NÃO 1230 (não conta o desconto)
+    assert round(n.csrf, 2) == 465.0               # NÃO 1080
+    sieg = {"ir": n.ir, "csrf": n.csrf, "optante_sn": False}
+    pend, itens = pendencia_sieg(sieg, n.valor_servico, ALIQ)
+    assert pend is False and itens == []           # antes: falso positivo no 5952
+
+
 def test_sieg_correto_sem_pendencia():
     sieg = {"ir": 150.0, "csrf": 465.0, "optante_sn": False}
     pend, itens = pendencia_sieg(sieg, 10000.0, ALIQ)   # 1,5% e 4,65% de 10.000

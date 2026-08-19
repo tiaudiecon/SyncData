@@ -184,7 +184,12 @@ def conciliar(autorizadas, canceladas, spdata, renew):
 
     def _consta_no_sieg(sp):
         for n in idx_sieg.get(sp.cnpj, []):
-            if n.numero_norm == sp.numero_norm or _casa_numero(sp.numero_norm, n.numero_norm):
+            if n.numero_norm == sp.numero_norm:
+                return True                               # número exato = mesma nota
+            # composto por sufixo: exige o valor bater (guarda contra coincidência de
+            # dígitos finais, ex.: SpData nº "7" × Sieg nº "1234567").
+            if _casa_numero(sp.numero_norm, n.numero_norm) and \
+               valores_batem(sp.valor_bruto, n.bruto_ajustado):
                 return True
         return False
 
