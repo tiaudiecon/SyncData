@@ -120,8 +120,11 @@ def ver(conciliacao_id: int, request: Request, db: Session = Depends(get_db)):
 
 
 def _nome_arquivo(razao, competencia, conc):
-    """SyncData_{empresa}_{competência|data}.xlsx (item 2)."""
-    base = re.sub(r"[^A-Za-z0-9]+", "_", (razao or "").strip()).strip("_") or "Cliente"
+    """SyncData_{empresa}_{competência|data}.xlsx (item 2). Sem acentos."""
+    import unicodedata
+    sem_acento = (unicodedata.normalize("NFKD", razao or "")
+                  .encode("ascii", "ignore").decode("ascii"))
+    base = re.sub(r"[^A-Za-z0-9]+", "_", sem_acento.strip()).strip("_") or "Cliente"
     quando = competencia or (conc.data_hora.strftime("%Y-%m-%d") if conc.data_hora else "")
     nome = f"SyncData_{base}_{quando}".rstrip("_")
     return nome + ".xlsx"
