@@ -40,7 +40,14 @@ def pad_numero(numero, largura) -> str:
     return d.zfill(largura)
 
 
+def rotular_dv(parte):
+    """'bruto R$ x ≠ R$ y' -> 'Bruto: R$ x ≠ R$ y' (rótulo em maiúscula)."""
+    cabeca, _sep, resto = (parte or "").partition(" ")
+    return (cabeca.capitalize() + ": " + resto) if resto else (parte or "").capitalize()
+
+
 def registrar_filtros(templates):
     """Registra os filtros de formatação no ambiente Jinja dos templates."""
     templates.env.filters["moeda"] = moeda
     templates.env.filters["num_br"] = num_br
+    templates.env.filters["rotular_dv"] = rotular_dv

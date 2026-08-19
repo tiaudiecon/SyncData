@@ -26,7 +26,8 @@ def test_resultado_tem_busca_e_grupos(client):
     st = montar_conciliacao("04541288000162", _spdata_txt(), _sieg_xlsx("04541288000162"))
     html = client.get(f"/resultado/{st['conciliacao_id']}").text
     assert 'id="busca"' in html
-    assert "Impostos .xlsx" in html                # export de impostos no Resultado
+    assert "Exportar .xlsx" in html                # export da conciliação
+    assert "Impostos .xlsx" not in html            # botão de impostos removido
 
 
 def test_impostos_consolidado_no_resultado(client):
@@ -44,6 +45,31 @@ def test_menu_sem_impostos(client):
     client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
     html = client.get("/").text
     assert 'href="/impostos"' not in html
+
+
+def test_rotular_dv_formata_divergencia():
+    from app.services.formatacao import rotular_dv
+    assert rotular_dv("bruto R$ 5.029,00 ≠ R$ 4.719,71") == "Bruto: R$ 5.029,00 ≠ R$ 4.719,71"
+    assert rotular_dv("impostos R$ 187,94 ≠ R$ 0,00") == "Impostos: R$ 187,94 ≠ R$ 0,00"
+
+
+def test_export_xlsx_do_resultado_funciona(client):
+    # "Exportar .xlsx" do Resultado gera um .xlsx válido (server-side ok).
+    import io, openpyxl
+    client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
+    st = montar_conciliacao("04541288000162", _spdata_txt(), _sieg_xlsx("04541288000162"))
+    r = client.get(f"/resultado/{st['conciliacao_id']}/planilha.xlsx")
+    assert r.status_code == 200
+    assert "spreadsheetml" in r.headers["content-type"]
+    wb = openpyxl.load_workbook(io.BytesIO(r.content))
+    assert "Conciliação" in wb.sheetnames
+
+
+def test_run_habilita_downloads_no_webview():
+    # o WebView2 bloqueia downloads por padrão; run.py precisa liberar.
+    import pathlib
+    run = pathlib.Path(__file__).resolve().parent.parent / "run.py"
+    assert 'ALLOW_DOWNLOADS' in run.read_text(encoding="utf-8")
 
 
 def test_resultado_mostra_botao_pdf(client):

@@ -108,6 +108,8 @@ def _janela_pywebview(url):
     caímos no Edge/Chrome --app)."""
     try:
         import webview
+        # Sem isto o WebView2 BLOQUEIA downloads (o "Exportar .xlsx" não baixava).
+        webview.settings["ALLOW_DOWNLOADS"] = True
         webview.create_window(_TITULO, url, width=1360, height=860)
         webview.start()              # bloqueia até a janela fechar
         return True

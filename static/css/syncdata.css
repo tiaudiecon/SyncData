@@ -102,7 +102,9 @@ table.dense thead th{vertical-align:bottom}
 /* DET-02: tag Simples Nacional · REG-01: bloco de recálculo (pendência) */
 .tag-sn{background:var(--ok-bg); color:var(--ok); font-size:9.5px; font-weight:600;
   padding:1px 6px; border-radius:4px; margin-left:6px; letter-spacing:.02em}
-.det-pend .det-extra-tit{color:var(--warn)}   /* título em amarelo — atenção */
+/* Recálculo: cartão de fundo branco, tudo em amarelo (atenção) */
+.det-pend{background:var(--surface-2); border-radius:var(--r-md); padding:10px 14px}
+.det-pend .det-extra-tit, .det-pend .det-k, .det-pend .mono, .det-pend .cod-trib{color:var(--warn)}
 
 /* ---------- Page head ---------- */
 .page-head{display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
@@ -167,10 +169,11 @@ tr.linha-cancelada, tr.linha-spextra{cursor:default}
 .det-col-imp{display:flex; flex-direction:column; gap:6px}
 .det-fornsp{font-size:12px; padding-top:2px}
 .det-fornsp .det-k{margin-right:8px}
-/* bloco de divergências no expand da nota (Resultado) */
-.det-diverg .det-extra-tit{color:var(--warn)}
-.det-dv{flex-direction:column; align-items:flex-start; gap:2px}
-.det-dv > span:last-child{font-size:11.5px; color:var(--alert); max-width:260px}
+/* Divergências: cartão de fundo branco, tudo em vermelho */
+.det-diverg{background:var(--surface-2); border-radius:var(--r-md); padding:10px 14px; max-width:300px}
+.det-diverg .det-extra-tit, .det-diverg .det-dv-tit, .det-diverg .det-dv-item{color:var(--alert)}
+.det-dv-tit{font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; margin-top:8px}
+.det-dv-item{font-size:11.5px; font-family:'JetBrains Mono',monospace; padding:1px 0}
 /* item 4: total de notas do filtro atual */
 .filtro-total{margin-left:auto; align-self:center; font-size:12px; color:var(--ink-3);
   font-weight:600; white-space:nowrap; padding-left:10px}

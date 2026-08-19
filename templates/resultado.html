@@ -23,7 +23,6 @@
 <div class="page-head">
   <div><div class="crumb">Resultado{% if resumo.competencia %} · Competência {{ resumo.competencia }}{% endif %} · {{ resumo.data_hora }}</div><h1>Conciliação</h1></div>
   <div class="actions">
-    <a class="btn btn-ghost" href="/impostos/{{ c.id }}/planilha.xlsx">Impostos .xlsx</a>
     <a class="btn btn-primary" href="/resultado/{{ c.id }}/planilha.xlsx">
       <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Exportar .xlsx</a>
@@ -64,16 +63,17 @@
         <th rowspan="2" class="ord" data-col="0" onclick="ordenar(this)">Nº NF</th>
         <th rowspan="2" class="ord" data-col="1" onclick="ordenar(this)">Fornecedor</th>
         <th rowspan="2" class="ord" data-col="2" onclick="ordenar(this)">Emissão</th>
+        <th rowspan="2" class="center" title="Optante pelo Simples Nacional">SN</th>
         <th colspan="3" class="grp">Sieg (R$)</th><th colspan="3" class="grp">SPData (R$)</th>
         <th rowspan="2">Lançam.</th><th rowspan="2">Arquivo</th>
         <th rowspan="2">PDF</th>
       </tr>
-      <tr><th class="right ord" data-col="3" onclick="ordenar(this)">Bruto</th>
-          <th class="right ord" data-col="4" onclick="ordenar(this)">Líq</th>
-          <th class="right ord" data-col="5" onclick="ordenar(this)">Imp</th>
-          <th class="right ord" data-col="6" onclick="ordenar(this)">Bruto</th>
-          <th class="right ord" data-col="7" onclick="ordenar(this)">Líq</th>
-          <th class="right ord" data-col="8" onclick="ordenar(this)">Imp</th></tr>
+      <tr><th class="right ord" data-col="4" onclick="ordenar(this)">Bruto</th>
+          <th class="right ord" data-col="5" onclick="ordenar(this)">Líq</th>
+          <th class="right ord" data-col="6" onclick="ordenar(this)">Imp</th>
+          <th class="right ord" data-col="7" onclick="ordenar(this)">Bruto</th>
+          <th class="right ord" data-col="8" onclick="ordenar(this)">Líq</th>
+          <th class="right ord" data-col="9" onclick="ordenar(this)">Imp</th></tr>
     </thead>
     <tbody>
     {% for i in itens %}
@@ -89,8 +89,9 @@
           data-valores="{{ (i.sieg_bruto*100)|round|int }} {{ (i.sieg_liquido*100)|round|int }} {{ (i.sieg_imp*100)|round|int }}{% if i.sp_bruto is not none %} {{ (i.sp_bruto*100)|round|int }}{% endif %}{% if i.sp_liquido is not none %} {{ (i.sp_liquido*100)|round|int }}{% endif %}{% if i.sp_imp is not none %} {{ (i.sp_imp*100)|round|int }}{% endif %}"
           {% if exp %}onclick="toggleDet(this)"{% endif %}>
         <td class="bold mono">{% if exp %}<i class="chev">▸</i>{% endif %}{{ i.numero }}</td>
-        <td class="col-forn" title="{{ i.nome_fornecedor }}">{{ i.nome_fornecedor }}{% if i.optante_sn %} <span class="tag-sn" title="Optante pelo Simples Nacional — dispensado de retenção">SN</span>{% endif %}{% if i.tem_desconto %} <span class="chip-desc">• desc</span>{% endif %}</td>
+        <td class="col-forn" title="{{ i.nome_fornecedor }}">{{ i.nome_fornecedor }}{% if i.tem_desconto %} <span class="chip-desc">• desc</span>{% endif %}</td>
         <td class="mono">{% if i.sp_extra %}<span class="mut">—</span>{% else %}{{ i.data_emissao }}{% endif %}{% if i.sp_data_lancamento %}<div class="sub-lanc">lanç: {{ i.sp_data_lancamento }}</div>{% endif %}</td>
+        <td class="center">{% if i.optante_sn %}<span class="tag-sn" title="Optante pelo Simples Nacional — dispensado de retenção">SN</span>{% endif %}</td>
         <td class="mono right {% if bruto_dz %}dz{% endif %}">{{ '—' if i.sp_extra else i.sieg_bruto|num_br }}</td>
         <td class="mono right {% if liq_dz %}dz{% endif %}">{{ '—' if i.sp_extra else i.sieg_liquido|num_br }}</td>
         <td class="mono right {% if imp_dz %}dz{% endif %}">{{ '—' if i.sp_extra else i.sieg_imp|num_br }}</td>
@@ -113,7 +114,7 @@
         </td>
       </tr>
       {% if exp %}
-      <tr class="linha-det"><td></td><td colspan="11">
+      <tr class="linha-det"><td></td><td colspan="12">
         <div class="det-wrap">
           <div class="det-col-imp">
             <table class="det-tab">
@@ -129,16 +130,17 @@
             </table>
             {% if i.fornecedor_sp %}<div class="det-fornsp"><span class="det-k">Fornecedor (SP Data)</span> <span>{{ i.fornecedor_sp }}</span></div>{% endif %}
           </div>
-          <div class="det-extra">
-            <div class="det-extra-tit">Só no Sieg</div>
-            <div class="det-x"><span class="det-k">Descontos</span><span class="mono">{{ i.imp_descontos|moeda }}</span></div>
-            <div class="det-x"><span class="det-k">Base de cálculo</span><span class="mono">{{ i.imp_base|moeda }}</span></div>
-          </div>
           {% if i.detalhe_lancamento or i.detalhe_arquivo %}
           <div class="det-extra det-diverg">
             <div class="det-extra-tit">Divergências</div>
-            {% if i.detalhe_lancamento %}<div class="det-x det-dv"><span class="det-k">Lançamento</span><span>{{ i.detalhe_lancamento }}</span></div>{% endif %}
-            {% if i.detalhe_arquivo %}<div class="det-x det-dv"><span class="det-k">Arquivo</span><span>{{ i.detalhe_arquivo }}</span></div>{% endif %}
+            {% if i.detalhe_lancamento %}
+            <div class="det-dv-tit">Lançamento</div>
+            {% for parte in i.detalhe_lancamento.split('; ') %}<div class="det-dv-item">{{ parte|rotular_dv }}</div>{% endfor %}
+            {% endif %}
+            {% if i.detalhe_arquivo %}
+            <div class="det-dv-tit">Arquivo</div>
+            {% for parte in i.detalhe_arquivo.split('; ') %}<div class="det-dv-item">{{ parte|rotular_dv }}</div>{% endfor %}
+            {% endif %}
           </div>
           {% endif %}
           {% if i.pendencia_sieg %}
