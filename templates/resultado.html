@@ -7,14 +7,23 @@
   {%- elif s == 'diverg' -%}<span class="badge b-warn">Diverg.</span>
   {%- else -%}<span class="badge b-alert">Faltou</span>{%- endif -%}
 {% endmacro %}
-{# item 3: presença da nota em cada sistema — verde = consta, vermelho = faltou #}
-{% macro selo_presenca(nome, ok) -%}
-<span class="badge selo-sis {{ 'b-ok' if ok else 'b-alert' }}" title="{{ nome }}: {{ 'consta' if ok else 'faltou' }}">{{ nome }} {{ '✓' if ok else '✗' }}</span>
+{# item 3: selo de presença 3 estados — verde OK / amarelo divergência / vermelho faltou #}
+{% macro selo(nome, estado) -%}
+  {%- if estado == 'ok' -%}<span class="badge selo-sis b-ok" title="{{ nome }}: OK">{{ nome }} ✓</span>
+  {%- elif estado == 'diverg' -%}<span class="badge selo-sis b-warn" title="{{ nome }}: divergência — abra a nota">{{ nome }} ⚠</span>
+  {%- else -%}<span class="badge selo-sis b-alert" title="{{ nome }}: faltou">{{ nome }} ✗</span>{%- endif -%}
 {%- endmacro %}
+{# quebra de um tributo Sieg × SP Data (expand da nota) #}
+{% macro linha_imp(nome, p, codigo='') %}
+  {%- set d = p.delta is not none and (p.delta > 0.05 or p.delta < -0.05) -%}
+  <td class="det-nome">{{ nome }}{% if codigo %} <span class="cod-trib">{{ codigo }}</span>{% endif %}</td>
+  <td class="mono right {% if d %}dz{% endif %}">{{ p.sieg|moeda }}</td>
+  <td class="mono right {% if d %}dz{% endif %}">{{ p.sp|moeda if p.sp is not none else '—' }}</td>
+{% endmacro %}
 <div class="page-head">
   <div><div class="crumb">Resultado{% if resumo.competencia %} · Competência {{ resumo.competencia }}{% endif %} · {{ resumo.data_hora }}</div><h1>Conciliação</h1></div>
   <div class="actions">
-    <a class="btn btn-ghost" href="/impostos/{{ c.id }}">Ver impostos</a>
+    <a class="btn btn-ghost" href="/impostos/{{ c.id }}/planilha.xlsx">Impostos .xlsx</a>
     <a class="btn btn-primary" href="/resultado/{{ c.id }}/planilha.xlsx">
       <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Exportar .xlsx</a>
@@ -49,7 +58,7 @@
 </div>
 
 <div class="table-scroll">
-  <table class="dense compacta" id="tab">
+  <table class="dense compacta imp-resumo" id="tab">
     <thead>
       <tr>
         <th rowspan="2" class="ord" data-col="0" onclick="ordenar(this)">Nº NF</th>
@@ -57,7 +66,6 @@
         <th rowspan="2" class="ord" data-col="2" onclick="ordenar(this)">Emissão</th>
         <th colspan="3" class="grp">Sieg (R$)</th><th colspan="3" class="grp">SPData (R$)</th>
         <th rowspan="2">Lançam.</th><th rowspan="2">Arquivo</th>
-        <th rowspan="2" class="col-flag" title="Passe o mouse no ⚠ para ver o detalhe">Div.</th>
         <th rowspan="2">PDF</th>
       </tr>
       <tr><th class="right ord" data-col="3" onclick="ordenar(this)">Bruto</th>
@@ -72,12 +80,15 @@
       {% set bruto_dz = (not i.sp_extra) and (i.sp_bruto is not none) and (not i.tem_desconto) and ((i.sieg_bruto - i.sp_bruto)|abs > 0.05) %}
       {% set liq_dz = (not i.sp_extra) and (i.sp_liquido is not none) and ((i.sieg_liquido - i.sp_liquido)|abs > 0.05) %}
       {% set imp_dz = (not i.sp_extra) and (i.sp_imp is not none) and ((i.sieg_imp - i.sp_imp)|abs > 0.05) %}
-      <tr data-v="{{ i.veredito }}" data-cancelada="{{ '1' if i.cancelada else '0' }}"
+      {% set exp = (not i.cancelada) and (not i.sp_extra) %}
+      {% set sp_estado = i.status_lancamento if i.status_lancamento in ('ok','diverg','falta') else 'ok' %}
+      <tr class="linha-resumo{% if i.cancelada %} linha-cancelada{% elif i.sp_extra %} linha-spextra{% endif %}"
+          data-v="{{ i.veredito }}" data-cancelada="{{ '1' if i.cancelada else '0' }}"
           data-pend="{{ '1' if i.pendencia_sieg else '0' }}"
           data-busca="{{ (i.numero ~ ' ' ~ i.nome_fornecedor)|lower }}"
           data-valores="{{ (i.sieg_bruto*100)|round|int }} {{ (i.sieg_liquido*100)|round|int }} {{ (i.sieg_imp*100)|round|int }}{% if i.sp_bruto is not none %} {{ (i.sp_bruto*100)|round|int }}{% endif %}{% if i.sp_liquido is not none %} {{ (i.sp_liquido*100)|round|int }}{% endif %}{% if i.sp_imp is not none %} {{ (i.sp_imp*100)|round|int }}{% endif %}"
-          class="{% if i.cancelada %}linha-cancelada{% elif i.sp_extra %}linha-spextra{% endif %}">
-        <td class="bold mono">{{ i.numero }}</td>
+          {% if exp %}onclick="toggleDet(this)"{% endif %}>
+        <td class="bold mono">{% if exp %}<i class="chev">▸</i>{% endif %}{{ i.numero }}</td>
         <td class="col-forn" title="{{ i.nome_fornecedor }}">{{ i.nome_fornecedor }}{% if i.tem_desconto %} <span class="chip-desc">• desc</span>{% endif %}</td>
         <td class="mono">{% if i.sp_extra %}<span class="mut">—</span>{% else %}{{ i.data_emissao }}{% endif %}{% if i.sp_data_lancamento %}<div class="sub-lanc">lanç: {{ i.sp_data_lancamento }}</div>{% endif %}</td>
         <td class="mono right {% if bruto_dz %}dz{% endif %}">{{ '—' if i.sp_extra else i.sieg_bruto|num_br }}</td>
@@ -86,30 +97,73 @@
         <td class="mono right {% if bruto_dz %}dz{% endif %}">{{ i.sp_bruto|num_br if i.sp_bruto is not none else '—' }}</td>
         <td class="mono right {% if liq_dz %}dz{% endif %}">{{ i.sp_liquido|num_br if i.sp_liquido is not none else '—' }}</td>
         <td class="mono right {% if imp_dz %}dz{% endif %}">{{ i.sp_imp|num_br if i.sp_imp is not none else '—' }}</td>
-        {% if i.cancelada %}
-        <td colspan="3" class="center"><span class="badge b-neutral">Cancelada</span></td>
-        {% elif i.sp_extra %}
-        <td colspan="3" class="cel-lanc">
-          {{ selo_presenca('SP Data', i.consta_spdata) }}{{ selo_presenca('SIEG', i.consta_sieg) }}
+        <td class="cel-lanc">
+          {%- if i.cancelada -%}<span class="badge b-neutral">Cancelada</span>
+          {%- else -%}{{ selo('SP Data', sp_estado) }}{{ selo('SIEG', 'ok' if i.consta_sieg else 'falta') }}
+          {%- if i.pendencia_sieg %} <span class="badge b-warn" title="Impostos do SIEG divergem da alíquota base — analisar">Div. Impostos</span>{% endif -%}
           {%- if i.veredito == 'sp_duplicada' %} <span class="badge b-warn">Duplicada no SP Data</span>{% endif -%}
-        </td>
-        {% else %}
-        <td class="cel-lanc">{{ selo_presenca('SP Data', i.consta_spdata) }}{{ selo_presenca('SIEG', i.consta_sieg) }}{% if i.pendencia_sieg %} <span class="badge b-warn" title="Impostos do SIEG divergem da alíquota base — analisar">Div. Impostos</span>{% endif %}</td>
-        <td>{{ status(i.status_arquivo) }}</td>
-        <td class="col-flag">
-          {%- if i.detalhe_lancamento or i.detalhe_arquivo -%}
-          <span class="dv-flag" tabindex="0" role="button" aria-label="Ver divergência"
-                data-lanc="{{ i.detalhe_lancamento }}" data-arq="{{ i.detalhe_arquivo }}">⚠</span>
           {%- endif -%}
         </td>
-        {% endif %}
+        <td>{% if i.cancelada or i.sp_extra %}<span class="mut">—</span>{% else %}{{ status(i.status_arquivo) }}{% endif %}</td>
         <td class="center">
           {% if i.arquivo_pdf %}
-            <button type="button" class="btn-mini" onclick="verPdf({{ i.id }}, '{{ i.numero }}')">Ver</button>
-            <a class="btn-mini" href="/pdf/{{ i.id }}" target="_blank" rel="noopener">Abrir</a>
+            <button type="button" class="btn-mini" onclick="event.stopPropagation(); verPdf({{ i.id }}, '{{ i.numero }}')">Ver</button>
+            <a class="btn-mini" href="/pdf/{{ i.id }}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Abrir</a>
           {% else %}<span class="mut">—</span>{% endif %}
         </td>
       </tr>
+      {% if exp %}
+      <tr class="linha-det"><td></td><td colspan="11">
+        <div class="det-wrap">
+          <table class="det-tab">
+            <thead><tr><th class="det-nome">Imposto</th><th class="right">Sieg</th><th class="right">SPData</th></tr></thead>
+            <tbody>
+              {% if i.iss_retido %}<tr>{{ linha_imp('ISS', i.imp_iss) }}</tr>
+              {% else %}<tr class="det-inform"><td class="det-nome">ISS <em>informativo</em></td><td class="mono right">{{ i.imp_iss.sieg|moeda }}</td><td class="mono right">{{ i.imp_iss.sp|moeda if i.imp_iss.sp is not none else '—' }}</td></tr>{% endif %}
+              <tr>{{ linha_imp('INSS', i.imp_inss) }}</tr>
+              <tr>{{ linha_imp('IRPJ', i.imp_ir, '1708') }}</tr>
+              <tr>{{ linha_imp('PIS/COFINS/CSLL', i.imp_csrf, '5952') }}</tr>
+              <tr class="det-total">{{ linha_imp('Total ret.', i.imp_total) }}</tr>
+            </tbody>
+          </table>
+          <div class="det-extra">
+            <div class="det-extra-tit">Dados da nota</div>
+            <div class="det-x"><span class="det-k">Emissão</span><span class="mono">{{ i.data_emissao or '—' }}</span></div>
+            <div class="det-x"><span class="det-k">Valor bruto</span><span class="mono">{{ i.sieg_bruto|moeda }}</span></div>
+            <div class="det-x"><span class="det-k">Valor líquido</span><span class="mono">{{ i.sieg_liquido|moeda }}</span></div>
+            {% if i.sp_data_lancamento %}<div class="det-x"><span class="det-k">Lançam. (SP Data)</span><span class="mono">{{ i.sp_data_lancamento }}</span></div>{% endif %}
+            {% if i.fornecedor_sp %}<div class="det-x"><span class="det-k">Fornecedor (SP Data)</span><span>{{ i.fornecedor_sp }}</span></div>{% endif %}
+            {% if i.optante_sn %}<div class="det-x"><span class="det-k">Regime</span><span class="tag-sn" title="Optante pelo Simples Nacional">SN</span></div>{% endif %}
+            {% if i.arquivo_pdf %}<div class="det-x" style="margin-top:8px">
+              <button type="button" class="btn-mini" onclick="event.stopPropagation(); verPdf({{ i.id }}, '{{ i.numero }}')">Ver PDF</button>
+              <a class="btn-mini" href="/pdf/{{ i.id }}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Abrir</a>
+            </div>{% endif %}
+          </div>
+          <div class="det-extra">
+            <div class="det-extra-tit">Só no Sieg</div>
+            <div class="det-x"><span class="det-k">Descontos</span><span class="mono">{{ i.imp_descontos|moeda }}</span></div>
+            <div class="det-x"><span class="det-k">Base de cálculo</span><span class="mono">{{ i.imp_base|moeda }}</span></div>
+          </div>
+          {% if i.detalhe_lancamento or i.detalhe_arquivo %}
+          <div class="det-extra det-diverg">
+            <div class="det-extra-tit">Divergências</div>
+            {% if i.detalhe_lancamento %}<div class="det-x det-dv"><span class="det-k">Lançamento</span><span>{{ i.detalhe_lancamento }}</span></div>{% endif %}
+            {% if i.detalhe_arquivo %}<div class="det-x det-dv"><span class="det-k">Arquivo</span><span>{{ i.detalhe_arquivo }}</span></div>{% endif %}
+          </div>
+          {% endif %}
+          {% if i.pendencia_sieg %}
+          <div class="det-extra det-pend">
+            <div class="det-extra-tit">Recálculo (base × alíquota)</div>
+            {% for it in i.pendencia_itens %}
+            <div class="det-x"><span class="det-k">{{ it.nome }} <span class="cod-trib">{{ it.codigo }}</span></span>
+              <span class="mono">esperado {{ it.esperado|moeda }} · SIEG {{ it.apurado|moeda }}</span></div>
+            {% endfor %}
+            <div class="det-pend-obs">O SIEG pode estar incorreto — sinalizado para análise (não reprova).</div>
+          </div>
+          {% endif %}
+        </div>
+      </td></tr>
+      {% endif %}
     {% endfor %}
     </tbody>
   </table>
@@ -136,7 +190,7 @@
     const q = raw.toLowerCase();
     const qDig = raw.replace(/\D/g, '');   // só dígitos: aceita 14263, 14263,00 e 14.263,00
     let visiveis = 0;
-    document.querySelectorAll('#tab tbody tr').forEach(tr => {
+    document.querySelectorAll('#tab tbody tr.linha-resumo').forEach(tr => {
       const v = tr.dataset.v;
       const canc = tr.dataset.cancelada === '1';
       const spextra = (v === 'sp_sem_sieg' || v === 'sp_duplicada');
@@ -154,7 +208,9 @@
       const okNum = qDig !== '' && (tr.dataset.valores || '').split(' ').some(v => v.includes(qDig));
       const okB = raw === '' || okTexto || okNum;
       const mostra = okS && okB;
-      tr.style.display = mostra ? '' : 'none';
+      tr.classList.toggle('filtrada', !mostra);
+      const det = tr.nextElementSibling;
+      if (det && det.classList.contains('linha-det')) det.classList.toggle('filtrada', !mostra);
       if (mostra) visiveis++;
     });
     // item 4: total de notas do filtro atual
@@ -170,6 +226,12 @@
   function fecharPdf(){
     document.getElementById('pdfPanel').style.display = 'none';
     document.getElementById('pdfFrame').src = 'about:blank';
+  }
+  function toggleDet(tr){
+    const det = tr.nextElementSibling;
+    if(!det || !det.classList.contains('linha-det')) return;
+    det.classList.toggle('aberto');
+    tr.classList.toggle('aberta');
   }
 
   // Popover de divergência (sobreposto, position:fixed — não é recortado pela tabela)

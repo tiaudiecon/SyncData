@@ -36,6 +36,14 @@ def _data_iso(data_br):
         return None
 
 
+def _par(s, p, chave):
+    """Par Sieg × SP Data de um tributo (p/ o expand de impostos no Resultado)."""
+    sv = s.get(chave, 0.0)
+    pv = (p or {}).get(chave) if p else None
+    delta = None if (sv is None or pv is None) else round(sv - pv, 2)
+    return {"sieg": sv, "sp": pv, "delta": delta}
+
+
 def montar_resumo_e_itens(conc, tabelas=None):
     tabelas = tabelas or []
     resumo = {
@@ -56,10 +64,11 @@ def montar_resumo_e_itens(conc, tabelas=None):
         sieg_dict = imp.get("sieg") or {}
         sp_dict = imp.get("spdata") or {}
         # CON-05: pendência do SIEG (recálculo) — só p/ notas do SIEG.
-        pend = False
+        pend, pend_itens = False, []
         if i.veredito not in ("cancelada", *_SP_EXTRA) and sieg_dict:
             aliq = serv_aliquotas.vigente_na_lista(tabelas, _data_iso(i.data_emissao))
-            pend, _ = pendencia_sieg(sieg_dict, i.valor_bruto, aliq)
+            pend, pend_itens = pendencia_sieg(sieg_dict, i.valor_bruto, aliq)
+        p_sp = imp.get("spdata")   # None se a nota não foi lançada no SP Data
         itens.append({
             "id": i.id,
             "numero": pad_numero(i.numero, largura),
@@ -83,6 +92,18 @@ def montar_resumo_e_itens(conc, tabelas=None):
             "consta_sieg": i.veredito not in _SP_EXTRA,
             "impostos": imp,
             "arquivo_pdf": i.arquivo_pdf,
+            # expand de impostos no Resultado (quebra Sieg × SP Data por tributo)
+            "imp_iss": _par(sieg_dict, p_sp, "iss"),
+            "imp_inss": _par(sieg_dict, p_sp, "inss"),
+            "imp_ir": _par(sieg_dict, p_sp, "ir"),
+            "imp_csrf": _par(sieg_dict, p_sp, "csrf"),
+            "imp_total": _par(sieg_dict, p_sp, "total"),
+            "iss_retido": bool(sieg_dict.get("iss_retido")),
+            "imp_descontos": sieg_dict.get("descontos", 0.0),
+            "imp_base": sieg_dict.get("base_calculo", 0.0),
+            "sem_spdata": p_sp is None,
+            "fornecedor_sp": (p_sp or {}).get("fornecedor", ""),
+            "pendencia_itens": pend_itens,
         })
     return resumo, itens
 

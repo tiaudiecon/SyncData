@@ -26,7 +26,24 @@ def test_resultado_tem_busca_e_grupos(client):
     st = montar_conciliacao("04541288000162", _spdata_txt(), _sieg_xlsx("04541288000162"))
     html = client.get(f"/resultado/{st['conciliacao_id']}").text
     assert 'id="busca"' in html
-    assert "Ver impostos" in html
+    assert "Impostos .xlsx" in html                # export de impostos no Resultado
+
+
+def test_impostos_consolidado_no_resultado(client):
+    # consolidação: a quebra de impostos vive no expand da nota, no Resultado.
+    client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
+    st = montar_conciliacao("04541288000162", _spdata_txt(), _sieg_xlsx("04541288000162"))
+    html = client.get(f"/resultado/{st['conciliacao_id']}").text
+    assert "linha-det" in html and "det-tab" in html      # expand com a quebra
+    assert "PIS/COFINS/CSLL" in html and "IRPJ" in html   # tributos no expand
+    assert 'onclick="toggleDet' in html                   # clicar p/ expandir
+
+
+def test_menu_sem_impostos(client):
+    # a tela Impostos saiu do menu lateral (tudo no Resultado).
+    client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
+    html = client.get("/").text
+    assert 'href="/impostos"' not in html
 
 
 def test_resultado_mostra_botao_pdf(client):

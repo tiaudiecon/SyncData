@@ -163,6 +163,12 @@ table.dense thead th{vertical-align:bottom}
 /* item 3: selos de presença SP Data × SIEG (compactos, lado a lado) */
 .cel-lanc{white-space:nowrap}
 .badge.selo-sis{font-size:10px; padding:1px 6px; margin-right:3px; letter-spacing:.02em}
+/* linhas não-expansíveis (canceladas / só-SP-Data) não têm cursor de clique */
+tr.linha-cancelada, tr.linha-spextra{cursor:default}
+/* bloco de divergências no expand da nota (Resultado) */
+.det-diverg .det-extra-tit{color:var(--warn)}
+.det-dv{flex-direction:column; align-items:flex-start; gap:2px}
+.det-dv > span:last-child{font-size:11.5px; color:var(--alert); max-width:260px}
 /* item 4: total de notas do filtro atual */
 .filtro-total{margin-left:auto; align-self:center; font-size:12px; color:var(--ink-3);
   font-weight:600; white-space:nowrap; padding-left:10px}
