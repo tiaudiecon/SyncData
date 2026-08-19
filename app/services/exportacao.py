@@ -36,14 +36,17 @@ _SITUACAO = {
 }
 _ROTULO_ARQ = {"ok": "OK", "diverg": "Divergência", "falta": "Não encontrada"}
 
-# Relatório espelha a tela: SN, presença SP Data × SIEG, arquivo, situação.
+# Relatório espelha a tela: SN, presença SP Data × SIEG, arquivo, situação e a
+# marcação do recálculo (qual tributo do SIEG diverge do base × alíquota).
 CABECALHOS = ["Nº NF", "Fornecedor", "SN", "Emissão", "Lançam. (SP Data)",
               "Bruto (Sieg)", "Líquido (Sieg)", "Impostos (Sieg)",
               "Bruto (SPData)", "Líquido (SPData)", "Impostos (SPData)",
-              "SP Data", "SIEG", "Arquivo", "Divergências", "Situação"]
+              "SP Data", "SIEG", "Arquivo", "Divergências", "Situação",
+              "Divergência (recálculo)"]
 _COLS_MOEDA = (6, 7, 8, 9, 10, 11)          # 1-based: as 6 colunas de valor
 _COLS_STATUS = (12, 13, 14, 16)             # SP Data, SIEG, Arquivo, Situação
 _COL_DIVERG = 15
+_COL_RECALC_STD = 17                         # "Divergência (recálculo)" no layout padrão
 
 
 def _cap_componente(parte):
@@ -97,6 +100,7 @@ def _linha_item(it):
         _TRACO if (canc or spx) else _ROTULO_ARQ.get(it["status_arquivo"], it["status_arquivo"]),
         _divergencias(it),
         _SITUACAO.get(it["veredito"], it["veredito"].capitalize()),           # Situação
+        _texto_recalc(it),                                                   # Divergência (recálculo)
     ]
 
 
@@ -138,6 +142,10 @@ def _escrever_aba(ws, itens, com_totais=None):
             if c == _COL_DIVERG:
                 cel.font = Font(color=_VERMELHO, size=9.5)     # UM vermelho (item 4)
                 cel.alignment = Alignment(wrap_text=True, vertical="top")
+            if c == _COL_RECALC_STD:                           # marca o tributo divergente
+                cel.alignment = Alignment(wrap_text=True, vertical="top")
+                if valor and valor != _TRACO:
+                    cel.font = Font(color=_VERMELHO, size=9.5)
             if c in _COLS_STATUS:
                 estilo = _estilo_por_texto(valor)
                 if estilo:
@@ -147,6 +155,7 @@ def _escrever_aba(ws, itens, com_totais=None):
                     cel.font = fonte
     _largura(ws, CABECALHOS, [[""] * len(CABECALHOS)] + linhas)
     ws.column_dimensions[get_column_letter(_COL_DIVERG)].width = 46   # texto multi-linha
+    ws.column_dimensions[get_column_letter(_COL_RECALC_STD)].width = 44
     if itens:   # filtro no cabeçalho p/ conferência
         ult = get_column_letter(len(CABECALHOS))
         ws.auto_filter.ref = f"A{linha_atual}:{ult}{primeira_dado + len(itens) - 1}"
