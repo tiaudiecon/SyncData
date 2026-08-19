@@ -99,3 +99,17 @@ def test_pasta_inexistente_avisa(client):
                                        "application/octet-stream")})
     assert resp.status_code == 200
     assert "não existe" in resp.text.lower()
+
+
+def test_sem_pasta_da_erro_amigavel_nao_422(client):
+    # form enviado sem o campo 'pasta' (ex.: usuário não selecionou) NÃO pode
+    # devolver o 422 cru — precisa cair no aviso amigável (HTTP 200).
+    client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
+    resp = client.post("/conciliar",
+                       data={"competencia": "2026-07"},   # sem 'pasta'
+                       files={"spdata": ("SpData.txt", _spdata_txt(), "text/plain"),
+                              "sieg": ("sieg.xlsx", _sieg_xlsx("04541288000162"),
+                                       "application/octet-stream")})
+    assert resp.status_code == 200
+    assert "Field required" not in resp.text
+    assert "Selecione a pasta" in resp.text

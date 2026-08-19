@@ -6,8 +6,9 @@
 </div>
 
 {% if erro %}<div class="erro-box">{{ erro }}</div>{% endif %}
+<div id="avisoPasta" class="erro-box" style="display:none">Selecione a pasta dos PDFs antes de conciliar — clique em <strong>Procurar…</strong>.</div>
 
-<form method="post" action="/conciliar" enctype="multipart/form-data">
+<form method="post" action="/conciliar" enctype="multipart/form-data" onsubmit="return antesDeEnviar(event)">
   <div class="panel">
     <div class="panel-head"><h3>Envie os arquivos do período</h3></div>
     <div class="panel-body">
@@ -31,7 +32,7 @@
         <div class="meta"><div class="t">Pasta dos PDFs</div><div class="h">Notas arquivadas · o SyncData processa com o Renew</div></div>
         <div style="display:flex; gap:8px; flex:1; min-width:0">
           <input type="text" id="pasta" name="pasta" class="input" style="flex:1"
-                 placeholder="Escolha a pasta com os PDFs…" required readonly>
+                 placeholder="Escolha (ou cole) a pasta com os PDFs…" required>
           <button type="button" class="btn btn-ghost" onclick="procurarPasta()">Procurar…</button>
         </div>
       </div>
@@ -63,8 +64,24 @@
     try{
       const r = await fetch('/procurar-pasta');
       const d = await r.json();
-      if (d.pasta){ campoPasta.value = d.pasta; localStorage.setItem('syncdata_pasta', d.pasta); }
+      if (d.pasta){
+        campoPasta.value = d.pasta;
+        localStorage.setItem('syncdata_pasta', d.pasta);
+        document.getElementById('avisoPasta').style.display = 'none';
+      }
     }catch(e){}
+  }
+  // trava: não envia sem pasta (o 'required' do HTML não vale em campo readonly)
+  function antesDeEnviar(ev){
+    if (!campoPasta.value.trim()){
+      ev.preventDefault();
+      const aviso = document.getElementById('avisoPasta');
+      aviso.style.display = '';
+      aviso.scrollIntoView({behavior:'smooth', block:'center'});
+      procurarPasta();   // já abre o seletor de pasta
+      return false;
+    }
+    return true;
   }
 </script>
 {% endblock %}

@@ -38,7 +38,7 @@ _RX_COMPETENCIA = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
 @router.post("/conciliar")
 async def executar(request: Request, db: Session = Depends(get_db),
                    spdata: UploadFile = File(...), sieg: UploadFile = File(...),
-                   pasta: str = Form(...), competencia: str = Form("")):
+                   pasta: str = Form(""), competencia: str = Form("")):
     cfg = obter_config(db)
     competencia = (competencia or "").strip()
     if not _RX_COMPETENCIA.match(competencia):   # INI-02: mês/ano do período
