@@ -152,12 +152,29 @@ def _escrever_aba(ws, itens, com_totais=None):
         ws.auto_filter.ref = f"A{linha_atual}:{ult}{primeira_dado + len(itens) - 1}"
 
 
+# Colunas SIEG e SPData lado a lado + a marcação do recálculo (item 2).
 CAB_IMP = ["Nº NF", "Fornecedor",
            "ISS (Sieg)", "ISS (SPData)", "INSS (Sieg)", "INSS (SPData)",
            "IRPJ 1708 (Sieg)", "IRPJ 1708 (SPData)",
            "PIS/COFINS/CSLL 5952 (Sieg)", "PIS/COFINS/CSLL 5952 (SPData)",
            "Descontos", "Base de cálculo", "Alíquota",
-           "Total (Sieg)", "Total (SPData)"]
+           "Total (Sieg)", "Total (SPData)", "Divergência (recálculo)"]
+_COL_RECALC = 16                                    # coluna de marcação do recálculo
+# colunas do SIEG cujo valor o recálculo confere (p/ pintar quando diverge)
+_COL_SIEG_TRIB = {"1708": 7, "5952": 9}
+
+
+def _rs(v):
+    """float -> 'R$ 1.234,56' (texto)."""
+    return ("R$ " + f"{(v or 0):,.2f}").replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def _texto_recalc(it):
+    """Marcação do recálculo: 'IRPJ 1708: esperado R$x ≠ SIEG R$y; ...' (item 2)."""
+    itens = it.get("pendencia_itens") or []
+    return "; ".join(
+        f"{p['nome']} {p['codigo']}: esperado {_rs(p['esperado'])} ≠ SIEG {_rs(p['apurado'])}"
+        for p in itens) or "—"
 
 
 def _aba_impostos(ws, itens):
@@ -171,14 +188,26 @@ def _aba_impostos(ws, itens):
                 s.get("iss", 0), p.get("iss"), s.get("inss", 0), p.get("inss"),
                 s.get("ir", 0), p.get("ir"), s.get("csrf", 0), p.get("csrf"),
                 s.get("descontos", 0), s.get("base_calculo", 0), s.get("aliquota", 0),
-                s.get("total", 0), p.get("total")]
+                s.get("total", 0), p.get("total"), _texto_recalc(it)]
         r = 2 + off
+        pend = bool(it.get("pendencia_sieg"))
+        cods_div = {str(x.get("codigo")) for x in (it.get("pendencia_itens") or [])}
         for c, v in enumerate(vals, start=1):
             cel = ws.cell(r, c, v); cel.font = _FONTE_DADO; cel.border = _BORDA
             if off % 2 == 1:
                 cel.fill = _FILL_ZEBRA
-            if c >= 3 and c != 13 and isinstance(v, (int, float)):   # 13 = Alíquota (não é moeda)
+            if 3 <= c <= 15 and c != 13 and isinstance(v, (int, float)):   # 13 = Alíquota
                 cel.number_format = _MOEDA
+        # item 2: MARCA a linha divergente do recálculo (célula de marcação + tributos)
+        cel_rec = ws.cell(r, _COL_RECALC)
+        cel_rec.alignment = Alignment(wrap_text=True, vertical="top")
+        if pend:
+            fill_a, fonte_a = _FILL_ALERT
+            cel_rec.fill = fill_a; cel_rec.font = Font(color=_VERMELHO, size=9.5)
+            for cod, col in _COL_SIEG_TRIB.items():
+                if cod in cods_div:
+                    ws.cell(r, col).fill = fill_a
+                    ws.cell(r, col).font = fonte_a
 
     # linha de totais
     total_r = 2 + len(itens)
@@ -198,6 +227,7 @@ def _aba_impostos(ws, itens):
         cel.font = Font(bold=True, color=_TINTA, size=10)
         cel.number_format = _MOEDA
     _largura(ws, CAB_IMP, [[c] for c in CAB_IMP])
+    ws.column_dimensions[get_column_letter(_COL_RECALC)].width = 52   # texto do recálculo
 
 
 def _principais(itens):
@@ -234,13 +264,25 @@ def gerar_xlsx(resumo: dict, itens: list) -> bytes:
         ("SP Data sem SIEG", resumo.get("qt_sp_sem_sieg", 0)),
         ("Duplicadas no SP Data", resumo.get("qt_sp_duplicadas", 0)),
     ]
-    # Aba principal com TODAS as notas (inclui o confronto inverso) — espelha a tela.
-    _escrever_aba(ws1, itens, com_totais=totais)
     prin = _principais(itens)
-    _escrever_aba(wb.create_sheet("Faltou Lançar"),
-                  [i for i in prin if i["status_lancamento"] == "falta"])
-    _escrever_aba(wb.create_sheet("Faltou Arquivar"),
-                  [i for i in prin if i["status_arquivo"] == "falta"])
+    # Aba "Resultado" = universo do Sieg (Todas) — SEM canceladas/confronto inverso,
+    # que vão para abas próprias (item 1: separar por filtro, não misturar).
+    _escrever_aba(ws1, prin, com_totais=totais)
+
+    # Uma aba por filtro da tela (só as que têm notas).
+    categorias = [
+        ("Gerenciadas", [i for i in prin if i["veredito"] == "gerenciada"]),
+        ("Ressalva", [i for i in prin if i["veredito"] == "ressalva"]),
+        ("Pendentes", [i for i in prin if i["veredito"] == "pendente"]),
+        ("Divergência Impostos", [i for i in prin if i.get("pendencia_sieg")]),
+        ("Canceladas", [i for i in itens if i.get("cancelada")]),
+        ("SP sem SIEG", [i for i in itens if i["veredito"] == "sp_sem_sieg"]),
+        ("Duplicadas SP", [i for i in itens if i["veredito"] == "sp_duplicada"]),
+    ]
+    for nome, subset in categorias:
+        if subset:
+            _escrever_aba(wb.create_sheet(nome), subset)
+
     _aba_impostos(wb.create_sheet("Impostos"), prin)
 
     buf = io.BytesIO()

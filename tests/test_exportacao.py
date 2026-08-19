@@ -54,26 +54,47 @@ def test_export_tem_aba_impostos_e_moeda_numerica():
     assert achou
 
 
-def test_gera_tres_abas_com_conteudo():
-    conteudo = gerar_xlsx(_resumo(), _itens())
+def test_abas_por_filtro():
+    # item 1: uma aba por filtro (Gerenciadas/Ressalva/Pendentes/…), não misturado.
+    conteudo = gerar_xlsx(_resumo(), _itens())   # 100 gerenc., 101 pendente, 102 ressalva
     wb = openpyxl.load_workbook(io.BytesIO(conteudo))
-    assert wb.sheetnames == ["Resultado", "Faltou Lançar", "Faltou Arquivar", "Impostos"]
-    # a aba "Faltou Lançar" tem só a nota 101 (1 cabeçalho + 1 linha)
-    aba = wb["Faltou Lançar"]
-    valores = [c.value for c in aba["A"] if c.value is not None]
-    assert "101" in [str(v) for v in valores]
-    assert "100" not in [str(v) for v in valores]
+    for aba in ("Resultado", "Gerenciadas", "Ressalva", "Pendentes", "Impostos"):
+        assert aba in wb.sheetnames, aba
+    # cada aba só tem a sua nota
+    pend = [str(c.value) for c in wb["Pendentes"]["A"] if c.value is not None]
+    assert "101" in pend and "100" not in pend and "102" not in pend
+    ger = [str(c.value) for c in wb["Gerenciadas"]["A"] if c.value is not None]
+    assert "100" in ger and "101" not in ger
 
 
-def test_faltou_arquivar_contem_so_notas_com_status_arquivo_falta():
-    conteudo = gerar_xlsx(_resumo(), _itens())
-    wb = openpyxl.load_workbook(io.BytesIO(conteudo))
-    # a aba "Faltou Arquivar" tem só a nota 101 (status_arquivo == "falta")
-    aba = wb["Faltou Arquivar"]
-    valores = [str(c.value) for c in aba["A"] if c.value is not None]
-    assert "101" in valores
-    assert "100" not in valores
-    assert "102" not in valores
+def test_confronto_inverso_em_aba_propria():
+    # item 1: SP sem SIEG NÃO fica na aba Resultado — vai para aba própria.
+    itens = _itens() + [{
+        "numero": "999", "nome_fornecedor": "SO NO SP", "data_emissao": "05/07/2026",
+        "valor_bruto": 0.0, "valor_liquido": 0.0, "status_lancamento": "",
+        "status_arquivo": "", "detalhe_lancamento": "", "detalhe_arquivo": "",
+        "veredito": "sp_sem_sieg", "sp_extra": True, "sp_bruto": 50.0, "sp_liquido": 50.0,
+    }]
+    wb = openpyxl.load_workbook(io.BytesIO(gerar_xlsx(_resumo(), itens)))
+    assert "SP sem SIEG" in wb.sheetnames
+    res = [str(c.value) for c in wb["Resultado"]["A"] if c.value is not None]
+    assert "999" not in res                       # não polui a aba principal
+    inv = [str(c.value) for c in wb["SP sem SIEG"]["A"] if c.value is not None]
+    assert "999" in inv
+
+
+def test_impostos_marca_recalculo():
+    # item 2: a aba Impostos marca a linha divergente do recálculo.
+    itens = _itens_ricos()
+    itens[0]["pendencia_sieg"] = True
+    itens[0]["pendencia_itens"] = [
+        {"nome": "IRPJ", "codigo": "1708", "esperado": 45.0, "apurado": 0.0}]
+    wb = openpyxl.load_workbook(io.BytesIO(gerar_xlsx(_resumo(), itens)))
+    ws = wb["Impostos"]
+    cab = [c.value for c in ws[1] if c.value]
+    assert "Divergência (recálculo)" in cab
+    texto = "\n".join(str(c.value) for row in ws.iter_rows() for c in row if c.value)
+    assert "esperado R$ 45,00" in texto and "IRPJ 1708" in texto
 
 
 def test_rel02_export_impostos_do_detalhamento():
