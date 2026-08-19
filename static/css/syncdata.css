@@ -102,9 +102,7 @@ table.dense thead th{vertical-align:bottom}
 /* DET-02: tag Simples Nacional · REG-01: bloco de recálculo (pendência) */
 .tag-sn{background:var(--ok-bg); color:var(--ok); font-size:9.5px; font-weight:600;
   padding:1px 6px; border-radius:4px; margin-left:6px; letter-spacing:.02em}
-.det-pend .det-extra-tit{color:var(--alert)}
-.det-pend .mono{color:var(--alert)}
-.det-pend-obs{font-size:10.5px; color:var(--ink-3); font-style:italic; margin-top:6px; max-width:240px}
+.det-pend .det-extra-tit{color:var(--warn)}   /* título em amarelo — atenção */
 
 /* ---------- Page head ---------- */
 .page-head{display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
@@ -165,6 +163,10 @@ table.dense thead th{vertical-align:bottom}
 .badge.selo-sis{font-size:10px; padding:1px 6px; margin-right:3px; letter-spacing:.02em}
 /* linhas não-expansíveis (canceladas / só-SP-Data) não têm cursor de clique */
 tr.linha-cancelada, tr.linha-spextra{cursor:default}
+/* coluna de impostos + fornecedor do SP Data abaixo dela (expand) */
+.det-col-imp{display:flex; flex-direction:column; gap:6px}
+.det-fornsp{font-size:12px; padding-top:2px}
+.det-fornsp .det-k{margin-right:8px}
 /* bloco de divergências no expand da nota (Resultado) */
 .det-diverg .det-extra-tit{color:var(--warn)}
 .det-dv{flex-direction:column; align-items:flex-start; gap:2px}

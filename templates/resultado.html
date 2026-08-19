@@ -89,7 +89,7 @@
           data-valores="{{ (i.sieg_bruto*100)|round|int }} {{ (i.sieg_liquido*100)|round|int }} {{ (i.sieg_imp*100)|round|int }}{% if i.sp_bruto is not none %} {{ (i.sp_bruto*100)|round|int }}{% endif %}{% if i.sp_liquido is not none %} {{ (i.sp_liquido*100)|round|int }}{% endif %}{% if i.sp_imp is not none %} {{ (i.sp_imp*100)|round|int }}{% endif %}"
           {% if exp %}onclick="toggleDet(this)"{% endif %}>
         <td class="bold mono">{% if exp %}<i class="chev">▸</i>{% endif %}{{ i.numero }}</td>
-        <td class="col-forn" title="{{ i.nome_fornecedor }}">{{ i.nome_fornecedor }}{% if i.tem_desconto %} <span class="chip-desc">• desc</span>{% endif %}</td>
+        <td class="col-forn" title="{{ i.nome_fornecedor }}">{{ i.nome_fornecedor }}{% if i.optante_sn %} <span class="tag-sn" title="Optante pelo Simples Nacional — dispensado de retenção">SN</span>{% endif %}{% if i.tem_desconto %} <span class="chip-desc">• desc</span>{% endif %}</td>
         <td class="mono">{% if i.sp_extra %}<span class="mut">—</span>{% else %}{{ i.data_emissao }}{% endif %}{% if i.sp_data_lancamento %}<div class="sub-lanc">lanç: {{ i.sp_data_lancamento }}</div>{% endif %}</td>
         <td class="mono right {% if bruto_dz %}dz{% endif %}">{{ '—' if i.sp_extra else i.sieg_bruto|num_br }}</td>
         <td class="mono right {% if liq_dz %}dz{% endif %}">{{ '—' if i.sp_extra else i.sieg_liquido|num_br }}</td>
@@ -115,29 +115,19 @@
       {% if exp %}
       <tr class="linha-det"><td></td><td colspan="11">
         <div class="det-wrap">
-          <table class="det-tab">
-            <thead><tr><th class="det-nome">Imposto</th><th class="right">Sieg</th><th class="right">SPData</th></tr></thead>
-            <tbody>
-              {% if i.iss_retido %}<tr>{{ linha_imp('ISS', i.imp_iss) }}</tr>
-              {% else %}<tr class="det-inform"><td class="det-nome">ISS <em>informativo</em></td><td class="mono right">{{ i.imp_iss.sieg|moeda }}</td><td class="mono right">{{ i.imp_iss.sp|moeda if i.imp_iss.sp is not none else '—' }}</td></tr>{% endif %}
-              <tr>{{ linha_imp('INSS', i.imp_inss) }}</tr>
-              <tr>{{ linha_imp('IRPJ', i.imp_ir, '1708') }}</tr>
-              <tr>{{ linha_imp('PIS/COFINS/CSLL', i.imp_csrf, '5952') }}</tr>
-              <tr class="det-total">{{ linha_imp('Total ret.', i.imp_total) }}</tr>
-            </tbody>
-          </table>
-          <div class="det-extra">
-            <div class="det-extra-tit">Dados da nota</div>
-            <div class="det-x"><span class="det-k">Emissão</span><span class="mono">{{ i.data_emissao or '—' }}</span></div>
-            <div class="det-x"><span class="det-k">Valor bruto</span><span class="mono">{{ i.sieg_bruto|moeda }}</span></div>
-            <div class="det-x"><span class="det-k">Valor líquido</span><span class="mono">{{ i.sieg_liquido|moeda }}</span></div>
-            {% if i.sp_data_lancamento %}<div class="det-x"><span class="det-k">Lançam. (SP Data)</span><span class="mono">{{ i.sp_data_lancamento }}</span></div>{% endif %}
-            {% if i.fornecedor_sp %}<div class="det-x"><span class="det-k">Fornecedor (SP Data)</span><span>{{ i.fornecedor_sp }}</span></div>{% endif %}
-            {% if i.optante_sn %}<div class="det-x"><span class="det-k">Regime</span><span class="tag-sn" title="Optante pelo Simples Nacional">SN</span></div>{% endif %}
-            {% if i.arquivo_pdf %}<div class="det-x" style="margin-top:8px">
-              <button type="button" class="btn-mini" onclick="event.stopPropagation(); verPdf({{ i.id }}, '{{ i.numero }}')">Ver PDF</button>
-              <a class="btn-mini" href="/pdf/{{ i.id }}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Abrir</a>
-            </div>{% endif %}
+          <div class="det-col-imp">
+            <table class="det-tab">
+              <thead><tr><th class="det-nome">Imposto</th><th class="right">Sieg</th><th class="right">SPData</th></tr></thead>
+              <tbody>
+                {% if i.iss_retido %}<tr>{{ linha_imp('ISS', i.imp_iss) }}</tr>
+                {% else %}<tr class="det-inform"><td class="det-nome">ISS <em>informativo</em></td><td class="mono right">{{ i.imp_iss.sieg|moeda }}</td><td class="mono right">{{ i.imp_iss.sp|moeda if i.imp_iss.sp is not none else '—' }}</td></tr>{% endif %}
+                <tr>{{ linha_imp('INSS', i.imp_inss) }}</tr>
+                <tr>{{ linha_imp('IRPJ', i.imp_ir, '1708') }}</tr>
+                <tr>{{ linha_imp('PIS/COFINS/CSLL', i.imp_csrf, '5952') }}</tr>
+                <tr class="det-total">{{ linha_imp('Total ret.', i.imp_total) }}</tr>
+              </tbody>
+            </table>
+            {% if i.fornecedor_sp %}<div class="det-fornsp"><span class="det-k">Fornecedor (SP Data)</span> <span>{{ i.fornecedor_sp }}</span></div>{% endif %}
           </div>
           <div class="det-extra">
             <div class="det-extra-tit">Só no Sieg</div>
@@ -156,9 +146,8 @@
             <div class="det-extra-tit">Recálculo (base × alíquota)</div>
             {% for it in i.pendencia_itens %}
             <div class="det-x"><span class="det-k">{{ it.nome }} <span class="cod-trib">{{ it.codigo }}</span></span>
-              <span class="mono">esperado {{ it.esperado|moeda }} · SIEG {{ it.apurado|moeda }}</span></div>
+              <span class="mono">Esperado {{ it.esperado|moeda }} · SIEG {{ it.apurado|moeda }}</span></div>
             {% endfor %}
-            <div class="det-pend-obs">O SIEG pode estar incorreto — sinalizado para análise (não reprova).</div>
           </div>
           {% endif %}
         </div>
