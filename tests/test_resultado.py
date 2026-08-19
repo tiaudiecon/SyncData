@@ -37,6 +37,31 @@ def test_resultado_mostra_botao_pdf(client):
     assert "Abrir" in html
 
 
+def test_item3_selos_presenca_spdata_e_sieg(client):
+    # item 3: coluna Lançam. traz dois selos (SP Data e SIEG), verde=consta.
+    client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
+    st = montar_conciliacao("04541288000162", _spdata_txt(), _sieg_xlsx("04541288000162"))
+    html = client.get(f"/resultado/{st['conciliacao_id']}").text
+    assert "selo-sis" in html and "SP Data" in html and "SIEG" in html
+    from app.database import SessionLocal
+    from app.models import Conciliacao
+    from app.routers.resultado import montar_resumo_e_itens
+    db = SessionLocal()
+    conc = db.query(Conciliacao).order_by(Conciliacao.id.desc()).first()
+    _, itens = montar_resumo_e_itens(conc)
+    db.close()
+    for chave in ("consta_spdata", "consta_sieg", "optante_sn"):
+        assert chave in itens[0]
+
+
+def test_item6_renomeia_pendencia_para_divergencia_impostos(client):
+    client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
+    st = montar_conciliacao("04541288000162", _spdata_txt(), _sieg_xlsx("04541288000162"))
+    html = client.get(f"/resultado/{st['conciliacao_id']}").text
+    assert "Divergência Impostos" in html
+    assert "Pendência SIEG" not in html and "SIEG?" not in html
+
+
 def test_resultado_e_export(client):
     client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
     st = montar_conciliacao("04541288000162", _spdata_txt(), _sieg_xlsx("04541288000162"))

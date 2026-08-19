@@ -76,7 +76,11 @@ def montar_resumo_e_itens(conc, tabelas=None):
             "detalhe_arquivo": i.detalhe_arquivo or "",
             "veredito": i.veredito, "cancelada": bool(i.cancelada),
             "sp_extra": i.veredito in _SP_EXTRA,          # CON-02/04
+            "optante_sn": bool(sieg_dict.get("optante_sn")),   # DET-02 (SN)
             "pendencia_sieg": pend,                        # CON-05
+            # item 3: presença em cada sistema (SP Data × SIEG)
+            "consta_spdata": i.status_lancamento in ("ok", "diverg"),
+            "consta_sieg": i.veredito not in _SP_EXTRA,
             "impostos": imp,
             "arquivo_pdf": i.arquivo_pdf,
         })

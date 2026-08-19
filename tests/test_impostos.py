@@ -78,3 +78,15 @@ def test_impostos_vazio_sem_conciliacao(client):
     r = client.get("/impostos")
     assert r.status_code == 200
     assert "Nenhuma conciliação" in r.text
+
+
+def test_item2_item6_rotulos_novos_na_tela_impostos(client):
+    # item 6: "Pendência SIEG" -> "Divergência de Impostos"; item 2: tag "SN".
+    client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
+    montar_conciliacao("04541288000162", _spdata_txt(), _sieg_xlsx("04541288000162"))
+    r = client.get("/impostos")
+    assert r.status_code == 200
+    assert "Só divergências de impostos" in r.text   # item 6 (chip)
+    assert "Div. Impostos" in r.text                  # item 6 (badge/legenda)
+    assert "Pendência SIEG" not in r.text             # rótulo antigo sumiu
+    assert ">Simples<" not in r.text                  # item 2: agora é "SN"

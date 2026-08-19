@@ -23,9 +23,10 @@
   <input id="busca" class="input" style="max-width:300px" placeholder="Buscar por nº, fornecedor ou valor…" oninput="aplicarFiltros()">
   <label class="chip" id="chDiv"><input type="checkbox" onchange="aplicarFiltros()" style="margin-right:6px">Só divergências</label>
   {% if qt_pendencia %}
-  <label class="chip" id="chPend"><input type="checkbox" onchange="aplicarFiltros()" style="margin-right:6px">Só pendências SIEG ({{ qt_pendencia }})</label>
+  <label class="chip" id="chPend"><input type="checkbox" onchange="aplicarFiltros()" style="margin-right:6px">Só divergências de impostos ({{ qt_pendencia }})</label>
   {% endif %}
-  <span class="legenda">Clique na nota para abrir a quebra · <span class="dz">vermelho</span> = Sieg × SPData divergem · <em>ISS informativo</em> não soma · <span class="badge b-alert" style="padding:1px 6px">Pendência SIEG</span> = recálculo diverge (analisar)</span>
+  <span class="legenda">Clique na nota para abrir a quebra · <span class="dz">vermelho</span> = Sieg × SPData divergem · <em>ISS informativo</em> não soma · <span class="badge b-warn" style="padding:1px 6px">Div. Impostos</span> = impostos do SIEG divergem da alíquota base (analisar)</span>
+  <span class="filtro-total" id="filtroTotal"></span>
 </div>
 <div class="table-scroll">
   <table class="dense imp-resumo" id="tab">
@@ -48,14 +49,15 @@
           onclick="toggleDet(this)">
         <td class="center"><i class="chev">▸</i></td>
         <td class="bold mono">{{ l.numero }}</td>
-        <td>{{ l.nome }}{% if l.optante_sn %} <span class="tag-sn" title="Optante pelo Simples Nacional — dispensado de retenção">Simples</span>{% endif %}</td>
+        <td>{{ l.nome }}{% if l.optante_sn %} <span class="tag-sn" title="Optante pelo Simples Nacional — dispensado de retenção">SN</span>{% endif %}</td>
         <td class="mono right {% if td %}dz{% endif %}">{{ l.total.sieg|moeda }}</td>
         <td class="mono right {% if td %}dz{% endif %}">{{ l.total.sp|moeda if l.total.sp is not none else '—' }}</td>
         <td>
           {%- if l.sem_spdata -%}<span class="badge b-neutral">Sem SPData</span>
           {%- elif l.diverge -%}<span class="badge b-warn">Divergência</span>
           {%- else -%}<span class="badge b-ok">OK</span>{%- endif -%}
-          {% if l.pendencia %} <span class="badge b-alert" title="SIEG diverge da alíquota base — analisar">Pendência SIEG</span>{% endif %}
+          {% if l.pendencia %} <span class="badge b-warn" title="Impostos do SIEG divergem da alíquota base — analisar">Div. Impostos</span>{% endif %}
+          {% if l.arquivo_pdf %} <button type="button" class="btn-mini" onclick="event.stopPropagation(); verPdf({{ l.id }}, '{{ l.numero }}')" title="Ver PDF da nota">PDF</button>{% endif %}
         </td>
       </tr>
       <tr class="linha-det"><td></td><td colspan="5">
@@ -150,6 +152,7 @@
     const raw = (document.getElementById('busca').value || '').trim();
     const q = raw.toLowerCase();
     const qDig = raw.replace(/\D/g, '');          // BUS-02: aceita 14263 / 14.263,00
+    let visiveis = 0;
     document.querySelectorAll('#tab tbody tr.linha-resumo').forEach(tr => {
       const okStatus = !((soDiv && tr.dataset.div !== '1') || (soPend && tr.dataset.pend !== '1'));
       const okTexto = (tr.dataset.busca || '').includes(q);
@@ -157,10 +160,18 @@
       const okB = raw === '' || okTexto || okNum;
       const esconde = !(okStatus && okB);
       tr.classList.toggle('filtrada', esconde);
+      if(!esconde) visiveis++;
       const det = tr.nextElementSibling;
       if(det && det.classList.contains('linha-det')) det.classList.toggle('filtrada', esconde);
     });
+    // item 4: total de notas do filtro atual
+    let rot = 'Todas';
+    if (soDiv) rot = 'Só divergências';
+    else if (soPend) rot = 'Só divergências de impostos';
+    document.getElementById('filtroTotal').textContent =
+      visiveis + ' nota' + (visiveis === 1 ? '' : 's') + ' · ' + rot;
   }
+  aplicarFiltros();   // item 4: total inicial
 </script>
 {% endif %}
 {% endblock %}

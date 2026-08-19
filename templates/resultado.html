@@ -7,6 +7,10 @@
   {%- elif s == 'diverg' -%}<span class="badge b-warn">Diverg.</span>
   {%- else -%}<span class="badge b-alert">Faltou</span>{%- endif -%}
 {% endmacro %}
+{# item 3: presença da nota em cada sistema — verde = consta, vermelho = faltou #}
+{% macro selo_presenca(nome, ok) -%}
+<span class="badge selo-sis {{ 'b-ok' if ok else 'b-alert' }}" title="{{ nome }}: {{ 'consta' if ok else 'faltou' }}">{{ nome }} {{ '✓' if ok else '✗' }}</span>
+{%- endmacro %}
 <div class="page-head">
   <div><div class="crumb">Resultado{% if resumo.competencia %} · Competência {{ resumo.competencia }}{% endif %} · {{ resumo.data_hora }}</div><h1>Conciliação</h1></div>
   <div class="actions">
@@ -36,11 +40,12 @@
     <button class="chip" data-f="gerenciada" onclick="setFiltro(this)">Gerenciadas</button>
     <button class="chip" data-f="ressalva" onclick="setFiltro(this)">Ressalva</button>
     <button class="chip" data-f="pendente" onclick="setFiltro(this)">Pendentes</button>
-    <button class="chip" data-f="pendencia_sieg" onclick="setFiltro(this)">Pendência SIEG</button>
+    <button class="chip" data-f="pendencia_sieg" onclick="setFiltro(this)">Divergência Impostos</button>
     <button class="chip" data-f="canceladas" onclick="setFiltro(this)">Canceladas</button>
     <button class="chip" data-f="sp_sem_sieg" onclick="setFiltro(this)">SP sem SIEG</button>
     <button class="chip" data-f="sp_duplicada" onclick="setFiltro(this)">Duplicadas SP</button>
   </div>
+  <span class="filtro-total" id="filtroTotal"></span>
 </div>
 
 <div class="table-scroll">
@@ -84,12 +89,12 @@
         {% if i.cancelada %}
         <td colspan="3" class="center"><span class="badge b-neutral">Cancelada</span></td>
         {% elif i.sp_extra %}
-        <td colspan="3" class="center">
-          {%- if i.veredito == 'sp_duplicada' -%}<span class="badge b-warn">Duplicada no SP Data</span>
-          {%- else -%}<span class="badge b-alert">Lançada, sem SIEG</span>{%- endif -%}
+        <td colspan="3" class="cel-lanc">
+          {{ selo_presenca('SP Data', i.consta_spdata) }}{{ selo_presenca('SIEG', i.consta_sieg) }}
+          {%- if i.veredito == 'sp_duplicada' %} <span class="badge b-warn">Duplicada no SP Data</span>{% endif -%}
         </td>
         {% else %}
-        <td>{{ status(i.status_lancamento) }}{% if i.pendencia_sieg %} <span class="badge b-alert" title="Recálculo diverge do SIEG — analisar">SIEG?</span>{% endif %}</td>
+        <td class="cel-lanc">{{ selo_presenca('SP Data', i.consta_spdata) }}{{ selo_presenca('SIEG', i.consta_sieg) }}{% if i.pendencia_sieg %} <span class="badge b-warn" title="Impostos do SIEG divergem da alíquota base — analisar">Div. Impostos</span>{% endif %}</td>
         <td>{{ status(i.status_arquivo) }}</td>
         <td class="col-flag">
           {%- if i.detalhe_lancamento or i.detalhe_arquivo -%}
@@ -130,6 +135,7 @@
     const raw = (document.getElementById('busca').value || '').trim();
     const q = raw.toLowerCase();
     const qDig = raw.replace(/\D/g, '');   // só dígitos: aceita 14263, 14263,00 e 14.263,00
+    let visiveis = 0;
     document.querySelectorAll('#tab tbody tr').forEach(tr => {
       const v = tr.dataset.v;
       const canc = tr.dataset.cancelada === '1';
@@ -147,8 +153,14 @@
       const okTexto = (tr.dataset.busca || '').includes(q);
       const okNum = qDig !== '' && (tr.dataset.valores || '').split(' ').some(v => v.includes(qDig));
       const okB = raw === '' || okTexto || okNum;
-      tr.style.display = (okS && okB) ? '' : 'none';
+      const mostra = okS && okB;
+      tr.style.display = mostra ? '' : 'none';
+      if (mostra) visiveis++;
     });
+    // item 4: total de notas do filtro atual
+    const rot = document.querySelector('.chip.on');
+    document.getElementById('filtroTotal').textContent =
+      visiveis + ' nota' + (visiveis === 1 ? '' : 's') + (rot ? ' · ' + rot.textContent.trim() : '');
   }
   function verPdf(id, numero){
     document.getElementById('pdfTitulo').textContent = 'NF ' + numero;
@@ -207,5 +219,6 @@
     if (e.target.closest('.dv-flag')) ocultarDv();
   });
   window.addEventListener('scroll', ocultarDv, true);
+  filtrar();   // item 4: já mostra o total do filtro inicial (Todas)
 </script>
 {% endblock %}
