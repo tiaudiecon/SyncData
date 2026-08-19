@@ -27,9 +27,18 @@ def test_simples_nacional_dispensado():
     assert pend is True and itens[0]["esperado"] == 0.0
 
 
-def test_dispensa_valor_pequeno():
-    # base 500: IRPJ 7,50 e CSRF 23,25 -> IRPJ <= 10 dispensado (0), CSRF fica 23,25
-    assert esperado(500.0, 1.50, False) == 0.0        # 7,50 <= 10 -> dispensado
+def test_dispensa_valor_pequeno_e_faculdade():
+    # base 500: IRPJ esperado 7,50 (<= R$ 10) — a dispensa é FACULDADE: reter o
+    # valor certo OU não reter, ambos corretos.
+    assert esperado(500.0, 1.50, False) == 7.50        # esperado cheio, NÃO zera
     assert esperado(500.0, 4.65, False) == 23.25
-    sieg = {"ir": 0.0, "csrf": 23.25, "optante_sn": False}
-    assert pendencia_sieg(sieg, 500.0, ALIQ) == (False, [])
+    # 1) cliente NÃO reteve (dispensa exercida) -> OK
+    assert pendencia_sieg({"ir": 0.0, "csrf": 23.25, "optante_sn": False},
+                          500.0, ALIQ) == (False, [])
+    # 2) cliente reteve o valor certo 7,50 -> OK (era o bug: apontava divergência)
+    assert pendencia_sieg({"ir": 7.50, "csrf": 23.25, "optante_sn": False},
+                          500.0, ALIQ) == (False, [])
+    # 3) cliente reteve valor errado (nem 0, nem 7,50) -> pendência
+    pend, itens = pendencia_sieg({"ir": 5.00, "csrf": 23.25, "optante_sn": False},
+                                 500.0, ALIQ)
+    assert pend is True and itens[0]["esperado"] == 7.50 and itens[0]["apurado"] == 5.00
