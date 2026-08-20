@@ -159,11 +159,11 @@ table.dense thead th{vertical-align:bottom}
 .panel-body{padding:20px}
 
 /* ---------- KPIs ---------- */
-.kpi-row{display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:24px}
-.kpi{background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r-lg); padding:16px 18px}
+.kpi-row{display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:18px}
+.kpi{background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r-lg); padding:11px 15px}
 .kpi.hl{border-color:var(--burdo); box-shadow:0 0 0 1px var(--burdo)}
-.kpi .lbl{font-size:10px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.1em; font-weight:600; margin-bottom:9px}
-.kpi .val{font-family:'Fraunces',serif; font-size:30px; font-weight:600; line-height:1; letter-spacing:-.01em}
+.kpi .lbl{font-size:9.5px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.1em; font-weight:600; margin-bottom:5px}
+.kpi .val{font-family:'Fraunces',serif; font-size:22px; font-weight:600; line-height:1; letter-spacing:-.01em}
 .kpi.ok .val{color:var(--ok)} .kpi.warn .val{color:var(--warn)} .kpi.alert .val{color:var(--alert)}
 .kpi .sub{font-size:11px; color:var(--ink-3); margin-top:7px}
 
@@ -172,7 +172,7 @@ table.dense thead th{vertical-align:bottom}
 /* NAV-02: cabeçalho fixo enquanto os dados rolam */
 .wrap-wide table.dense thead th{position:sticky; top:0; z-index:3; background:var(--surface-2)}
 .wrap-wide table.dense thead th.grp{background:var(--navy)}
-.wrap-wide table.dense.compacta thead tr:nth-child(2) th{top:24px}
+.wrap-wide table.dense.compacta thead tr:nth-child(2) th{top:26px}
 /* item 3: selos de presença SP Data × SIEG (compactos, lado a lado) */
 .cel-lanc{white-space:nowrap}
 .badge.selo-sis{font-size:8.5px; padding:0 4px; margin-right:2px; letter-spacing:0}   /* item 2: menor p/ o nome ganhar espaço */
@@ -182,6 +182,15 @@ tr.linha-cancelada, tr.linha-spextra{cursor:default}
 .det-col-imp{display:flex; flex-direction:column; gap:6px}
 .det-fornsp{font-size:12px; padding-top:2px}
 .det-fornsp .det-k{margin-right:8px}
+/* item 2: CNPJ como veio do SP Data, logo abaixo do nome (p/ comparação) */
+.det-fornsp-cnpj{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-3); margin-top:2px}
+/* item 5: linha de totais do filtro fixa no topo, alinhada às colunas de valor */
+.wrap-wide table.dense.compacta thead tr.tr-totais-top th{top:52px; padding:5px 5px;
+  background:var(--surface-3); border-top:1px solid var(--line-2); border-bottom:2px solid var(--line-2)}
+.wrap-wide table.dense.compacta thead tr.tr-totais-top th.rot-tot{text-align:right; text-transform:none;
+  color:var(--ink-2); font-weight:700; letter-spacing:0; font-size:9px}
+.wrap-wide table.dense.compacta thead tr.tr-totais-top th.num-tot{text-align:right; text-transform:none;
+  font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--ink); font-weight:700; letter-spacing:0}
 /* Divergências: cartão de fundo branco, tudo em vermelho */
 .det-diverg{background:var(--surface-2); border-radius:var(--r-md); padding:10px 14px; max-width:300px}
 .det-diverg .det-extra-tit, .det-diverg .det-dv-tit, .det-diverg .det-dv-item{color:var(--alert)}

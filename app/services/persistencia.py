@@ -15,7 +15,7 @@ def _impostos_json(n, sp):
         "spdata": ({"iss": sp.issqn, "inss": sp.inss, "ir": sp.ir, "csrf": sp.csrf,
                     "total": sp.total_retencoes,
                     "data_lancamento": _fmt_data(sp.emissao),   # CON-01
-                    "fornecedor": sp.fornecedor} if sp else None),  # DET-03
+                    "fornecedor": sp.fornecedor, "cnpj": sp.cnpj} if sp else None),  # DET-03
     }
     return json.dumps(dados)
 

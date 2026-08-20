@@ -3,6 +3,11 @@
 {% block content %}
 <div class="page-head">
   <div><div class="crumb">Fornecedores dispensados de recolhimento</div><h1>Exceções de recálculo</h1></div>
+  <div class="actions">
+    <button type="button" class="btn btn-ghost" onclick="voltar()">
+      <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Voltar</button>
+  </div>
 </div>
 
 <div class="panel" style="max-width:820px">
@@ -54,6 +59,11 @@
   </div>
 </div>
 <script>
+  function voltar(){
+    // volta para a tela anterior (ex.: o Resultado de onde veio "Gerenciar")
+    if (document.referrer && history.length > 1) { history.back(); }
+    else { window.location.href = '/historico'; }
+  }
   function editarExc(btn){
     const tr = btn.closest('tr');
     document.getElementById('fCnpj').value = tr.dataset.cnpj || '';

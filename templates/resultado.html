@@ -3,9 +3,9 @@
 {% block wrapclass %}wrap-wide{% endblock %}
 {% block content %}
 {% macro status(s) %}
-  {%- if s == 'ok' -%}<span class="badge b-ok">OK</span>
-  {%- elif s == 'diverg' -%}<span class="badge b-warn">Diverg.</span>
-  {%- else -%}<span class="badge b-alert">Faltou</span>{%- endif -%}
+  {%- if s == 'ok' -%}<span class="badge selo-sis b-ok">OK</span>
+  {%- elif s == 'diverg' -%}<span class="badge selo-sis b-warn">Diverg.</span>
+  {%- else -%}<span class="badge selo-sis b-alert">Faltou</span>{%- endif -%}
 {% endmacro %}
 {# item 3: selo de presença 3 estados — verde OK / amarelo divergência / vermelho faltou #}
 {% macro selo(nome, estado) -%}
@@ -81,6 +81,13 @@
           <th class="right ord" data-col="7" onclick="ordenar(this)">Bruto</th>
           <th class="right ord" data-col="8" onclick="ordenar(this)">Líq</th>
           <th class="right ord" data-col="9" onclick="ordenar(this)">Imp</th></tr>
+      {# item 5: totais do filtro fixos no topo, alinhados às colunas de valor #}
+      <tr class="tr-totais-top">
+        <th colspan="4" class="rot-tot">Totais do filtro</th>
+        <th class="num-tot" id="tSB"></th><th class="num-tot" id="tSL"></th><th class="num-tot" id="tSI"></th>
+        <th class="num-tot" id="tPB"></th><th class="num-tot" id="tPL"></th><th class="num-tot" id="tPI"></th>
+        <th colspan="3"></th>
+      </tr>
     </thead>
     <tbody>
     {% for i in itens %}
@@ -106,11 +113,11 @@
         <td class="mono right {% if liq_dz %}dz{% endif %}">{% if i.sp_liquido is not none %}{{ i.sp_liquido|num_br }}{% else %}{{ TR }}{% endif %}</td>
         <td class="mono right {% if imp_dz %}dz{% endif %}">{% if i.sp_imp is not none %}{{ i.sp_imp|num_br }}{% else %}{{ TR }}{% endif %}</td>
         <td class="cel-lanc">
-          {%- if i.cancelada -%}<span class="badge b-neutral">Cancelada</span>
+          {%- if i.cancelada -%}<span class="badge selo-sis b-neutral">Cancelada</span>
           {%- else -%}{{ selo('SP Data', sp_estado) }}{{ selo('SIEG', 'ok' if i.consta_sieg else 'falta') }}
-          {%- if i.pendencia_sieg %} <span class="badge b-warn" title="Impostos do SIEG divergem da alíquota base — analisar">Div. Impostos</span>{% endif -%}
-          {%- if i.excecao %} <span class="badge b-info" title="Fornecedor marcado como exceção: {{ i.excecao_obs }}">Exceção</span>{% endif -%}
-          {%- if i.veredito == 'sp_duplicada' %} <span class="badge b-warn">Duplicada no SP Data</span>{% endif -%}
+          {%- if i.pendencia_sieg %} <span class="badge selo-sis b-warn" title="Impostos do SIEG divergem da alíquota base — analisar">Div. Impostos</span>{% endif -%}
+          {%- if i.excecao %} <span class="badge selo-sis b-info" title="Fornecedor marcado como exceção: {{ i.excecao_obs }}">Exceção</span>{% endif -%}
+          {%- if i.veredito == 'sp_duplicada' %} <span class="badge selo-sis b-warn">Duplicada no SP Data</span>{% endif -%}
           {%- endif -%}
         </td>
         <td>{% if i.cancelada or i.sp_extra %}<span class="mut">—</span>{% else %}{{ status(i.status_arquivo) }}{% endif %}</td>
@@ -136,7 +143,9 @@
                 <tr class="det-total">{{ linha_imp('Total ret.', i.imp_total) }}</tr>
               </tbody>
             </table>
-            {% if i.fornecedor_sp %}<div class="det-fornsp"><span class="det-k">Fornecedor (SP Data)</span> <span>{{ i.fornecedor_sp }}</span></div>{% endif %}
+            {% if i.fornecedor_sp %}<div class="det-fornsp"><span class="det-k">Fornecedor (SP Data)</span>
+              <span class="det-fornsp-nome">{{ i.fornecedor_sp }}</span>
+              {% if i.cnpj_fornecedor_sp %}<div class="det-fornsp-cnpj">{{ i.cnpj_fornecedor_sp }}</div>{% endif %}</div>{% endif %}
           </div>
           {% if i.detalhe_lancamento or i.detalhe_arquivo %}
           <div class="det-extra det-diverg">
@@ -162,7 +171,7 @@
             </div>
             {% if i.excecao %}
             <div class="det-exc-obs">Fornecedor marcado como <strong>exceção</strong> — {{ i.excecao_obs }}
-              <a href="/excecoes">gerenciar</a></div>
+              <a href="/excecoes">Gerenciar</a></div>
             {% else %}
             <form method="post" action="/excecoes/marcar" class="det-exc-form">
               <input type="hidden" name="cnpj" value="{{ i.cnpj_norm }}">
@@ -179,14 +188,6 @@
       {% endif %}
     {% endfor %}
     </tbody>
-    <tfoot>
-      <tr class="linha-totais">
-        <td colspan="4" class="right bold">Totais do filtro</td>
-        <td class="mono right" id="tSB"></td><td class="mono right" id="tSL"></td><td class="mono right" id="tSI"></td>
-        <td class="mono right" id="tPB"></td><td class="mono right" id="tPL"></td><td class="mono right" id="tPI"></td>
-        <td colspan="3"></td>
-      </tr>
-    </tfoot>
   </table>
 </div>
 

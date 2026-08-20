@@ -21,6 +21,27 @@ def test_montar_itens_enriquecido(client):
     assert it["numero"].isdigit()
 
 
+def test_item2_cnpj_do_spdata_no_detalhe(client):
+    # item 2: o item expõe o CNPJ como veio do SP Data (p/ comparação com o SIEG)
+    client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
+    montar_conciliacao("04541288000162", _spdata_txt(), _sieg_xlsx("04541288000162"))
+    from app.database import SessionLocal
+    from app.models import Conciliacao
+    from app.routers.resultado import montar_resumo_e_itens
+    db = SessionLocal()
+    conc = db.query(Conciliacao).order_by(Conciliacao.id.desc()).first()
+    _, itens = montar_resumo_e_itens(conc)
+    db.close()
+    casados = [i for i in itens if i["fornecedor_sp"]]          # notas achadas no SP Data
+    assert casados, "esperava ao menos uma nota casada com o SP Data"
+    it = casados[0]
+    raw = it["impostos"]["spdata"]["cnpj"]                       # gravado pela persistência
+    assert raw
+    formatado = it["cnpj_fornecedor_sp"]
+    assert "/" in formatado                                      # veio formatado (XX.XXX.XXX/XXXX-XX)
+    assert "".join(c for c in formatado if c.isdigit()) == raw
+
+
 def test_resultado_tem_busca_e_grupos(client):
     client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
     st = montar_conciliacao("04541288000162", _spdata_txt(), _sieg_xlsx("04541288000162"))

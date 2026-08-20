@@ -125,6 +125,9 @@ def montar_resumo_e_itens(conc, tabelas=None, excecoes=None):
             "imp_base": sieg_dict.get("base_calculo", 0.0),
             "sem_spdata": p_sp is None,
             "fornecedor_sp": (p_sp or {}).get("fornecedor", ""),
+            # item 2: CNPJ como veio do SP Data (p/ comparação com o do SIEG).
+            # Conciliações antigas não têm esse campo -> cai no CNPJ do fornecedor.
+            "cnpj_fornecedor_sp": _fmt_cnpj((p_sp or {}).get("cnpj") or i.cnpj_fornecedor),
             "pendencia_itens": pend_itens,
         })
     resumo["qt_excecoes"] = sum(1 for it in itens if it["excecao"])   # item 6
