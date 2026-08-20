@@ -76,7 +76,10 @@ table.dense thead th{vertical-align:bottom}
 .wrap-wide table.dense.compacta thead th{text-align:center}
 .wrap-wide table.dense.compacta th{font-size:8.5px; padding:6px 5px}
 .wrap-wide table.dense.compacta td{padding:5px 5px}
-.col-forn{max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.col-forn{max-width:210px}
+.col-forn .nome-f{display:block; max-width:210px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.sub-cnpj{font-size:8.5px; color:var(--ink-4); font-family:'JetBrains Mono',monospace; line-height:1.2; margin-top:1px}
+.v-tr{font-size:9px; color:var(--ink-4)}   /* dash de valor vazio, compacto (item 1) */
 /* coluna Div. estreita: só o marcador ⚠ (detalhe abre em popover sobreposto) */
 .col-flag{text-align:center; white-space:nowrap}
 .dv-flag{cursor:help; color:var(--alert); font-size:13px; line-height:1; user-select:none}
@@ -108,6 +111,12 @@ table.dense thead th{vertical-align:bottom}
 /* item 6: grid alinha "Esperado" entre as linhas (label auto + valor auto) */
 .det-pend-grid{display:grid; grid-template-columns:auto auto; gap:4px 16px; align-items:baseline}
 .det-pend-grid .mono{white-space:nowrap}
+/* item 6: exceção — o mesmo bloco, porém azul/info (divergência esperada) */
+.det-pend.det-exc .det-extra-tit, .det-exc .det-k, .det-exc .mono, .det-exc .cod-trib{color:var(--info)}
+.det-exc-obs{font-size:11px; color:var(--info); margin-top:8px; max-width:280px}
+.det-exc-obs a{color:var(--info); text-decoration:underline; margin-left:4px}
+.det-exc-form{display:flex; gap:6px; margin-top:9px; align-items:center; flex-wrap:wrap}
+.det-exc-form .exc-obs{height:26px; font-size:11px; min-width:190px; max-width:250px; padding:0 8px}
 
 /* ---------- Page head ---------- */
 .page-head{display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
@@ -140,6 +149,7 @@ table.dense thead th{vertical-align:bottom}
 .b-alert{background:var(--alert-bg); color:var(--alert)}
 .b-neutral{background:var(--surface-3); color:var(--ink-2)}
 .b-neutral::before{display:none}
+.b-info{background:var(--info-bg); color:var(--info)}   /* item 6: exceção */
 
 /* ---------- Panels ---------- */
 .panel{background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r-lg); overflow:hidden; margin-bottom:18px}
@@ -165,7 +175,7 @@ table.dense thead th{vertical-align:bottom}
 .wrap-wide table.dense.compacta thead tr:nth-child(2) th{top:24px}
 /* item 3: selos de presença SP Data × SIEG (compactos, lado a lado) */
 .cel-lanc{white-space:nowrap}
-.badge.selo-sis{font-size:10px; padding:1px 6px; margin-right:3px; letter-spacing:.02em}
+.badge.selo-sis{font-size:8.5px; padding:0 4px; margin-right:2px; letter-spacing:0}   /* item 2: menor p/ o nome ganhar espaço */
 /* linhas não-expansíveis (canceladas / só-SP-Data) não têm cursor de clique */
 tr.linha-cancelada, tr.linha-spextra{cursor:default}
 /* coluna de impostos + fornecedor do SP Data abaixo dela (expand) */

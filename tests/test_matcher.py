@@ -13,8 +13,10 @@ def nota(numero="100", cnpj="11111111000111", emissao=date(2026, 7, 3),
 
 def lanc(numero="100", cnpj="11111111000111", emissao=date(2026, 7, 3),
          bruto=150.0, liquido=150.0):
-    return LancamentoSpData(numero, numero.lstrip("0"), cnpj, "FORNEC A",
-                            emissao, bruto, liquido)
+    # valor_liquido do SP Data = bruto − impostos; a diferença vira imposto (csrf).
+    l = LancamentoSpData(numero, numero.lstrip("0"), cnpj, "FORNEC A", emissao, bruto)
+    l.csrf = round(bruto - liquido, 2)
+    return l
 
 
 def reg(numero="100", cnpj="11111111000111", emissao=date(2026, 7, 3), valor=150.0):
@@ -161,7 +163,7 @@ def test_desconto_nao_gera_divergencia():
     n = NotaSieg("100", "100", "11111111000111", "F", date(2026, 7, 3),
                  10000.0, 9385.0, False, deducoes=615.0)
     l = LancamentoSpData("100", "100", "11111111000111", "F", date(2026, 7, 3),
-                         9385.0, 9385.0)
+                         9385.0)
     r = conciliar([n], [], [l], [reg(valor=10000.0)])
     item = r.itens[0]
     assert item.lancamento.status == STATUS_OK
@@ -176,7 +178,7 @@ def test_imposto_diverge_vira_ressalva():
     n = NotaSieg("100", "100", "11111111000111", "F", date(2026, 7, 3),
                  200.0, 180.0, False)                    # retenção Sieg = 20
     l = LancamentoSpData("100", "100", "11111111000111", "F", date(2026, 7, 3),
-                         200.0, 180.0, issqn=5.0)          # retenção SPData = 5
+                         200.0, issqn=5.0)                 # retenção SPData = 5 (líq = 195)
     r = conciliar([n], [], [l], [reg(valor=200.0)])
     item = r.itens[0]
     assert item.lancamento.status == STATUS_DIVERG
@@ -190,7 +192,7 @@ def test_imposto_bate_nao_gera_divergencia():
     n = NotaSieg("100", "100", "11111111000111", "F", date(2026, 7, 3),
                  200.0, 180.0, False)                    # retenção Sieg = 20
     l = LancamentoSpData("100", "100", "11111111000111", "F", date(2026, 7, 3),
-                         200.0, 180.0, issqn=20.0)         # retenção SPData = 20
+                         200.0, issqn=20.0)                # retenção SPData = 20 (líq = 180)
     r = conciliar([n], [], [l], [reg(valor=200.0)])
     assert r.itens[0].lancamento.status == STATUS_OK
     assert r.itens[0].veredito == "gerenciada"
@@ -235,7 +237,7 @@ def test_renew_aceita_valor_bruto_mesmo_com_desconto():
     n = NotaSieg("100", "100", "11111111000111", "F", date(2026, 7, 3),
                  10000.0, 9385.0, False, deducoes=615.0)
     l = LancamentoSpData("100", "100", "11111111000111", "F", date(2026, 7, 3),
-                         9385.0, 9385.0)
+                         9385.0)
     r = conciliar([n], [], [l], [reg(valor=10000.0)])   # Renew com o bruto cheio
     assert r.itens[0].arquivo.status == STATUS_OK
 

@@ -156,6 +156,15 @@ def _escrever_aba(ws, itens, com_totais=None):
                     if fill:
                         cel.fill = fill
                     cel.font = fonte
+    # item 4: linha de TOTAIS das colunas de valor
+    if linhas:
+        tot_r = primeira_dado + len(linhas)
+        ws.cell(tot_r, 1, "TOTAIS").font = Font(bold=True, color=_NAVY, size=10)
+        for c in _COLS_MOEDA:
+            soma = round(sum(l[c - 1] for l in linhas if isinstance(l[c - 1], (int, float))), 2)
+            cel = ws.cell(tot_r, c, soma)
+            cel.font = Font(bold=True, color=_TINTA, size=10)
+            cel.number_format = _MOEDA
     _largura(ws, CABECALHOS, [[""] * len(CABECALHOS)] + linhas)
     ws.column_dimensions[get_column_letter(_COL_DIVERG)].width = 46   # texto multi-linha
     ws.column_dimensions[get_column_letter(_COL_RECALC_STD)].width = 44
@@ -182,11 +191,16 @@ def _rs(v):
 
 
 def _texto_recalc(it):
-    """Marcação do recálculo: 'IRPJ 1708: esperado R$x ≠ SIEG R$y; ...' (item 2)."""
+    """Marcação do recálculo: 'IRPJ 1708: esperado R$x ≠ SIEG R$y; ...' (item 2).
+    Fornecedor em exceção (item 6) leva o prefixo 'EXCEÇÃO: <motivo>'."""
     itens = it.get("pendencia_itens") or []
-    return "; ".join(
+    txt = "; ".join(
         f"{p['nome']} {p['codigo']}: esperado {_rs(p['esperado'])} ≠ SIEG {_rs(p['apurado'])}"
-        for p in itens) or "—"
+        for p in itens)
+    if it.get("excecao"):
+        obs = it.get("excecao_obs") or ""
+        return ("EXCEÇÃO: " + obs + (" · " + txt if txt else "")).strip()
+    return txt or "—"
 
 
 def _aba_impostos(ws, itens):
@@ -289,6 +303,7 @@ def gerar_xlsx(resumo: dict, itens: list) -> bytes:
         ("Ressalva", [i for i in prin if i["veredito"] == "ressalva"]),
         ("Pendentes", [i for i in prin if i["veredito"] == "pendente"]),
         ("Divergência Impostos", [i for i in prin if i.get("pendencia_sieg")]),
+        ("Exceções", [i for i in prin if i.get("excecao")]),
         ("Canceladas", [i for i in itens if i.get("cancelada")]),
         ("SP sem SIEG", [i for i in itens if i["veredito"] == "sp_sem_sieg"]),
         ("Duplicadas SP", [i for i in itens if i["veredito"] == "sp_duplicada"]),

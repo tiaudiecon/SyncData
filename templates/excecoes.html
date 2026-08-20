@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block titulo %}Exceções · SyncData{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><div class="crumb">Fornecedores dispensados de recolhimento</div><h1>Exceções de recálculo</h1></div>
+</div>
+
+<div class="panel" style="max-width:820px">
+  <div class="panel-head"><h3>Adicionar / atualizar exceção</h3></div>
+  <div class="panel-body">
+    <p class="sub" style="margin-bottom:16px">Fornecedores nesta lista têm a <strong>divergência de impostos considerada esperada</strong>
+      (grupo que não precisa recolher). As notas deles saem do filtro <em>Divergência Impostos</em> e vão para
+      <em>Exceções</em> — em todas as conciliações, inclusive as futuras (por CNPJ).</p>
+    <form method="post" action="/excecoes/salvar">
+      <div style="display:flex; flex-wrap:wrap; gap:14px">
+        <div class="field" style="flex:1 1 190px"><label>CNPJ do fornecedor</label>
+          <input id="fCnpj" class="input mono" type="text" name="cnpj" placeholder="00.000.000/0000-00" required></div>
+        <div class="field" style="flex:2 1 260px"><label>Nome (opcional)</label>
+          <input id="fNome" class="input" type="text" name="nome" placeholder="Razão social do fornecedor"></div>
+      </div>
+      <div class="field" style="margin-top:12px"><label>Observação (motivo da exceção)</label>
+        <input id="fObs" class="input" type="text" name="observacao" placeholder="Ex.: entidade imune / não sujeito à retenção" required></div>
+      <div style="margin-top:12px"><button class="btn btn-accent" type="submit">Salvar exceção</button></div>
+    </form>
+
+    {% if linhas %}
+    <table class="dense" style="margin-top:24px; width:100%">
+      <thead><tr>
+        <th>CNPJ</th><th>Fornecedor</th><th>Observação</th><th>Desde</th><th></th>
+      </tr></thead>
+      <tbody>
+      {% for e in linhas %}
+        <tr data-cnpj="{{ e.cnpj }}" data-nome="{{ e.nome }}" data-obs="{{ e.observacao }}">
+          <td class="mono">{{ e.cnpj }}</td>
+          <td>{{ e.nome or '—' }}</td>
+          <td>{{ e.observacao }}</td>
+          <td class="mono" style="white-space:nowrap">{{ e.criado }}</td>
+          <td class="right" style="white-space:nowrap">
+            <button type="button" class="btn btn-ghost" style="height:28px; padding:0 10px; font-size:12px"
+                    onclick="editarExc(this)">Editar</button>
+            <form method="post" action="/excecoes/{{ e.id }}/remover" style="display:inline"
+                  onsubmit="return confirm('Remover esta exceção ({{ e.cnpj }})?')">
+              <button type="submit" class="btn btn-ghost" style="height:28px; padding:0 10px; font-size:12px; color:var(--alert)">Remover</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty" style="margin-top:20px">Nenhuma exceção cadastrada. Você também pode marcar direto na nota,
+      pela tela de Resultado (no detalhe, botão <strong>Marcar como exceção</strong>).</div>
+    {% endif %}
+  </div>
+</div>
+<script>
+  function editarExc(btn){
+    const tr = btn.closest('tr');
+    document.getElementById('fCnpj').value = tr.dataset.cnpj || '';
+    document.getElementById('fNome').value = tr.dataset.nome || '';
+    document.getElementById('fObs').value = tr.dataset.obs || '';
+    document.getElementById('fObs').focus();
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  }
+</script>
+{% endblock %}

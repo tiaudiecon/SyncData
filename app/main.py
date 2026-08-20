@@ -12,6 +12,7 @@ from app.routers import historico, configuracoes
 from app.routers import impostos
 from app.routers import processar
 from app.routers import pdf
+from app.routers import excecoes
 
 Base.metadata.create_all(bind=engine)
 garantir_colunas(engine)   # INI-02: adiciona colunas novas em bancos antigos
@@ -36,6 +37,7 @@ app.include_router(configuracoes.router)
 app.include_router(impostos.router)
 app.include_router(processar.router)
 app.include_router(pdf.router)
+app.include_router(excecoes.router)
 
 
 @app.get("/health")

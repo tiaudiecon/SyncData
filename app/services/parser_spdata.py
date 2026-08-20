@@ -13,7 +13,6 @@ class LancamentoSpData:
     fornecedor: str
     emissao: "date | None"
     valor_bruto: float
-    valor_liquido: float
     issqn: float = 0.0
     inss_pj: float = 0.0
     inss_auton: float = 0.0
@@ -33,6 +32,12 @@ class LancamentoSpData:
     @property
     def total_retencoes(self) -> float:
         return round(self.issqn + self.inss + self.ir + self.csrf, 2)
+
+    @property
+    def valor_liquido(self) -> float:
+        # Líquido do SP Data = Valor Bruto − Impostos (retenções). NÃO usa a coluna
+        # VALOR_LIQUIDO do arquivo (que pode vir calculada de outra forma).
+        return round(self.valor_bruto - self.total_retencoes, 2)
 
 
 def ler_spdata(conteudo: bytes) -> "list[LancamentoSpData]":
@@ -71,7 +76,6 @@ def ler_spdata(conteudo: bytes) -> "list[LancamentoSpData]":
             fornecedor=celula(campos, "FORNECEDOR"),
             emissao=para_data(celula(campos, "EMISSAO")),
             valor_bruto=moeda(campos, "VALOR_BRUTO"),
-            valor_liquido=moeda(campos, "VALOR_LIQUIDO"),
             issqn=moeda(campos, "ISSQN"),
             inss_pj=moeda(campos, "INSS_PJ"), inss_auton=moeda(campos, "INSS_AUTON"),
             irpj=moeda(campos, "IRPJ"), ir_auton=moeda(campos, "IR_AUTON"),

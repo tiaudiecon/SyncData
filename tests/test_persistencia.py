@@ -13,7 +13,7 @@ def test_persiste_impostos_e_lado_spdata():
     n = NotaSieg("100", "100", "11111111000111", "F", date(2026, 7, 3), 1000.0, 900.0,
                  False, ir=100.0, iss=0.0, deducoes=0.0)
     l = LancamentoSpData("100", "100", "11111111000111", "F", date(2026, 7, 3),
-                         1000.0, 900.0, irpj=100.0)
+                         1000.0, irpj=100.0)              # líq = 1000 − 100 = 900
     from app.services.parser_renew import RegistroRenew
     reg = RegistroRenew("100", "100", "11111111000111", "F", date(2026, 7, 3), 1000.0)
     res = conciliar([n], [], [l], [reg])
@@ -54,7 +54,7 @@ def test_impostos_json_remap_por_campo():
                  False, iss=11.0, iss_retido=True, inss=22.0, ir=33.0,
                  pis=1.0, cofins=2.0, csll=3.0, aliquota=5.0, base_calculo=900.0)
     l = LancamentoSpData("100", "100", "11111111000111", "F", date(2026, 7, 3),
-                         1000.0, 800.0, issqn=11.0, inss_pj=20.0, inss_auton=2.0,
+                         1000.0, issqn=11.0, inss_pj=20.0, inss_auton=2.0,
                          irpj=30.0, ir_auton=3.0, ir_coop=0.0, csrf=6.0)
     from app.services.parser_renew import RegistroRenew
     reg = RegistroRenew("100", "100", "11111111000111", "F", date(2026, 7, 3), 1000.0)
@@ -78,7 +78,7 @@ def test_impostos_json_remap_por_campo():
 def test_persiste_pasta_e_arquivo_pdf(client):
     from app.services.parser_renew import RegistroRenew
     n = NotaSieg("100", "100", "11111111000111", "F", date(2026, 7, 3), 150.0, 150.0, False)
-    l = LancamentoSpData("100", "100", "11111111000111", "F", date(2026, 7, 3), 150.0, 150.0)
+    l = LancamentoSpData("100", "100", "11111111000111", "F", date(2026, 7, 3), 150.0)
     reg = RegistroRenew("100", "100", "11111111000111", "F", date(2026, 7, 3), 150.0,
                         arquivo_pdf="E_100.pdf")
     res = conciliar([n], [], [l], [reg])

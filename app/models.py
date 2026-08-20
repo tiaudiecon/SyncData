@@ -78,3 +78,17 @@ class TabelaAliquota(Base):
     # Reforma tributária — ainda NÃO efetivado; deixado preparado (default 0).
     cbs = Column(Float, default=0.0)
     ibs = Column(Float, default=0.0)
+
+
+class ExcecaoFornecedor(Base):
+    """Fornecedor marcado como EXCEÇÃO da regra de recálculo: a divergência de
+    impostos é esperada (grupo dispensado de recolhimento). Vale por CNPJ, para
+    TODAS as conciliações — inclusive as futuras (o operador não refaz sempre)."""
+    __tablename__ = "excecao_fornecedor"
+    id = Column(Integer, primary_key=True)
+    cnpj = Column(String, nullable=False, unique=True, index=True)   # só dígitos
+    nome = Column(String, nullable=True)
+    observacao = Column(String, nullable=False, default="")
+    criado_em = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    atualizado_em = Column(DateTime, default=lambda: datetime.now(timezone.utc),
+                           onupdate=lambda: datetime.now(timezone.utc))

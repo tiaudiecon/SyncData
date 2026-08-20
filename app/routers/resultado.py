@@ -14,7 +14,9 @@ router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 from app.services.formatacao import largura_numeros, pad_numero, registrar_filtros
 from app.services import aliquotas as serv_aliquotas
+from app.services import excecoes as serv_excecoes
 from app.services.recalculo import pendencia_sieg
+from app.services.normalizacao import so_digitos
 import json
 registrar_filtros(templates)
 _XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -37,6 +39,16 @@ def _data_iso(data_br):
         return None
 
 
+def _fmt_cnpj(c):
+    """14 dígitos -> 'XX.XXX.XXX/XXXX-XX'; senão devolve como veio."""
+    d = "".join(ch for ch in str(c or "") if ch.isdigit())
+    if len(d) == 14:
+        return f"{d[:2]}.{d[2:5]}.{d[5:8]}/{d[8:12]}-{d[12:]}"
+    if len(d) == 11:   # CPF
+        return f"{d[:3]}.{d[3:6]}.{d[6:9]}-{d[9:]}"
+    return str(c or "")
+
+
 def _par(s, p, chave):
     """Par Sieg × SP Data de um tributo (p/ o expand de impostos no Resultado)."""
     sv = s.get(chave, 0.0)
@@ -45,8 +57,9 @@ def _par(s, p, chave):
     return {"sieg": sv, "sp": pv, "delta": delta}
 
 
-def montar_resumo_e_itens(conc, tabelas=None):
+def montar_resumo_e_itens(conc, tabelas=None, excecoes=None):
     tabelas = tabelas or []
+    excecoes = excecoes or {}   # {cnpj_normalizado: observacao} (item 6)
     resumo = {
         "cnpj": conc.cnpj, "data_hora": formatar_dt(conc.data_hora),
         "competencia": formatar_competencia(conc.competencia),
@@ -69,11 +82,16 @@ def montar_resumo_e_itens(conc, tabelas=None):
         if i.veredito not in ("cancelada", *_SP_EXTRA) and sieg_dict:
             aliq = serv_aliquotas.vigente_na_lista(tabelas, _data_iso(i.data_emissao))
             pend, pend_itens = pendencia_sieg(sieg_dict, i.valor_bruto, aliq)
+        # item 6: fornecedor marcado como exceção -> a divergência é esperada
+        _obs_exc = excecoes.get(so_digitos(i.cnpj_fornecedor)) if pend else None
+        is_excecao = pend and _obs_exc is not None
         p_sp = imp.get("spdata")   # None se a nota não foi lançada no SP Data
         itens.append({
             "id": i.id,
             "numero": pad_numero(i.numero, largura),
-            "nome_fornecedor": i.nome_fornecedor, "data_emissao": i.data_emissao,
+            "nome_fornecedor": i.nome_fornecedor,
+            "cnpj_fornecedor": _fmt_cnpj(i.cnpj_fornecedor),   # item 3
+            "data_emissao": i.data_emissao,
             "sp_data_lancamento": sp_dict.get("data_lancamento", ""),   # CON-01
             "tem_desconto": bool(i.tem_desconto),
             "sieg_bruto": i.valor_bruto, "sieg_liquido": i.valor_liquido,
@@ -87,7 +105,9 @@ def montar_resumo_e_itens(conc, tabelas=None):
             "veredito": i.veredito, "cancelada": bool(i.cancelada),
             "sp_extra": i.veredito in _SP_EXTRA,          # CON-02/04
             "optante_sn": bool(sieg_dict.get("optante_sn")),   # DET-02 (SN)
-            "pendencia_sieg": pend,                        # CON-05
+            "pendencia_sieg": pend and not is_excecao,     # CON-05 (exceção não conta)
+            "excecao": is_excecao, "excecao_obs": _obs_exc or "",   # item 6
+            "cnpj_norm": so_digitos(i.cnpj_fornecedor),
             # item 3: presença em cada sistema (SP Data × SIEG).
             # sp_extra (SP sem SIEG / duplicada) EXISTE no SP Data -> consta_spdata.
             "consta_spdata": (i.veredito in _SP_EXTRA) or (i.status_lancamento in ("ok", "diverg")),
@@ -107,13 +127,15 @@ def montar_resumo_e_itens(conc, tabelas=None):
             "fornecedor_sp": (p_sp or {}).get("fornecedor", ""),
             "pendencia_itens": pend_itens,
         })
+    resumo["qt_excecoes"] = sum(1 for it in itens if it["excecao"])   # item 6
     return resumo, itens
 
 
 @router.get("/resultado/{conciliacao_id}")
 def ver(conciliacao_id: int, request: Request, db: Session = Depends(get_db)):
     conc = _carregar(db, conciliacao_id)
-    resumo, itens = montar_resumo_e_itens(conc, serv_aliquotas.listar(db))
+    resumo, itens = montar_resumo_e_itens(conc, serv_aliquotas.listar(db),
+                                          serv_excecoes.mapa_cnpjs(db))
     return templates.TemplateResponse(request, "resultado.html", {
         "ativo": "resultado", "c": conc,
         "resumo": resumo, "itens": itens, **contexto_cliente(db),
@@ -134,7 +156,8 @@ def _nome_arquivo(razao, competencia, conc):
 @router.get("/resultado/{conciliacao_id}/planilha.xlsx")
 def baixar(conciliacao_id: int, db: Session = Depends(get_db)):
     conc = _carregar(db, conciliacao_id)
-    resumo, itens = montar_resumo_e_itens(conc, serv_aliquotas.listar(db))
+    resumo, itens = montar_resumo_e_itens(conc, serv_aliquotas.listar(db),
+                                          serv_excecoes.mapa_cnpjs(db))
     cfg = obter_config(db)
     resumo["razao_social"] = cfg.razao_social or ""      # cabeçalho do relatório
     conteudo = gerar_xlsx(resumo, itens)
