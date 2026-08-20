@@ -74,10 +74,10 @@ table.dense thead th{vertical-align:bottom}
 .wrap-wide table.dense.compacta{font-size:10.5px}
 /* cabeçalhos todos centralizados (dados seguem seu próprio alinhamento) */
 .wrap-wide table.dense.compacta thead th{text-align:center}
-.wrap-wide table.dense.compacta th{font-size:8.5px; padding:6px 5px}
-.wrap-wide table.dense.compacta td{padding:5px 5px}
-.col-forn{max-width:210px}
-.col-forn .nome-f{display:block; max-width:210px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.wrap-wide table.dense.compacta th{font-size:8.5px; padding:6px 4px}
+.wrap-wide table.dense.compacta td{padding:5px 4px}
+.col-forn{max-width:200px}
+.col-forn .nome-f{display:block; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .sub-cnpj{font-size:8.5px; color:var(--ink-4); font-family:'JetBrains Mono',monospace; line-height:1.2; margin-top:1px}
 .v-tr{font-size:9px; color:var(--ink-4)}   /* dash de valor vazio, compacto (item 1) */
 /* coluna Div. estreita: só o marcador ⚠ (detalhe abre em popover sobreposto) */
@@ -328,6 +328,8 @@ td.center{text-align:center; white-space:nowrap}
   cursor:pointer; border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink-2);
   padding:0 10px; border-radius:7px; text-decoration:none; margin:0 1px; vertical-align:middle}
 .btn-mini:hover{border-color:var(--navy); color:var(--navy)}
+/* botões da coluna PDF (Ver/Abrir): compactos p/ caber sem cortar na tela */
+.btn-mini.btn-pdf{min-width:0; height:22px; padding:0 7px; font-size:10.5px; margin:0 1px}
 .pdf-panel{position:fixed; top:0; right:0; width:min(560px, 46vw); height:100vh;
   background:var(--surface-2); border-left:1px solid var(--line-2);
   box-shadow:-8px 0 24px rgba(0,0,0,.12); display:flex; flex-direction:column; z-index:60}
