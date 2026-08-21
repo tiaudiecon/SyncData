@@ -39,6 +39,18 @@ def _itens_ricos():
     return base
 
 
+def test_export_cabecalho_tem_periodo():
+    # o período da conferência aparece no cabeçalho do relatório (aba Resultado)
+    resumo = _resumo()
+    resumo["competencia"] = "jul/2026"
+    resumo["periodo"] = "01/07/2026 a 18/07/2026"
+    wb = openpyxl.load_workbook(io.BytesIO(gerar_xlsx(resumo, _itens_ricos())))
+    ws = wb["Resultado"]
+    textos = [c.value for row in ws.iter_rows() for c in row if isinstance(c.value, str)]
+    assert "Período (conferência)" in textos
+    assert "01/07/2026 a 18/07/2026" in textos
+
+
 def test_export_tem_aba_impostos_e_moeda_numerica():
     import io, openpyxl
     conteudo = gerar_xlsx(_resumo(), _itens_ricos())

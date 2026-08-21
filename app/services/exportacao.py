@@ -281,6 +281,7 @@ def gerar_xlsx(resumo: dict, itens: list) -> bytes:
         ("Cliente", resumo.get("razao_social") or resumo["cnpj"]),
         ("CNPJ", resumo["cnpj"]),
         ("Competência", resumo.get("competencia") or _TRACO),
+        ("Período (conferência)", resumo.get("periodo") or _TRACO),
         ("Gerado em", resumo["data_hora"]),
         ("Total de notas (Sieg)", resumo["total_universo"]),
         ("Valor total (bruto)", resumo["valor_total"]),
