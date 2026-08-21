@@ -7,7 +7,7 @@ from app.database import get_db
 from app.models import Conciliacao
 import re
 from app.services.exportacao import gerar_xlsx
-from app.services.tempo import formatar_dt, formatar_competencia
+from app.services.tempo import formatar_dt, formatar_competencia, formatar_periodo
 from app.services.configuracao import contexto_cliente, obter_config
 
 router = APIRouter()
@@ -63,6 +63,8 @@ def montar_resumo_e_itens(conc, tabelas=None, excecoes=None):
     resumo = {
         "cnpj": conc.cnpj, "data_hora": formatar_dt(conc.data_hora),
         "competencia": formatar_competencia(conc.competencia),
+        "periodo": formatar_periodo(conc.periodo_inicio, conc.periodo_fim),   # print3
+
         "total_universo": conc.total_universo, "valor_total": conc.valor_total,
         "qt_gerenciadas": conc.qt_gerenciadas, "qt_ressalva": conc.qt_ressalva,
         "qt_falta_lancar": conc.qt_falta_lancar,

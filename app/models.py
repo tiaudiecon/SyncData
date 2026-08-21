@@ -19,6 +19,8 @@ class Conciliacao(Base):
     id = Column(Integer, primary_key=True)
     data_hora = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
     competencia = Column(String, nullable=True, index=True)   # INI-02: "aaaa-mm"
+    periodo_inicio = Column(String, nullable=True)   # data início da conferência ("aaaa-mm-dd")
+    periodo_fim = Column(String, nullable=True)      # data fim da conferência ("aaaa-mm-dd")
     cnpj = Column(String, nullable=False)
     arquivo_spdata_nome = Column(String, nullable=True)
     arquivo_sieg_nome = Column(String, nullable=True)

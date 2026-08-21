@@ -22,7 +22,7 @@
 {% endmacro %}
 {% set TR = '<span class="v-tr">—</span>'|safe %}
 <div class="page-head">
-  <div><div class="crumb">Resultado{% if resumo.competencia %} · Competência {{ resumo.competencia }}{% endif %} · {{ resumo.data_hora }}</div><h1>Conciliação</h1></div>
+  <div><div class="crumb">Resultado{% if resumo.competencia %} · Competência {{ resumo.competencia }}{% endif %}{% if resumo.periodo %} · Conferência {{ resumo.periodo }}{% endif %} · {{ resumo.data_hora }}</div><h1>Conciliação</h1></div>
   <div class="actions">
     <button type="button" class="btn btn-ghost" id="btnSalvar" onclick="salvarHistorico(this)"
             title="A conciliação é salva automaticamente ao processar — clique para confirmar / ver no histórico">
@@ -41,7 +41,7 @@
   <div class="kpi alert"><div class="lbl">Faltou lançar</div><div class="val tnum">{{ resumo.qt_falta_lancar }}</div></div>
   <div class="kpi alert"><div class="lbl">Faltou arquivar</div><div class="val tnum">{{ resumo.qt_falta_arquivar }}</div></div>
 </div>
-<p class="sub" style="margin:-8px 0 16px">
+<p class="sub" style="margin:-2px 0 6px; font-size:11px">
   {{ resumo.qt_canceladas }} cancelada(s) fora do universo. Valores em <span class="dz">vermelho</span> = Sieg × SPData divergem.
   Confronto inverso (SP Data): <strong>{{ resumo.qt_sp_sem_sieg }}</strong> sem SIEG · <strong>{{ resumo.qt_sp_duplicadas }}</strong> duplicada(s).
 </p>

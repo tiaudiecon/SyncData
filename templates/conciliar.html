@@ -14,8 +14,15 @@
     <div class="panel-body">
       <div class="upload">
         <div class="num">0</div>
-        <div class="meta"><div class="t">Competência</div><div class="h">Mês/ano do período conciliado · organiza o histórico</div></div>
-        <input type="month" id="competencia" name="competencia" class="input" style="max-width:200px" required>
+        <div class="meta"><div class="t">Competência e período</div><div class="h">Mês/ano do período · datas em que você fez a conferência</div></div>
+        <div class="comp-wrap">
+          <input type="month" id="competencia" name="competencia" class="input" style="max-width:170px" required>
+          <span class="periodo-wrap">
+            <input type="date" id="periodo_inicio" name="periodo_inicio" class="input" title="Data inicial da conferência">
+            <span class="periodo-sep">a</span>
+            <input type="date" id="periodo_fim" name="periodo_fim" class="input" title="Data final da conferência">
+          </span>
+        </div>
       </div>
       <div class="upload">
         <div class="num">1</div>
@@ -60,6 +67,14 @@
     const h = new Date();
     campoComp.value = h.getFullYear() + '-' + String(h.getMonth() + 1).padStart(2, '0');
   }
+  // print2: ao escolher a competência, a data INICIAL do período é preenchida
+  // automaticamente com o 1º dia do mês (a data final o operador informa).
+  const campoIni = document.getElementById('periodo_inicio');
+  function primeiroDiaDaCompetencia(){
+    return campoComp.value ? campoComp.value + '-01' : '';   // "aaaa-mm" -> "aaaa-mm-01"
+  }
+  campoComp.addEventListener('change', function(){ campoIni.value = primeiroDiaDaCompetencia(); });
+  if (campoComp.value && !campoIni.value) { campoIni.value = primeiroDiaDaCompetencia(); }
   async function procurarPasta(){
     try{
       const r = await fetch('/procurar-pasta');

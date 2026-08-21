@@ -20,3 +20,22 @@ def formatar_competencia(valor):
         return f"{_MESES[int(mes)]}/{ano}"
     except (ValueError, IndexError):
         return ""
+
+
+def formatar_data_br(iso):
+    """'aaaa-mm-dd' -> 'dd/mm/aaaa' (vazio se não vier no formato esperado)."""
+    try:
+        ano, mes, dia = str(iso or "").split("-")
+        if len(ano) == 4:
+            return f"{dia.zfill(2)}/{mes.zfill(2)}/{ano}"
+    except ValueError:
+        pass
+    return ""
+
+
+def formatar_periodo(inicio, fim):
+    """Período da conferência: 'dd/mm/aaaa a dd/mm/aaaa' (o que houver)."""
+    di, df = formatar_data_br(inicio), formatar_data_br(fim)
+    if di and df:
+        return f"{di} a {df}"
+    return di or df or ""

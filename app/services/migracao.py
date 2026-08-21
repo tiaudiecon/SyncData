@@ -9,6 +9,8 @@ from sqlalchemy import inspect, text
 # (tabela, coluna, tipo_ddl)
 _COLUNAS = [
     ("conciliacao", "competencia", "VARCHAR"),   # INI-02
+    ("conciliacao", "periodo_inicio", "VARCHAR"),   # período da conferência (data início)
+    ("conciliacao", "periodo_fim", "VARCHAR"),      # período da conferência (data fim)
     ("tabela_aliquota", "cbs", "FLOAT"),         # reforma tributária (prep)
     ("tabela_aliquota", "ibs", "FLOAT"),
 ]

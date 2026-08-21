@@ -33,16 +33,21 @@ def _erro(request, db, msg):
 
 
 _RX_COMPETENCIA = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
+_RX_DATA = re.compile(r"^\d{4}-\d{2}-\d{2}$")   # data do input <type=date> (aaaa-mm-dd)
 
 
 @router.post("/conciliar")
 async def executar(request: Request, db: Session = Depends(get_db),
                    spdata: UploadFile = File(...), sieg: UploadFile = File(...),
-                   pasta: str = Form(""), competencia: str = Form("")):
+                   pasta: str = Form(""), competencia: str = Form(""),
+                   periodo_inicio: str = Form(""), periodo_fim: str = Form("")):
     cfg = obter_config(db)
     competencia = (competencia or "").strip()
     if not _RX_COMPETENCIA.match(competencia):   # INI-02: mês/ano do período
         return _erro(request, db, "Informe a competência (mês/ano) do período.")
+    # período da conferência (datas que o operador conferiu) — só aceita aaaa-mm-dd
+    periodo_inicio = periodo_inicio if _RX_DATA.match(periodo_inicio or "") else ""
+    periodo_fim = periodo_fim if _RX_DATA.match(periodo_fim or "") else ""
     pasta_lim = (pasta or "").strip()
     if not pasta_lim or not os.path.isdir(pasta_lim):
         return _erro(request, db, "Selecione a pasta dos PDFs — o caminho informado não existe.")
@@ -56,7 +61,8 @@ async def executar(request: Request, db: Session = Depends(get_db),
         return _erro(request, db, f"Não consegui ler um dos arquivos: {exc}")
 
     jid = criar_job(total=n_pdfs)
-    nomes = {"spdata": spdata.filename, "sieg": sieg.filename, "competencia": competencia}
+    nomes = {"spdata": spdata.filename, "sieg": sieg.filename, "competencia": competencia,
+             "periodo_inicio": periodo_inicio, "periodo_fim": periodo_fim}
     threading.Thread(
         target=processar_pasta,
         args=(jid, pasta_lim, autorizadas, canceladas, lancamentos, cfg.cnpj_cliente, nomes),

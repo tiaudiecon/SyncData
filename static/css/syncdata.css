@@ -166,6 +166,22 @@ table.dense thead th{vertical-align:bottom}
 .kpi .val{font-family:'Fraunces',serif; font-size:22px; font-weight:600; line-height:1; letter-spacing:-.01em}
 .kpi.ok .val{color:var(--ok)} .kpi.warn .val{color:var(--warn)} .kpi.alert .val{color:var(--alert)}
 .kpi .sub{font-size:11px; color:var(--ink-3); margin-top:7px}
+/* print1: no Resultado (wrap-wide) o topo é compacto p/ a tabela subir ~metade */
+.wrap-wide .page-head{margin-bottom:6px; padding-bottom:5px}
+.wrap-wide .page-head h1{font-size:17px}
+.wrap-wide .page-head .crumb{margin-bottom:3px}
+.wrap-wide .page-head .actions .btn{height:30px}
+.wrap-wide .kpi-row{gap:8px; margin-bottom:6px}
+.wrap-wide .kpi{padding:5px 12px}
+.wrap-wide .kpi .lbl{margin-bottom:1px; font-size:8.5px}
+.wrap-wide .kpi .val{font-size:15px}
+.wrap-wide .toolbar{margin-bottom:8px}
+.wrap-wide .toolbar .input{height:32px}
+/* período da conferência (tela Conciliar) — data início a data fim */
+.comp-wrap{display:flex; align-items:center; gap:14px; flex-wrap:wrap; justify-content:flex-end}
+.periodo-wrap{display:flex; align-items:center; gap:8px}
+.periodo-wrap .input{max-width:150px; height:34px}
+.periodo-sep{color:var(--ink-3); font-size:13px; font-weight:600}
 
 /* ---------- Tables ---------- */
 .table-scroll{overflow:auto; max-height:calc(100vh - 250px); border:1px solid var(--line); border-radius:var(--r-lg)}

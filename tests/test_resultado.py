@@ -75,6 +75,30 @@ def test_iss_so_aparece_quando_retido(client):
     assert html.count(">ISS</td>") == 1            # só a nota com ISS retido tem a linha
 
 
+def test_formatar_periodo_conferencia():
+    from app.services.tempo import formatar_periodo, formatar_data_br
+    assert formatar_data_br("2026-07-01") == "01/07/2026"
+    assert formatar_data_br("") == "" and formatar_data_br(None) == ""
+    assert formatar_periodo("2026-07-01", "2026-07-15") == "01/07/2026 a 15/07/2026"
+    assert formatar_periodo("2026-07-01", "") == "01/07/2026"   # só início
+    assert formatar_periodo(None, None) == ""
+
+
+def test_resumo_expoe_periodo(client):
+    # print3: o período informado na criação aparece no resumo (p/ mostrar no Resultado)
+    from app.database import SessionLocal, engine, Base
+    from app.models import Conciliacao
+    from app.routers.resultado import montar_resumo_e_itens
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    conc = Conciliacao(cnpj="11", competencia="2026-07",
+                       periodo_inicio="2026-07-01", periodo_fim="2026-07-20")
+    db.add(conc); db.commit(); db.refresh(conc)
+    resumo, _ = montar_resumo_e_itens(conc)
+    db.close()
+    assert resumo["periodo"] == "01/07/2026 a 20/07/2026"
+
+
 def test_resultado_tem_busca_e_grupos(client):
     client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
     st = montar_conciliacao("04541288000162", _spdata_txt(), _sieg_xlsx("04541288000162"))

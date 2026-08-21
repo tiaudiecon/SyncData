@@ -32,6 +32,8 @@ def salvar_conciliacao(db, cnpj, nomes, resultado):
     conc = Conciliacao(
         cnpj=cnpj,
         competencia=nomes.get("competencia"),   # INI-02
+        periodo_inicio=nomes.get("periodo_inicio"),   # período da conferência
+        periodo_fim=nomes.get("periodo_fim"),
         arquivo_spdata_nome=nomes.get("spdata"),
         arquivo_sieg_nome=nomes.get("sieg"),
         arquivo_renew_nome=nomes.get("renew"),
