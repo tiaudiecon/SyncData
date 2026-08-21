@@ -25,7 +25,7 @@
   {% if qt_pendencia %}
   <label class="chip" id="chPend"><input type="checkbox" onchange="aplicarFiltros()" style="margin-right:6px">Só divergências de impostos ({{ qt_pendencia }})</label>
   {% endif %}
-  <span class="legenda">Clique na nota para abrir a quebra · <span class="dz">vermelho</span> = Sieg × SPData divergem · <em>ISS informativo</em> não soma · <span class="badge b-warn" style="padding:1px 6px">Div. Impostos</span> = impostos do SIEG divergem da alíquota base (analisar)</span>
+  <span class="legenda">Clique na nota para abrir a quebra · <span class="dz">vermelho</span> = Sieg × SPData divergem · <span class="badge b-warn" style="padding:1px 6px">Div. Impostos</span> = impostos do SIEG divergem da alíquota base (analisar)</span>
   <span class="filtro-total" id="filtroTotal"></span>
 </div>
 <div class="table-scroll">
@@ -67,13 +67,7 @@
             <tbody>
               {% if l.iss_retido %}
               <tr>{{ linha_imp('ISS', l.iss) }}</tr>
-              {% else %}
-              <tr class="det-inform">
-                <td class="det-nome">ISS <em>informativo</em></td>
-                <td class="mono right">{{ l.iss.sieg|moeda }}</td>
-                <td class="mono right">{{ l.iss.sp|moeda if l.iss.sp is not none else '—' }}</td>
-              </tr>
-              {% endif %}
+              {% endif %}{# ISS só aparece quando é retido #}
               <tr>{{ linha_imp('INSS', l.inss) }}</tr>
               <tr>{{ linha_imp('IRPJ', l.ir, '1708') }}</tr>
               <tr>{{ linha_imp('PIS/COFINS/CSLL', l.csrf, '5952') }}</tr>

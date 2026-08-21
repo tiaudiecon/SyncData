@@ -135,8 +135,7 @@
             <table class="det-tab">
               <thead><tr><th class="det-nome">Imposto</th><th class="right">Sieg</th><th class="right">SPData</th></tr></thead>
               <tbody>
-                {% if i.iss_retido %}<tr>{{ linha_imp('ISS', i.imp_iss) }}</tr>
-                {% else %}<tr class="det-inform"><td class="det-nome">ISS <em>informativo</em></td><td class="mono right">{{ i.imp_iss.sieg|moeda }}</td><td class="mono right">{{ i.imp_iss.sp|moeda if i.imp_iss.sp is not none else '—' }}</td></tr>{% endif %}
+                {% if i.iss_retido %}<tr>{{ linha_imp('ISS', i.imp_iss) }}</tr>{% endif %}{# ISS só aparece quando é retido #}
                 <tr>{{ linha_imp('INSS', i.imp_inss) }}</tr>
                 <tr>{{ linha_imp('IRPJ', i.imp_ir, '1708') }}</tr>
                 <tr>{{ linha_imp('PIS/COFINS/CSLL', i.imp_csrf, '5952') }}</tr>

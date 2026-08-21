@@ -42,6 +42,39 @@ def test_item2_cnpj_do_spdata_no_detalhe(client):
     assert "".join(c for c in formatado if c.isdigit()) == raw
 
 
+def test_iss_so_aparece_quando_retido(client):
+    # o ISS só deve aparecer no detalhe quando for RETIDO; se não, nem a linha aparece
+    import json
+    from app.database import SessionLocal, engine, Base
+    from app.models import Conciliacao, ConciliacaoItem
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    conc = Conciliacao(cnpj="11", competencia="2026-07"); db.add(conc); db.flush()
+
+    def _imp(iss_retido):
+        return json.dumps({
+            "sieg": {"iss": 120.0, "inss": 0, "ir": 0, "csrf": 0, "descontos": 0,
+                     "base_calculo": 1000.0, "aliquota": 0, "iss_retido": iss_retido,
+                     "optante_sn": False, "total": 0.0},
+            "spdata": {"iss": 0, "inss": 0, "ir": 0, "csrf": 0, "total": 0}})
+
+    def _item(numero, cnpj, iss_retido):
+        return ConciliacaoItem(
+            conciliacao_id=conc.id, numero=numero, cnpj_fornecedor=cnpj,
+            nome_fornecedor="FORN " + numero, data_emissao="03/07/2026",
+            valor_bruto=1000.0, valor_liquido=1000.0, imp_sieg=0.0,
+            impostos_json=_imp(iss_retido), status_lancamento="ok", status_arquivo="ok",
+            veredito="gerenciada", cancelada=False, sp_valor_bruto=1000.0, sp_valor_liquido=1000.0)
+
+    db.add(_item("1", "11", iss_retido=False))   # informativo -> some
+    db.add(_item("2", "22", iss_retido=True))    # retido -> mostra
+    db.commit(); cid = conc.id; db.close()
+
+    html = client.get(f"/resultado/{cid}").text
+    assert "informativo" not in html               # nunca mostra "ISS informativo"
+    assert html.count(">ISS</td>") == 1            # só a nota com ISS retido tem a linha
+
+
 def test_resultado_tem_busca_e_grupos(client):
     client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
     st = montar_conciliacao("04541288000162", _spdata_txt(), _sieg_xlsx("04541288000162"))
