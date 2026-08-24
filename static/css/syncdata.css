@@ -177,6 +177,15 @@ table.dense thead th{vertical-align:bottom}
 .wrap-wide .kpi .val{font-size:15px}
 .wrap-wide .toolbar{margin-bottom:8px}
 .wrap-wide .toolbar .input{height:32px}
+/* controle de fonte da tabela (Resultado) — A- / A+ p/ monitores maiores */
+.fonte-ctrl{display:inline-flex; align-items:center; gap:1px; border:1px solid var(--line-2);
+  border-radius:var(--r-md); padding:2px; background:var(--surface-2)}
+.fonte-btn{min-width:28px; height:26px; border:none; background:transparent; cursor:pointer;
+  font-weight:700; color:var(--ink-2); border-radius:4px; font-family:inherit; line-height:1; padding:0 6px}
+.fonte-btn.fb-menor{font-size:11px}
+.fonte-btn.fb-maior{font-size:16px}
+.fonte-btn:hover{background:var(--surface-3); color:var(--navy)}
+.fonte-pct{min-width:40px; text-align:center; font-size:11px; color:var(--ink-3); font-variant-numeric:tabular-nums}
 /* período da conferência (tela Conciliar) — data início a data fim */
 .comp-wrap{display:flex; align-items:center; gap:14px; flex-wrap:wrap; justify-content:flex-end}
 .periodo-wrap{display:flex; align-items:center; gap:8px}

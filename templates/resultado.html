@@ -24,6 +24,11 @@
 <div class="page-head">
   <div><div class="crumb">Resultado{% if resumo.competencia %} · Competência {{ resumo.competencia }}{% endif %}{% if resumo.periodo %} · Conferência {{ resumo.periodo }}{% endif %} · {{ resumo.data_hora }}</div><h1>Conciliação</h1></div>
   <div class="actions">
+    <div class="fonte-ctrl" title="Tamanho da fonte da tabela (para monitores maiores)">
+      <button type="button" class="fonte-btn fb-menor" onclick="fonteTabela(-1)" aria-label="Diminuir fonte">A</button>
+      <span id="fontePct" class="fonte-pct">100%</span>
+      <button type="button" class="fonte-btn fb-maior" onclick="fonteTabela(1)" aria-label="Aumentar fonte">A</button>
+    </div>
     <button type="button" class="btn btn-ghost" id="btnSalvar" onclick="salvarHistorico(this)"
             title="A conciliação é salva automaticamente ao processar — clique para confirmar / ver no histórico">
       <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
@@ -328,6 +333,20 @@
     if (e.target.closest('.dv-flag')) ocultarDv();
   });
   window.addEventListener('scroll', ocultarDv, true);
+  // Controle de fonte da tabela (para monitores maiores) — persiste por navegador.
+  let _fonteZoom = parseFloat(localStorage.getItem('syncdata_fonte_tab')) || 1;
+  function aplicarFonteTabela(){
+    document.getElementById('tab').style.zoom = _fonteZoom;
+    const pct = document.getElementById('fontePct');
+    if (pct) pct.textContent = Math.round(_fonteZoom * 100) + '%';
+  }
+  function fonteTabela(dir){
+    _fonteZoom = Math.min(1.7, Math.max(1.0, Math.round((_fonteZoom + dir * 0.1) * 100) / 100));
+    localStorage.setItem('syncdata_fonte_tab', _fonteZoom);
+    aplicarFonteTabela();
+  }
+  aplicarFonteTabela();
+
   filtrar();   // item 4: já mostra o total do filtro inicial (Todas)
 </script>
 {% endblock %}
