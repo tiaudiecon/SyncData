@@ -36,33 +36,46 @@
     <a class="btn btn-primary" href="/resultado/{{ c.id }}/planilha.xlsx">
       <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Exportar .xlsx</a>
+    {# item 3: exportar dados p/ o fiscal importar — só com a conferência sem erros #}
+    {% if resumo.qt_erros == 0 %}
+    <a class="btn btn-accent" href="/resultado/{{ c.id }}/dados.json"
+       title="Conferência sem erros — exportar o arquivo de dados para enviar à contabilidade">
+      <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+      Exportar dados</a>
+    {% else %}
+    <span class="btn btn-ghost" style="opacity:.5; cursor:not-allowed"
+          title="Disponível quando não houver mais erros ({{ resumo.qt_erros }} restante(s))">
+      <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+      Exportar dados</span>
+    {% endif %}
   </div>
 </div>
 
 <div class="kpi-row">
   <div class="kpi hl"><div class="lbl">Universo</div><div class="val tnum">{{ resumo.total_universo }}</div></div>
   <div class="kpi ok"><div class="lbl">Gerenciadas</div><div class="val tnum">{{ resumo.qt_gerenciadas }}</div></div>
-  <div class="kpi warn"><div class="lbl">Com ressalva</div><div class="val tnum">{{ resumo.qt_ressalva }}</div></div>
-  <div class="kpi alert"><div class="lbl">Faltou lançar</div><div class="val tnum">{{ resumo.qt_falta_lancar }}</div></div>
-  <div class="kpi alert"><div class="lbl">Faltou arquivar</div><div class="val tnum">{{ resumo.qt_falta_arquivar }}</div></div>
+  <div class="kpi alert"><div class="lbl">Erros</div><div class="val tnum">{{ resumo.qt_erros }}</div></div>
+  <div class="kpi warn"><div class="lbl">Divergência Impostos</div><div class="val tnum">{{ resumo.qt_divergencia }}</div></div>
+  <div class="kpi info"><div class="lbl">Exceções</div><div class="val tnum">{{ resumo.qt_excecoes }}</div></div>
 </div>
 <p class="sub" style="margin:-2px 0 6px; font-size:11px">
-  {{ resumo.qt_canceladas }} cancelada(s) fora do universo. Valores em <span class="dz">vermelho</span> = Sieg × SPData divergem.
-  Confronto inverso (SP Data): <strong>{{ resumo.qt_sp_sem_sieg }}</strong> sem SIEG · <strong>{{ resumo.qt_sp_duplicadas }}</strong> duplicada(s).
+  Erros = ressalva ({{ resumo.qt_ressalva }}) + faltou lançar ({{ resumo.qt_falta_lancar }}) + faltou arquivar ({{ resumo.qt_falta_arquivar }}) + divergência de impostos ({{ resumo.qt_divergencia }}).
+  Manual: <strong>{{ resumo.qt_validadas }}</strong> validada(s) · <strong>{{ resumo.qt_excecoes }}</strong> exceção(ões).
+  Informativos: {{ resumo.qt_canceladas }} cancelada(s) · {{ resumo.qt_sp_sem_sieg }} SP sem SIEG · {{ resumo.qt_sp_duplicadas }} duplicada(s).
 </p>
 
 <div class="toolbar">
   <input id="busca" class="input" style="max-width:320px" placeholder="Buscar por nº, fornecedor ou valor…" oninput="filtrar()">
   <div class="chips">
-    <button class="chip on" data-f="todas" onclick="setFiltro(this)">Todas</button>
+    <button class="chip on" data-f="todas" onclick="setFiltro(this)">Total</button>
     <button class="chip" data-f="gerenciada" onclick="setFiltro(this)">Gerenciadas</button>
-    <button class="chip" data-f="ressalva" onclick="setFiltro(this)">Ressalva</button>
-    <button class="chip" data-f="pendente" onclick="setFiltro(this)">Pendentes</button>
-    <button class="chip" data-f="pendencia_sieg" onclick="setFiltro(this)">Divergência Impostos</button>
-    <button class="chip" data-f="excecao" onclick="setFiltro(this)">Exceções</button>
-    <button class="chip" data-f="canceladas" onclick="setFiltro(this)">Canceladas</button>
-    <button class="chip" data-f="sp_sem_sieg" onclick="setFiltro(this)">SP sem SIEG</button>
-    <button class="chip" data-f="sp_duplicada" onclick="setFiltro(this)">Duplicadas SP</button>
+    <button class="chip" data-f="erros" onclick="setFiltro(this)">Erros</button>
+    <button class="chip" data-f="pendencia_sieg" onclick="setFiltro(this)">Divergência de Impostos</button>
+    <span class="chip-sep"></span>
+    <button class="chip chip-info" data-f="excecao" onclick="setFiltro(this)">Exceções</button>
+    <button class="chip chip-info" data-f="canceladas" onclick="setFiltro(this)">Canceladas</button>
+    <button class="chip chip-info" data-f="sp_sem_sieg" onclick="setFiltro(this)">SP sem SIEG</button>
+    <button class="chip chip-info" data-f="sp_duplicada" onclick="setFiltro(this)">Duplicadas SP</button>
   </div>
   <span class="filtro-total" id="filtroTotal"></span>
 </div>
@@ -104,6 +117,7 @@
       <tr class="linha-resumo{% if i.cancelada %} linha-cancelada{% elif i.sp_extra %} linha-spextra{% endif %}"
           data-v="{{ i.veredito }}" data-cancelada="{{ '1' if i.cancelada else '0' }}"
           data-pend="{{ '1' if i.pendencia_sieg else '0' }}" data-exc="{{ '1' if i.excecao else '0' }}"
+          data-erro="{{ '1' if i.tem_erro else '0' }}" data-ger="{{ '1' if i.eh_gerenciada else '0' }}" data-val="{{ '1' if i.validada else '0' }}"
           data-busca="{{ (i.numero ~ ' ' ~ i.nome_fornecedor)|lower }}"
           data-valores="{{ (i.sieg_bruto*100)|round|int }} {{ (i.sieg_liquido*100)|round|int }} {{ (i.sieg_imp*100)|round|int }}{% if i.sp_bruto is not none %} {{ (i.sp_bruto*100)|round|int }}{% endif %}{% if i.sp_liquido is not none %} {{ (i.sp_liquido*100)|round|int }}{% endif %}{% if i.sp_imp is not none %} {{ (i.sp_imp*100)|round|int }}{% endif %}"
           {% if exp %}onclick="toggleDet(this)"{% endif %}>
@@ -122,6 +136,7 @@
           {%- else -%}{{ selo('SP Data', sp_estado) }}{{ selo('SIEG', 'ok' if i.consta_sieg else 'falta') }}
           {%- if i.pendencia_sieg %} <span class="badge selo-sis b-warn" title="Impostos do SIEG divergem da alíquota base — analisar">Div. Impostos</span>{% endif -%}
           {%- if i.excecao %} <span class="badge selo-sis b-info" title="Fornecedor marcado como exceção: {{ i.excecao_obs }}">Exceção</span>{% endif -%}
+          {%- if i.validada %} <span class="badge selo-sis b-info" title="Validada manualmente (nesta competência): {{ i.validada_obs }}">Validada</span>{% endif -%}
           {%- if i.veredito == 'sp_duplicada' %} <span class="badge selo-sis b-warn">Duplicada no SP Data</span>{% endif -%}
           {%- endif -%}
         </td>
@@ -164,8 +179,8 @@
             {% endif %}
           </div>
           {% endif %}
-          {% if i.pendencia_sieg or i.excecao %}
-          <div class="det-extra det-pend{% if i.excecao %} det-exc{% endif %}">
+          {% if i.pendencia_sieg or i.excecao or i.validada %}
+          <div class="det-extra det-pend{% if i.excecao or i.validada %} det-exc{% endif %}">
             <div class="det-extra-tit">Recálculo (base × alíquota)</div>
             <div class="det-pend-grid">
             {% for it in i.pendencia_itens %}
@@ -176,13 +191,28 @@
             {% if i.excecao %}
             <div class="det-exc-obs">Fornecedor marcado como <strong>exceção</strong> — {{ i.excecao_obs }}
               <a href="/excecoes">Gerenciar</a></div>
+            {% elif i.validada %}
+            <div class="det-exc-obs">Nota <strong>validada</strong> manualmente (só nesta competência) — {{ i.validada_obs }}
+              <form method="post" action="/validacoes/desfazer" style="display:inline">
+                <input type="hidden" name="cnpj" value="{{ i.cnpj_norm }}">
+                <input type="hidden" name="numero" value="{{ i.numero_norm }}">
+                <input type="hidden" name="competencia" value="{{ resumo.competencia_raw }}">
+                <input type="hidden" name="conciliacao_id" value="{{ c.id }}">
+                <button type="submit" class="det-desfazer">desfazer</button>
+              </form></div>
             {% else %}
-            <form method="post" action="/excecoes/marcar" class="det-exc-form">
+            {# um único campo de justificativa, dois botões (item 1) #}
+            <form method="post" class="det-exc-form">
               <input type="hidden" name="cnpj" value="{{ i.cnpj_norm }}">
+              <input type="hidden" name="numero" value="{{ i.numero_norm }}">
               <input type="hidden" name="nome" value="{{ i.nome_fornecedor }}">
+              <input type="hidden" name="competencia" value="{{ resumo.competencia_raw }}">
               <input type="hidden" name="conciliacao_id" value="{{ c.id }}">
-              <input type="text" name="observacao" class="input exc-obs" placeholder="Motivo (ex.: entidade imune)" required>
-              <button type="submit" class="btn-mini">Marcar como exceção</button>
+              <input type="text" name="observacao" class="input exc-obs" placeholder="Justificativa" required>
+              <button type="submit" class="btn-mini b-info-btn" formaction="/validacoes/marcar"
+                      title="Sem erro de imposto nesta nota — vai p/ Gerenciadas (só nesta competência)">Marcar como validada</button>
+              <button type="submit" class="btn-mini b-info-btn" formaction="/excecoes/marcar"
+                      title="Fornecedor dispensado (por CNPJ, todas as competências) — vai p/ Exceções">Marcar como exceção</button>
             </form>
             {% endif %}
           </div>
@@ -225,12 +255,14 @@
       let okS;
       switch (filtroStatus) {
         case 'todas': okS = principal; break;
+        case 'gerenciada': okS = principal && tr.dataset.ger === '1'; break;
+        case 'erros': okS = principal && tr.dataset.erro === '1'; break;
+        case 'pendencia_sieg': okS = principal && tr.dataset.pend === '1'; break;
+        case 'excecao': okS = principal && tr.dataset.exc === '1'; break;
         case 'canceladas': okS = canc; break;
         case 'sp_sem_sieg': okS = v === 'sp_sem_sieg'; break;
         case 'sp_duplicada': okS = v === 'sp_duplicada'; break;
-        case 'pendencia_sieg': okS = principal && tr.dataset.pend === '1'; break;
-        case 'excecao': okS = principal && tr.dataset.exc === '1'; break;
-        default: okS = principal && v === filtroStatus;   // gerenciada/ressalva/pendente
+        default: okS = principal;
       }
       const okTexto = (tr.dataset.busca || '').includes(q);
       const okNum = qDig !== '' && (tr.dataset.valores || '').split(' ').some(v => v.includes(qDig));

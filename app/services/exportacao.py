@@ -14,10 +14,13 @@ _AMARELO = "FFB0791E"
 _VERMELHO = "FFA8331C"
 _CINZA = "FF9CA0B5"
 
+_AZUL = "FF2E5BAE"
 _FILL_OK = (PatternFill("solid", fgColor="FFE4F1EA"), Font(color=_VERDE, size=10))
 _FILL_WARN = (PatternFill("solid", fgColor="FFF8EED7"), Font(color=_AMARELO, size=10))
 _FILL_ALERT = (PatternFill("solid", fgColor="FFF6E0DA"), Font(color=_VERMELHO, size=10))
 _FILL_NEUTRO = (None, Font(color=_CINZA, size=10))
+# item 1: gerenciamento manual (Validada/Exceção) em azul
+_FILL_INFO = (PatternFill("solid", fgColor="FFE1E8F5"), Font(color=_AZUL, size=10))
 
 _FONTE_CAB = Font(bold=True, color=_BRANCO, size=11)
 _FILL_CAB = PatternFill("solid", fgColor=_NAVY)
@@ -38,15 +41,15 @@ _ROTULO_ARQ = {"ok": "OK", "diverg": "Divergência", "falta": "Não encontrada"}
 
 # Relatório espelha a tela: SN, presença SP Data × SIEG, arquivo, situação e a
 # marcação do recálculo (qual tributo do SIEG diverge do base × alíquota).
-CABECALHOS = ["Nº NF", "Fornecedor", "SN", "Emissão", "Lançam. (SP Data)",
+CABECALHOS = ["Nº NF", "Fornecedor", "CNPJ", "SN", "Emissão", "Lançam. (SP Data)",
               "Bruto (Sieg)", "Líquido (Sieg)", "Impostos (Sieg)",
               "Bruto (SPData)", "Líquido (SPData)", "Impostos (SPData)",
               "SP Data", "SIEG", "Arquivo", "Divergências", "Situação",
               "Divergência (recálculo)"]
-_COLS_MOEDA = (6, 7, 8, 9, 10, 11)          # 1-based: as 6 colunas de valor
-_COLS_STATUS = (12, 13, 14, 16)             # SP Data, SIEG, Arquivo, Situação
-_COL_DIVERG = 15
-_COL_RECALC_STD = 17                         # "Divergência (recálculo)" no layout padrão
+_COLS_MOEDA = (7, 8, 9, 10, 11, 12)         # 1-based: as 6 colunas de valor
+_COLS_STATUS = (13, 14, 15, 17)             # SP Data, SIEG, Arquivo, Situação
+_COL_DIVERG = 16
+_COL_RECALC_STD = 18                         # "Divergência (recálculo)" no layout padrão
 
 
 def _cap_componente(parte):
@@ -76,16 +79,27 @@ def _estilo_por_texto(txt):
     if t in ("Faltou", "Não encontrada", "Faltou lançar",
              "SP Data sem SIEG", "Duplicada no SP Data"):
         return _FILL_ALERT
+    if t in ("Validada", "Exceção"):          # item 1: gerenciamento manual = azul
+        return _FILL_INFO
     if t in (_TRACO, "Cancelada"):
         return _FILL_NEUTRO
     return None
+
+
+def _situacao_texto(it):
+    """Situação legível, com o gerenciamento manual (item 1)."""
+    if it.get("validada"):
+        return "Validada"
+    if it.get("excecao"):
+        return "Exceção"
+    return _SITUACAO.get(it["veredito"], it["veredito"].capitalize())
 
 
 def _linha_item(it):
     spx = it.get("sp_extra")
     canc = it.get("cancelada")
     return [
-        it["numero"], it["nome_fornecedor"],
+        it["numero"], it["nome_fornecedor"], it.get("cnpj_fornecedor") or _TRACO,   # CNPJ (item 2)
         "Sim" if it.get("optante_sn") else _TRACO,                       # SN (item 3)
         _TRACO if spx else it["data_emissao"],
         it.get("sp_data_lancamento") or "",
@@ -99,7 +113,7 @@ def _linha_item(it):
         "OK" if it.get("consta_sieg") else "Faltou",                          # SIEG
         _TRACO if (canc or spx) else _ROTULO_ARQ.get(it["status_arquivo"], it["status_arquivo"]),
         _divergencias(it),
-        _SITUACAO.get(it["veredito"], it["veredito"].capitalize()),           # Situação
+        _situacao_texto(it),                                                 # Situação
         _texto_recalc(it),                                                   # Divergência (recálculo)
     ]
 
@@ -174,15 +188,15 @@ def _escrever_aba(ws, itens, com_totais=None):
 
 
 # Colunas SIEG e SPData lado a lado + a marcação do recálculo (item 2).
-CAB_IMP = ["Nº NF", "Fornecedor",
+CAB_IMP = ["Nº NF", "Fornecedor", "CNPJ",
            "ISS (Sieg)", "ISS (SPData)", "INSS (Sieg)", "INSS (SPData)",
            "IRPJ 1708 (Sieg)", "IRPJ 1708 (SPData)",
            "PIS/COFINS/CSLL 5952 (Sieg)", "PIS/COFINS/CSLL 5952 (SPData)",
            "Descontos", "Base de cálculo", "Alíquota",
            "Total (Sieg)", "Total (SPData)", "Divergência (recálculo)"]
-_COL_RECALC = 16                                    # coluna de marcação do recálculo
+_COL_RECALC = 17                                    # coluna de marcação do recálculo
 # colunas do SIEG cujo valor o recálculo confere (p/ pintar quando diverge)
-_COL_SIEG_TRIB = {"1708": 7, "5952": 9}
+_COL_SIEG_TRIB = {"1708": 8, "5952": 10}
 
 
 def _rs(v):
@@ -200,6 +214,9 @@ def _texto_recalc(it):
     if it.get("excecao"):
         obs = it.get("excecao_obs") or ""
         return ("EXCEÇÃO: " + obs + (" · " + txt if txt else "")).strip()
+    if it.get("validada"):
+        obs = it.get("validada_obs") or ""
+        return ("VALIDADA: " + obs + (" · " + txt if txt else "")).strip()
     return txt or "—"
 
 
@@ -211,7 +228,7 @@ def _aba_impostos(ws, itens):
     for off, it in enumerate(itens):
         s = (it.get("impostos") or {}).get("sieg") or {}
         p = (it.get("impostos") or {}).get("spdata") or {}
-        vals = [it["numero"], it["nome_fornecedor"],
+        vals = [it["numero"], it["nome_fornecedor"], it.get("cnpj_fornecedor") or _TRACO,
                 s.get("iss", 0), p.get("iss"), s.get("inss", 0), p.get("inss"),
                 s.get("ir", 0), p.get("ir"), s.get("csrf", 0), p.get("csrf"),
                 s.get("descontos", 0), s.get("base_calculo", 0), s.get("aliquota", 0),
@@ -224,7 +241,7 @@ def _aba_impostos(ws, itens):
             cel = ws.cell(r, c, v); cel.font = _FONTE_DADO; cel.border = _BORDA
             if off % 2 == 1:
                 cel.fill = _FILL_ZEBRA
-            if 3 <= c <= 15 and c != 13 and isinstance(v, (int, float)):   # 13 = Alíquota
+            if 4 <= c <= 16 and c != 14 and isinstance(v, (int, float)):   # 14 = Alíquota
                 cel.number_format = _MOEDA
         # item 2: MARCA a linha divergente do recálculo (célula de marcação + tributos)
         cel_rec = ws.cell(r, _COL_RECALC)
@@ -244,11 +261,11 @@ def _aba_impostos(ws, itens):
     for it in itens:
         s = (it.get("impostos") or {}).get("sieg") or {}
         p = (it.get("impostos") or {}).get("spdata") or {}
-        for c, v in ((3, s.get("iss", 0)), (4, p.get("iss") or 0), (5, s.get("inss", 0)),
-                     (6, p.get("inss") or 0), (7, s.get("ir", 0)), (8, p.get("ir") or 0),
-                     (9, s.get("csrf", 0)), (10, p.get("csrf") or 0),
-                     (11, s.get("descontos", 0)), (12, s.get("base_calculo", 0)),
-                     (14, s.get("total", 0)), (15, p.get("total") or 0)):
+        for c, v in ((4, s.get("iss", 0)), (5, p.get("iss") or 0), (6, s.get("inss", 0)),
+                     (7, p.get("inss") or 0), (8, s.get("ir", 0)), (9, p.get("ir") or 0),
+                     (10, s.get("csrf", 0)), (11, p.get("csrf") or 0),
+                     (12, s.get("descontos", 0)), (13, s.get("base_calculo", 0)),
+                     (15, s.get("total", 0)), (16, p.get("total") or 0)):
             somas[c] = round(somas.get(c, 0) + (v or 0), 2)
     for c, v in somas.items():
         cel = ws.cell(total_r, c, v)
@@ -285,11 +302,12 @@ def gerar_xlsx(resumo: dict, itens: list) -> bytes:
         ("Gerado em", resumo["data_hora"]),
         ("Total de notas (Sieg)", resumo["total_universo"]),
         ("Valor total (bruto)", resumo["valor_total"]),
-        ("Gerenciadas", resumo["qt_gerenciadas"]),
-        ("Com ressalva", resumo["qt_ressalva"]),
-        ("Faltou lançar", resumo["qt_falta_lancar"]),
-        ("Faltou arquivar", resumo["qt_falta_arquivar"]),
-        ("Canceladas (informativo)", resumo["qt_canceladas"]),
+        ("Gerenciadas", resumo.get("qt_gerenciadas", 0)),
+        ("Erros", resumo.get("qt_erros", 0)),
+        ("Divergência de impostos", resumo.get("qt_divergencia", 0)),
+        ("Validadas (manual)", resumo.get("qt_validadas", 0)),
+        ("Exceções (manual)", resumo.get("qt_excecoes", 0)),
+        ("Canceladas (informativo)", resumo.get("qt_canceladas", 0)),
         ("SP Data sem SIEG", resumo.get("qt_sp_sem_sieg", 0)),
         ("Duplicadas no SP Data", resumo.get("qt_sp_duplicadas", 0)),
     ]
@@ -298,12 +316,13 @@ def gerar_xlsx(resumo: dict, itens: list) -> bytes:
     # que vão para abas próprias (item 1: separar por filtro, não misturar).
     _escrever_aba(ws1, prin, com_totais=totais)
 
-    # Uma aba por filtro da tela (só as que têm notas).
+    # Uma aba por filtro da tela (só as que têm notas) — item 1: Erros no lugar de
+    # Ressalva/Pendentes; Validadas listadas à parte (contam como Gerenciadas).
     categorias = [
-        ("Gerenciadas", [i for i in prin if i["veredito"] == "gerenciada"]),
-        ("Ressalva", [i for i in prin if i["veredito"] == "ressalva"]),
-        ("Pendentes", [i for i in prin if i["veredito"] == "pendente"]),
+        ("Gerenciadas", [i for i in prin if i.get("eh_gerenciada")]),
+        ("Erros", [i for i in prin if i.get("tem_erro")]),
         ("Divergência Impostos", [i for i in prin if i.get("pendencia_sieg")]),
+        ("Validadas", [i for i in prin if i.get("validada")]),
         ("Exceções", [i for i in prin if i.get("excecao")]),
         ("Canceladas", [i for i in itens if i.get("cancelada")]),
         ("SP sem SIEG", [i for i in itens if i["veredito"] == "sp_sem_sieg"]),

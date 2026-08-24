@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
-from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
+                        String, UniqueConstraint)
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -94,3 +95,20 @@ class ExcecaoFornecedor(Base):
     criado_em = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     atualizado_em = Column(DateTime, default=lambda: datetime.now(timezone.utc),
                            onupdate=lambda: datetime.now(timezone.utc))
+
+
+class ValidacaoImposto(Base):
+    """Nota marcada manualmente como VALIDADA na divergência de impostos: o
+    operador confirma que aquela nota NÃO tem erro de imposto. Diferente da
+    exceção, vale APENAS para a competência trabalhada (não replica p/ as
+    demais) — por isso a chave é competência + CNPJ + número da nota."""
+    __tablename__ = "validacao_imposto"
+    __table_args__ = (UniqueConstraint("competencia", "cnpj", "numero",
+                                       name="uq_validacao_comp_cnpj_num"),)
+    id = Column(Integer, primary_key=True)
+    competencia = Column(String, nullable=False, index=True)   # "aaaa-mm"
+    cnpj = Column(String, nullable=False)      # só dígitos
+    numero = Column(String, nullable=False)    # só dígitos (número da nota)
+    nome = Column(String, nullable=True)
+    observacao = Column(String, nullable=False, default="")
+    criado_em = Column(DateTime, default=lambda: datetime.now(timezone.utc))

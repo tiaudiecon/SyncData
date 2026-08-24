@@ -15,15 +15,15 @@ def _itens():
         {"numero": "100", "nome_fornecedor": "FORNEC A", "data_emissao": "03/07/2026",
          "valor_bruto": 150.0, "valor_liquido": 150.0, "status_lancamento": "ok",
          "status_arquivo": "ok", "detalhe_lancamento": "", "detalhe_arquivo": "",
-         "veredito": "gerenciada"},
+         "veredito": "gerenciada", "eh_gerenciada": True, "tem_erro": False},
         {"numero": "101", "nome_fornecedor": "FORNEC B", "data_emissao": "04/07/2026",
          "valor_bruto": 100.0, "valor_liquido": 100.0, "status_lancamento": "falta",
          "status_arquivo": "falta", "detalhe_lancamento": "", "detalhe_arquivo": "",
-         "veredito": "pendente"},
+         "veredito": "pendente", "eh_gerenciada": False, "tem_erro": True},
         {"numero": "102", "nome_fornecedor": "FORNEC C", "data_emissao": "05/07/2026",
          "valor_bruto": 200.0, "valor_liquido": 190.0, "status_lancamento": "diverg",
          "status_arquivo": "ok", "detalhe_lancamento": "valor diverge", "detalhe_arquivo": "",
-         "veredito": "ressalva"},
+         "veredito": "ressalva", "eh_gerenciada": False, "tem_erro": True},
     ]
 
 
@@ -51,6 +51,18 @@ def test_export_cabecalho_tem_periodo():
     assert "01/07/2026 a 18/07/2026" in textos
 
 
+def test_export_tem_coluna_cnpj_em_todas_as_abas():
+    # item 2: a coluna CNPJ aparece no relatório (aba Resultado e aba Impostos)
+    itens = _itens_ricos()
+    for it in itens:
+        it["cnpj_fornecedor"] = "11.222.333/0001-99"
+    wb = openpyxl.load_workbook(io.BytesIO(gerar_xlsx(_resumo(), itens)))
+    res = [str(c.value) for row in wb["Resultado"].iter_rows() for c in row if c.value]
+    assert "CNPJ" in res and "11.222.333/0001-99" in res
+    imp = [str(c.value) for row in wb["Impostos"].iter_rows() for c in row if c.value]
+    assert "CNPJ" in imp and "11.222.333/0001-99" in imp
+
+
 def test_export_tem_aba_impostos_e_moeda_numerica():
     import io, openpyxl
     conteudo = gerar_xlsx(_resumo(), _itens_ricos())
@@ -67,14 +79,15 @@ def test_export_tem_aba_impostos_e_moeda_numerica():
 
 
 def test_abas_por_filtro():
-    # item 1: uma aba por filtro (Gerenciadas/Ressalva/Pendentes/…), não misturado.
+    # item 1: abas Gerenciadas e Erros (Ressalva/Pendentes viraram Erros).
     conteudo = gerar_xlsx(_resumo(), _itens())   # 100 gerenc., 101 pendente, 102 ressalva
     wb = openpyxl.load_workbook(io.BytesIO(conteudo))
-    for aba in ("Resultado", "Gerenciadas", "Ressalva", "Pendentes", "Impostos"):
+    for aba in ("Resultado", "Gerenciadas", "Erros", "Impostos"):
         assert aba in wb.sheetnames, aba
-    # cada aba só tem a sua nota
-    pend = [str(c.value) for c in wb["Pendentes"]["A"] if c.value is not None]
-    assert "101" in pend and "100" not in pend and "102" not in pend
+    assert "Ressalva" not in wb.sheetnames and "Pendentes" not in wb.sheetnames
+    # Erros junta pendente (101) + ressalva (102); Gerenciadas só a 100
+    erros = [str(c.value) for c in wb["Erros"]["A"] if c.value is not None]
+    assert "101" in erros and "102" in erros and "100" not in erros
     ger = [str(c.value) for c in wb["Gerenciadas"]["A"] if c.value is not None]
     assert "100" in ger and "101" not in ger
 

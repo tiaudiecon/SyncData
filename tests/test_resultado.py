@@ -99,6 +99,35 @@ def test_resumo_expoe_periodo(client):
     assert resumo["periodo"] == "01/07/2026 a 20/07/2026"
 
 
+def test_export_dados_bloqueia_com_erro_e_libera_apos_validar(client):
+    # item 3: exportar dados só com a conferência sem erros; validar zera o erro
+    import json
+    from app.database import SessionLocal, engine, Base
+    from app.models import Conciliacao, ConciliacaoItem
+    from app.services.aliquotas import garantir_padrao
+    Base.metadata.create_all(bind=engine)
+    client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
+    db = SessionLocal(); garantir_padrao(db)
+    conc = Conciliacao(cnpj="04541288000162", competencia="2026-07"); db.add(conc); db.flush()
+    imp = {"sieg": {"ir": 0.0, "csrf": 0.0, "iss": 0.0, "inss": 0.0, "optante_sn": False,
+                    "descontos": 0.0, "base_calculo": 1000.0, "total": 0.0, "iss_retido": False},
+           "spdata": {"iss": 0, "inss": 0, "ir": 0, "csrf": 0, "total": 0}}
+    db.add(ConciliacaoItem(conciliacao_id=conc.id, numero="55", cnpj_fornecedor="11222333000199",
+        nome_fornecedor="X", data_emissao="03/07/2026", valor_bruto=1000.0, valor_liquido=1000.0,
+        imp_sieg=0.0, impostos_json=json.dumps(imp), status_lancamento="ok", status_arquivo="ok",
+        veredito="gerenciada", cancelada=False, sp_valor_bruto=1000.0, sp_valor_liquido=1000.0))
+    db.commit(); cid = conc.id; db.close()
+    # IRPJ esperado 15 (>10) apurado 0 -> divergência (erro) -> bloqueia a exportação
+    assert client.get(f"/resultado/{cid}/dados.json").status_code == 409
+    # após validar manualmente, some o erro -> libera (200) e devolve o pacote JSON
+    client.post("/validacoes/marcar", data={"cnpj": "11222333000199", "numero": "55",
+        "nome": "X", "observacao": "ok", "competencia": "2026-07", "conciliacao_id": cid},
+        follow_redirects=False)
+    r2 = client.get(f"/resultado/{cid}/dados.json")
+    assert r2.status_code == 200 and r2.json()["formato"] == "syncdata-conciliacao"
+    assert r2.json()["resumo"]["validadas"] == 1 and r2.json()["resumo"]["erros"] == 0
+
+
 def test_resultado_tem_busca_e_grupos(client):
     client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
     st = montar_conciliacao("04541288000162", _spdata_txt(), _sieg_xlsx("04541288000162"))

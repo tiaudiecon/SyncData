@@ -7,6 +7,7 @@ from app.database import get_db
 from app.models import Conciliacao
 import re
 from app.services.exportacao import gerar_xlsx
+from app.services.pacote_dados import gerar_pacote_dados
 from app.services.tempo import formatar_dt, formatar_competencia, formatar_periodo
 from app.services.configuracao import contexto_cliente, obter_config
 
@@ -15,6 +16,7 @@ templates = Jinja2Templates(directory="templates")
 from app.services.formatacao import largura_numeros, pad_numero, registrar_filtros
 from app.services import aliquotas as serv_aliquotas
 from app.services import excecoes as serv_excecoes
+from app.services import validacoes as serv_validacoes
 from app.services.recalculo import pendencia_sieg
 from app.services.normalizacao import so_digitos
 import json
@@ -57,18 +59,18 @@ def _par(s, p, chave):
     return {"sieg": sv, "sp": pv, "delta": delta}
 
 
-def montar_resumo_e_itens(conc, tabelas=None, excecoes=None):
+def montar_resumo_e_itens(conc, tabelas=None, excecoes=None, validacoes=None):
     tabelas = tabelas or []
-    excecoes = excecoes or {}   # {cnpj_normalizado: observacao} (item 6)
+    excecoes = excecoes or {}     # {cnpj_norm: obs} — exceção por CNPJ (todas as competências)
+    validacoes = validacoes or {}  # {(cnpj_norm, numero_norm): obs} — validada só nesta competência
     resumo = {
         "cnpj": conc.cnpj, "data_hora": formatar_dt(conc.data_hora),
         "competencia": formatar_competencia(conc.competencia),
+        "competencia_raw": conc.competencia or "",   # chave p/ marcar validada
         "periodo": formatar_periodo(conc.periodo_inicio, conc.periodo_fim),   # print3
-
         "total_universo": conc.total_universo, "valor_total": conc.valor_total,
-        "qt_gerenciadas": conc.qt_gerenciadas, "qt_ressalva": conc.qt_ressalva,
-        "qt_falta_lancar": conc.qt_falta_lancar,
-        "qt_falta_arquivar": conc.qt_falta_arquivar, "qt_canceladas": conc.qt_canceladas,
+        "qt_canceladas": conc.qt_canceladas,
+        "qt_falta_arquivar": conc.qt_falta_arquivar,
         "qt_sp_sem_sieg": sum(1 for i in conc.itens if i.veredito == "sp_sem_sieg"),
         "qt_sp_duplicadas": sum(1 for i in conc.itens if i.veredito == "sp_duplicada"),
     }
@@ -84,9 +86,19 @@ def montar_resumo_e_itens(conc, tabelas=None, excecoes=None):
         if i.veredito not in ("cancelada", *_SP_EXTRA) and sieg_dict:
             aliq = serv_aliquotas.vigente_na_lista(tabelas, _data_iso(i.data_emissao))
             pend, pend_itens = pendencia_sieg(sieg_dict, i.valor_bruto, aliq)
-        # item 6: fornecedor marcado como exceção -> a divergência é esperada
-        _obs_exc = excecoes.get(so_digitos(i.cnpj_fornecedor)) if pend else None
+        cnpj_norm = so_digitos(i.cnpj_fornecedor)
+        numero_norm = so_digitos(i.numero)
+        # item 6: exceção por CNPJ (divergência esperada, vai p/ Exceções)
+        _obs_exc = excecoes.get(cnpj_norm) if pend else None
         is_excecao = pend and _obs_exc is not None
+        # novo: validada manualmente (só nesta competência) -> vira Gerenciada
+        _obs_val = validacoes.get((cnpj_norm, numero_norm)) if (pend and not is_excecao) else None
+        is_validada = _obs_val is not None
+        pend_aberta = pend and not is_excecao and not is_validada   # divergência ainda em aberto
+        principal = i.veredito not in ("cancelada", *_SP_EXTRA)
+        # buckets novos (item 1): Gerenciadas x Erros
+        eh_gerenciada = principal and (i.veredito == "gerenciada") and not pend_aberta and not is_excecao
+        tem_erro = principal and ((i.veredito in ("ressalva", "pendente")) or pend_aberta)
         p_sp = imp.get("spdata")   # None se a nota não foi lançada no SP Data
         itens.append({
             "id": i.id,
@@ -106,10 +118,13 @@ def montar_resumo_e_itens(conc, tabelas=None, excecoes=None):
             "detalhe_arquivo": i.detalhe_arquivo or "",
             "veredito": i.veredito, "cancelada": bool(i.cancelada),
             "sp_extra": i.veredito in _SP_EXTRA,          # CON-02/04
+            "principal": principal,
+            "eh_gerenciada": eh_gerenciada, "tem_erro": tem_erro,   # item 1
             "optante_sn": bool(sieg_dict.get("optante_sn")),   # DET-02 (SN)
-            "pendencia_sieg": pend and not is_excecao,     # CON-05 (exceção não conta)
+            "pendencia_sieg": pend_aberta,     # CON-05 (exceção/validada não contam)
             "excecao": is_excecao, "excecao_obs": _obs_exc or "",   # item 6
-            "cnpj_norm": so_digitos(i.cnpj_fornecedor),
+            "validada": is_validada, "validada_obs": _obs_val or "",   # item 1
+            "cnpj_norm": cnpj_norm, "numero_norm": numero_norm,
             # item 3: presença em cada sistema (SP Data × SIEG).
             # sp_extra (SP sem SIEG / duplicada) EXISTE no SP Data -> consta_spdata.
             "consta_spdata": (i.veredito in _SP_EXTRA) or (i.status_lancamento in ("ok", "diverg")),
@@ -132,40 +147,72 @@ def montar_resumo_e_itens(conc, tabelas=None, excecoes=None):
             "cnpj_fornecedor_sp": _fmt_cnpj((p_sp or {}).get("cnpj") or i.cnpj_fornecedor),
             "pendencia_itens": pend_itens,
         })
-    resumo["qt_excecoes"] = sum(1 for it in itens if it["excecao"])   # item 6
+    # contagens em tempo de exibição (refletem exceção/validada atuais) — item 1
+    prin = [it for it in itens if it["principal"]]
+    resumo["qt_gerenciadas"] = sum(1 for it in prin if it["eh_gerenciada"])
+    resumo["qt_erros"] = sum(1 for it in prin if it["tem_erro"])
+    resumo["qt_divergencia"] = sum(1 for it in prin if it["pendencia_sieg"])
+    resumo["qt_excecoes"] = sum(1 for it in prin if it["excecao"])
+    resumo["qt_validadas"] = sum(1 for it in prin if it["validada"])
+    resumo["qt_ressalva"] = sum(1 for it in prin if it["veredito"] == "ressalva")
+    resumo["qt_falta_lancar"] = sum(1 for it in prin if it["veredito"] == "pendente")
     return resumo, itens
+
+
+def _resumo_itens(db, conc):
+    """Monta resumo+itens com as alíquotas, exceções e validações da competência."""
+    return montar_resumo_e_itens(
+        conc, serv_aliquotas.listar(db), serv_excecoes.mapa_cnpjs(db),
+        serv_validacoes.mapa(db, conc.competencia))
 
 
 @router.get("/resultado/{conciliacao_id}")
 def ver(conciliacao_id: int, request: Request, db: Session = Depends(get_db)):
     conc = _carregar(db, conciliacao_id)
-    resumo, itens = montar_resumo_e_itens(conc, serv_aliquotas.listar(db),
-                                          serv_excecoes.mapa_cnpjs(db))
+    resumo, itens = _resumo_itens(db, conc)
     return templates.TemplateResponse(request, "resultado.html", {
         "ativo": "resultado", "c": conc,
         "resumo": resumo, "itens": itens, **contexto_cliente(db),
     })
 
 
-def _nome_arquivo(razao, competencia, conc):
-    """SyncData_{empresa}_{competência|data}.xlsx (item 2). Sem acentos."""
+def _nome_arquivo(razao, competencia, conc, ext="xlsx", prefixo="SyncData"):
+    """{prefixo}_{empresa}_{competência|data}.{ext} (item 2). Sem acentos."""
     import unicodedata
     sem_acento = (unicodedata.normalize("NFKD", razao or "")
                   .encode("ascii", "ignore").decode("ascii"))
     base = re.sub(r"[^A-Za-z0-9]+", "_", sem_acento.strip()).strip("_") or "Cliente"
     quando = competencia or (conc.data_hora.strftime("%Y-%m-%d") if conc.data_hora else "")
-    nome = f"SyncData_{base}_{quando}".rstrip("_")
-    return nome + ".xlsx"
+    nome = f"{prefixo}_{base}_{quando}".rstrip("_")
+    return f"{nome}.{ext}"
 
 
 @router.get("/resultado/{conciliacao_id}/planilha.xlsx")
 def baixar(conciliacao_id: int, db: Session = Depends(get_db)):
     conc = _carregar(db, conciliacao_id)
-    resumo, itens = montar_resumo_e_itens(conc, serv_aliquotas.listar(db),
-                                          serv_excecoes.mapa_cnpjs(db))
+    resumo, itens = _resumo_itens(db, conc)
     cfg = obter_config(db)
     resumo["razao_social"] = cfg.razao_social or ""      # cabeçalho do relatório
     conteudo = gerar_xlsx(resumo, itens)
     nome = _nome_arquivo(cfg.razao_social, conc.competencia, conc)
     return StreamingResponse(io.BytesIO(conteudo), media_type=_XLSX,
+        headers={"Content-Disposition": f'attachment; filename="{nome}"'})
+
+
+@router.get("/resultado/{conciliacao_id}/dados.json")
+def exportar_dados(conciliacao_id: int, db: Session = Depends(get_db)):
+    """Item 3: pacote de dados da conciliação (para o cliente enviar e o fiscal
+    importar). Liberado só quando não há mais erros (conferência concluída)."""
+    conc = _carregar(db, conciliacao_id)
+    resumo, itens = _resumo_itens(db, conc)
+    if resumo.get("qt_erros", 0) > 0:
+        raise HTTPException(status_code=409,
+            detail="A conciliação ainda tem erros — resolva-os antes de exportar os dados.")
+    cfg = obter_config(db)
+    resumo["razao_social"] = cfg.razao_social or ""
+    pacote = gerar_pacote_dados(resumo, itens, conc)
+    conteudo = json.dumps(pacote, ensure_ascii=False, indent=1).encode("utf-8")
+    nome = _nome_arquivo(cfg.razao_social, conc.competencia, conc,
+                         ext="syncdata.json", prefixo="SyncData_dados")
+    return StreamingResponse(io.BytesIO(conteudo), media_type="application/json",
         headers={"Content-Disposition": f'attachment; filename="{nome}"'})
