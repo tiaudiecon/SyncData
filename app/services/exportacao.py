@@ -290,13 +290,46 @@ def gerar_xlsx_impostos(itens: list) -> bytes:
     return buf.getvalue()
 
 
+def _escrever_resumo(ws, resumo):
+    """Aba 'Resumo': cabeçalho/metadados da conciliação (cliente, competência,
+    período e as contagens) — separado da aba de dados (Total)."""
+    linhas = [
+        ("Cliente", resumo.get("razao_social") or resumo.get("cnpj", "")),
+        ("CNPJ", resumo.get("cnpj", "")),
+        ("Competência", resumo.get("competencia") or _TRACO),
+        ("Período (conferência)", resumo.get("periodo") or _TRACO),
+        ("Gerado em", resumo.get("data_hora", "")),
+        ("", ""),
+        ("Total de notas (Sieg)", resumo.get("total_universo", 0)),
+        ("Valor total (bruto)", resumo.get("valor_total", 0.0)),
+        ("Gerenciadas", resumo.get("qt_gerenciadas", 0)),
+        ("Erros", resumo.get("qt_erros", 0)),
+        ("Divergência de impostos", resumo.get("qt_divergencia", 0)),
+        ("Validadas (manual)", resumo.get("qt_validadas", 0)),
+        ("Exceções (manual)", resumo.get("qt_excecoes", 0)),
+        ("Canceladas (informativo)", resumo.get("qt_canceladas", 0)),
+        ("SP Data sem SIEG", resumo.get("qt_sp_sem_sieg", 0)),
+        ("Duplicadas no SP Data", resumo.get("qt_sp_duplicadas", 0)),
+    ]
+    for r, (rot, val) in enumerate(linhas, start=1):
+        if rot:
+            ws.cell(r, 1, rot).font = Font(bold=True, color=_NAVY, size=10)
+        cel = ws.cell(r, 2, val); cel.font = _FONTE_DADO
+        if isinstance(val, float):
+            cel.number_format = _MOEDA
+    ws.column_dimensions["A"].width = 26
+    ws.column_dimensions["B"].width = 32
+
+
 def gerar_xlsx(resumo: dict, itens: list) -> bytes:
     wb = openpyxl.Workbook()
-    ws1 = wb.active
-    ws1.title = "Total"
+    ws_resumo = wb.active
+    ws_resumo.title = "Resumo"
+    _escrever_resumo(ws_resumo, resumo)   # metadados numa aba própria (separada dos dados)
+    ws1 = wb.create_sheet("Total")
     prin = _principais(itens)
-    # Aba "Total" = universo do Sieg (Todas) — SEM cabeçalho (item 5) e SEM
-    # canceladas/confronto inverso, que vão para abas próprias.
+    # Aba "Total" = universo do Sieg (Todas) — só a tabela; SEM canceladas/confronto
+    # inverso, que vão para abas próprias.
     _escrever_aba(ws1, prin)
 
     # Uma aba por filtro da tela (só as que têm notas) — item 1: Erros no lugar de

@@ -168,10 +168,6 @@ table.dense thead th{vertical-align:bottom}
 .kpi.ok .val{color:var(--ok)} .kpi.warn .val{color:var(--warn)} .kpi.alert .val{color:var(--alert)}
 .kpi.info .val{color:var(--info)}   /* item 1: Exceções (gerenciamento manual = azul) */
 .kpi-row.kpi-row-3{grid-template-columns:repeat(3,1fr)}   /* Dash só Universo/Gerenciadas/Erros */
-/* link discreto de teste do "Exportar dados" (destrava mesmo com erros) */
-.link-teste-export{align-self:center; font-size:11px; color:var(--ink-4); text-decoration:underline;
-  margin-left:2px; white-space:nowrap}
-.link-teste-export:hover{color:var(--burdo)}
 .kpi .sub{font-size:11px; color:var(--ink-3); margin-top:7px}
 /* print1: no Resultado (wrap-wide) o topo é compacto p/ a tabela subir ~metade */
 .wrap-wide .page-head{margin-bottom:6px; padding-bottom:5px}

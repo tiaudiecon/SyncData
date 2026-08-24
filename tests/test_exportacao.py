@@ -39,12 +39,14 @@ def _itens_ricos():
     return base
 
 
-def test_primeira_aba_total_sem_cabecalho():
-    # item 5: a primeira aba chama "Total" e NÃO tem o bloco de cabeçalho
+def test_aba_resumo_separada_e_total_sem_cabecalho():
+    # item 5: 1ª aba "Resumo" (metadados) e aba "Total" só com a tabela de dados
     wb = openpyxl.load_workbook(io.BytesIO(gerar_xlsx(_resumo(), _itens_ricos())))
-    assert wb.sheetnames[0] == "Total"
-    a1 = wb["Total"]["A1"].value
-    assert a1 == "Nº NF"                 # começa direto na tabela (sem "Cliente"/"CNPJ" no topo)
+    assert wb.sheetnames[0] == "Resumo"
+    assert "Total" in wb.sheetnames
+    assert wb["Total"]["A1"].value == "Nº NF"     # Total começa direto na tabela
+    res = [str(c.value) for row in wb["Resumo"].iter_rows() for c in row if c.value]
+    assert "Cliente" in res and "CNPJ" in res and "Erros" in res
 
 
 def test_export_tem_coluna_cnpj_em_todas_as_abas():
