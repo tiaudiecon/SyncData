@@ -293,28 +293,11 @@ def gerar_xlsx_impostos(itens: list) -> bytes:
 def gerar_xlsx(resumo: dict, itens: list) -> bytes:
     wb = openpyxl.Workbook()
     ws1 = wb.active
-    ws1.title = "Resultado"
-    totais = [
-        ("Cliente", resumo.get("razao_social") or resumo["cnpj"]),
-        ("CNPJ", resumo["cnpj"]),
-        ("Competência", resumo.get("competencia") or _TRACO),
-        ("Período (conferência)", resumo.get("periodo") or _TRACO),
-        ("Gerado em", resumo["data_hora"]),
-        ("Total de notas (Sieg)", resumo["total_universo"]),
-        ("Valor total (bruto)", resumo["valor_total"]),
-        ("Gerenciadas", resumo.get("qt_gerenciadas", 0)),
-        ("Erros", resumo.get("qt_erros", 0)),
-        ("Divergência de impostos", resumo.get("qt_divergencia", 0)),
-        ("Validadas (manual)", resumo.get("qt_validadas", 0)),
-        ("Exceções (manual)", resumo.get("qt_excecoes", 0)),
-        ("Canceladas (informativo)", resumo.get("qt_canceladas", 0)),
-        ("SP Data sem SIEG", resumo.get("qt_sp_sem_sieg", 0)),
-        ("Duplicadas no SP Data", resumo.get("qt_sp_duplicadas", 0)),
-    ]
+    ws1.title = "Total"
     prin = _principais(itens)
-    # Aba "Resultado" = universo do Sieg (Todas) — SEM canceladas/confronto inverso,
-    # que vão para abas próprias (item 1: separar por filtro, não misturar).
-    _escrever_aba(ws1, prin, com_totais=totais)
+    # Aba "Total" = universo do Sieg (Todas) — SEM cabeçalho (item 5) e SEM
+    # canceladas/confronto inverso, que vão para abas próprias.
+    _escrever_aba(ws1, prin)
 
     # Uma aba por filtro da tela (só as que têm notas) — item 1: Erros no lugar de
     # Ressalva/Pendentes; Validadas listadas à parte (contam como Gerenciadas).

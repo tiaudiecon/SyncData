@@ -119,6 +119,8 @@ def test_export_dados_bloqueia_com_erro_e_libera_apos_validar(client):
     db.commit(); cid = conc.id; db.close()
     # IRPJ esperado 15 (>10) apurado 0 -> divergência (erro) -> bloqueia a exportação
     assert client.get(f"/resultado/{cid}/dados.json").status_code == 409
+    # item 6: bypass de teste destrava mesmo com erro
+    assert client.get(f"/resultado/{cid}/dados.json?forcar=1").status_code == 200
     # após validar manualmente, some o erro -> libera (200) e devolve o pacote JSON
     client.post("/validacoes/marcar", data={"cnpj": "11222333000199", "numero": "55",
         "nome": "X", "observacao": "ok", "competencia": "2026-07", "conciliacao_id": cid},
@@ -169,7 +171,7 @@ def test_export_xlsx_do_resultado_funciona(client):
     assert r.status_code == 200
     assert "spreadsheetml" in r.headers["content-type"]
     wb = openpyxl.load_workbook(io.BytesIO(r.content))
-    assert "Resultado" in wb.sheetnames
+    assert "Total" in wb.sheetnames
 
 
 def test_run_habilita_downloads_no_webview():
@@ -208,7 +210,7 @@ def test_item6_renomeia_pendencia_para_divergencia_impostos(client):
     client.post("/setup", data={"cnpj": "04541288000162", "razao_social": "HSS"})
     st = montar_conciliacao("04541288000162", _spdata_txt(), _sieg_xlsx("04541288000162"))
     html = client.get(f"/resultado/{st['conciliacao_id']}").text
-    assert "Divergência Impostos" in html
+    assert "Divergência de Impostos" in html          # filtro (renomeado)
     assert "Pendência SIEG" not in html and "SIEG?" not in html
 
 
@@ -220,4 +222,4 @@ def test_resultado_e_export(client):
     planilha = client.get(destino + "/planilha.xlsx")
     assert planilha.status_code == 200
     wb = openpyxl.load_workbook(io.BytesIO(planilha.content))
-    assert "Resultado" in wb.sheetnames and "Impostos" in wb.sheetnames
+    assert "Total" in wb.sheetnames and "Impostos" in wb.sheetnames

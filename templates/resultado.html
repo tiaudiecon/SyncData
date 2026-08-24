@@ -47,22 +47,17 @@
           title="Disponível quando não houver mais erros ({{ resumo.qt_erros }} restante(s))">
       <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
       Exportar dados</span>
+    <a class="link-teste-export" href="/resultado/{{ c.id }}/dados.json?forcar=1"
+       title="Apenas para teste: gera o arquivo mesmo com erros">testar</a>
     {% endif %}
   </div>
 </div>
 
-<div class="kpi-row">
+<div class="kpi-row kpi-row-3">
   <div class="kpi hl"><div class="lbl">Universo</div><div class="val tnum">{{ resumo.total_universo }}</div></div>
   <div class="kpi ok"><div class="lbl">Gerenciadas</div><div class="val tnum">{{ resumo.qt_gerenciadas }}</div></div>
   <div class="kpi alert"><div class="lbl">Erros</div><div class="val tnum">{{ resumo.qt_erros }}</div></div>
-  <div class="kpi warn"><div class="lbl">Divergência Impostos</div><div class="val tnum">{{ resumo.qt_divergencia }}</div></div>
-  <div class="kpi info"><div class="lbl">Exceções</div><div class="val tnum">{{ resumo.qt_excecoes }}</div></div>
 </div>
-<p class="sub" style="margin:-2px 0 6px; font-size:11px">
-  Erros = ressalva ({{ resumo.qt_ressalva }}) + faltou lançar ({{ resumo.qt_falta_lancar }}) + faltou arquivar ({{ resumo.qt_falta_arquivar }}) + divergência de impostos ({{ resumo.qt_divergencia }}).
-  Manual: <strong>{{ resumo.qt_validadas }}</strong> validada(s) · <strong>{{ resumo.qt_excecoes }}</strong> exceção(ões).
-  Informativos: {{ resumo.qt_canceladas }} cancelada(s) · {{ resumo.qt_sp_sem_sieg }} SP sem SIEG · {{ resumo.qt_sp_duplicadas }} duplicada(s).
-</p>
 
 <div class="toolbar">
   <input id="busca" class="input" style="max-width:320px" placeholder="Buscar por nº, fornecedor ou valor…" oninput="filtrar()">
@@ -209,10 +204,12 @@
               <input type="hidden" name="competencia" value="{{ resumo.competencia_raw }}">
               <input type="hidden" name="conciliacao_id" value="{{ c.id }}">
               <input type="text" name="observacao" class="input exc-obs" placeholder="Justificativa" required>
-              <button type="submit" class="btn-mini b-info-btn" formaction="/validacoes/marcar"
-                      title="Sem erro de imposto nesta nota — vai p/ Gerenciadas (só nesta competência)">Marcar como validada</button>
-              <button type="submit" class="btn-mini b-info-btn" formaction="/excecoes/marcar"
-                      title="Fornecedor dispensado (por CNPJ, todas as competências) — vai p/ Exceções">Marcar como exceção</button>
+              <div class="det-exc-botoes">
+                <button type="submit" class="btn-mini b-info-btn" formaction="/validacoes/marcar"
+                        title="Sem erro de imposto nesta nota — vai p/ Gerenciadas (só nesta competência)">Marcar como validada</button>
+                <button type="submit" class="btn-mini b-info-btn" formaction="/excecoes/marcar"
+                        title="Fornecedor dispensado (por CNPJ, todas as competências) — vai p/ Gerenciadas e Exceções">Marcar como exceção</button>
+              </div>
             </form>
             {% endif %}
           </div>

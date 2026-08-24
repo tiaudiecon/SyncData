@@ -39,11 +39,14 @@ def test_item6_excecao_tira_de_divergencia_impostos(client):
     # base 1000: IRPJ esperado 15 (>10) apurado 0 -> pendência (sem exceção)
     _, itens = montar_resumo_e_itens(conc, al.listar(db))
     assert itens[0]["pendencia_sieg"] is True and itens[0]["excecao"] is False
+    assert itens[0]["tem_erro"] is True and itens[0]["eh_gerenciada"] is False
     # marca o fornecedor como exceção
     serv.salvar(db, "11.222.333/0001-99", "FORN X", "entidade imune")
     _, itens2 = montar_resumo_e_itens(conc, al.listar(db), serv.mapa_cnpjs(db))
     assert itens2[0]["excecao"] is True
     assert itens2[0]["pendencia_sieg"] is False            # sai de Divergência Impostos
+    # item (ajuste): exceção também conta como Gerenciada, além de aparecer em Exceções
+    assert itens2[0]["eh_gerenciada"] is True and itens2[0]["tem_erro"] is False
     assert itens2[0]["excecao_obs"] == "entidade imune"
     db.close()
 

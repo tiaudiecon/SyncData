@@ -115,8 +115,9 @@ table.dense thead th{vertical-align:bottom}
 .det-pend.det-exc .det-extra-tit, .det-exc .det-k, .det-exc .mono, .det-exc .cod-trib{color:var(--info)}
 .det-exc-obs{font-size:11px; color:var(--info); margin-top:8px; max-width:280px}
 .det-exc-obs a{color:var(--info); text-decoration:underline; margin-left:4px}
-.det-exc-form{display:flex; gap:6px; margin-top:9px; align-items:center; flex-wrap:wrap}
-.det-exc-form .exc-obs{height:26px; font-size:11px; min-width:190px; max-width:250px; padding:0 8px}
+.det-exc-form{display:flex; flex-direction:column; gap:6px; margin-top:9px; align-items:flex-start}
+.det-exc-form .exc-obs{height:26px; font-size:11px; min-width:190px; max-width:280px; padding:0 8px}
+.det-exc-botoes{display:flex; gap:6px; flex-wrap:wrap}   /* item 1: botões juntos, abaixo */
 
 /* ---------- Page head ---------- */
 .page-head{display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
@@ -166,6 +167,11 @@ table.dense thead th{vertical-align:bottom}
 .kpi .val{font-family:'Fraunces',serif; font-size:22px; font-weight:600; line-height:1; letter-spacing:-.01em}
 .kpi.ok .val{color:var(--ok)} .kpi.warn .val{color:var(--warn)} .kpi.alert .val{color:var(--alert)}
 .kpi.info .val{color:var(--info)}   /* item 1: Exceções (gerenciamento manual = azul) */
+.kpi-row.kpi-row-3{grid-template-columns:repeat(3,1fr)}   /* Dash só Universo/Gerenciadas/Erros */
+/* link discreto de teste do "Exportar dados" (destrava mesmo com erros) */
+.link-teste-export{align-self:center; font-size:11px; color:var(--ink-4); text-decoration:underline;
+  margin-left:2px; white-space:nowrap}
+.link-teste-export:hover{color:var(--burdo)}
 .kpi .sub{font-size:11px; color:var(--ink-3); margin-top:7px}
 /* print1: no Resultado (wrap-wide) o topo é compacto p/ a tabela subir ~metade */
 .wrap-wide .page-head{margin-bottom:6px; padding-bottom:5px}

@@ -96,8 +96,10 @@ def montar_resumo_e_itens(conc, tabelas=None, excecoes=None, validacoes=None):
         is_validada = _obs_val is not None
         pend_aberta = pend and not is_excecao and not is_validada   # divergência ainda em aberto
         principal = i.veredito not in ("cancelada", *_SP_EXTRA)
-        # buckets novos (item 1): Gerenciadas x Erros
-        eh_gerenciada = principal and (i.veredito == "gerenciada") and not pend_aberta and not is_excecao
+        # buckets (item 1): Gerenciadas x Erros. Validada e Exceção resolvem a
+        # divergência de imposto -> a nota conta como Gerenciada (a exceção também
+        # continua aparecendo no filtro informativo Exceções).
+        eh_gerenciada = principal and (i.veredito == "gerenciada") and not pend_aberta
         tem_erro = principal and ((i.veredito in ("ressalva", "pendente")) or pend_aberta)
         p_sp = imp.get("spdata")   # None se a nota não foi lançada no SP Data
         itens.append({
@@ -200,12 +202,13 @@ def baixar(conciliacao_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/resultado/{conciliacao_id}/dados.json")
-def exportar_dados(conciliacao_id: int, db: Session = Depends(get_db)):
+def exportar_dados(conciliacao_id: int, forcar: int = 0, db: Session = Depends(get_db)):
     """Item 3: pacote de dados da conciliação (para o cliente enviar e o fiscal
-    importar). Liberado só quando não há mais erros (conferência concluída)."""
+    importar). Liberado só quando não há mais erros (conferência concluída).
+    `?forcar=1` destrava temporariamente para TESTE, mesmo com erros."""
     conc = _carregar(db, conciliacao_id)
     resumo, itens = _resumo_itens(db, conc)
-    if resumo.get("qt_erros", 0) > 0:
+    if resumo.get("qt_erros", 0) > 0 and not forcar:
         raise HTTPException(status_code=409,
             detail="A conciliação ainda tem erros — resolva-os antes de exportar os dados.")
     cfg = obter_config(db)
