@@ -21,7 +21,10 @@ def _itens():
          "data_emissao": "03/07/2026", "sieg_bruto": 150.0, "sieg_liquido": 150.0,
          "sieg_imp": 0.0, "sp_bruto": 150.0, "sp_liquido": 150.0, "sp_imp": 0.0,
          "status_lancamento": "ok", "status_arquivo": "ok", "veredito": "gerenciada",
-         "eh_gerenciada": True, "tem_erro": False},
+         "eh_gerenciada": True, "tem_erro": False,
+         "impostos": {"sieg": {"iss": 5.0, "total": 5.0}, "spdata": {"iss": 5.0, "total": 5.0}},
+         "detalhe_lancamento": "lancado ok", "detalhe_arquivo": "arquivado ok",
+         "tem_desconto": True, "arquivo_pdf": "100.pdf"},
         {"numero": "101", "cnpj_fornecedor": "44.555.666/0001-77", "nome_fornecedor": "B",
          "data_emissao": "04/07/2026", "sieg_bruto": 100.0, "sieg_liquido": 100.0,
          "sieg_imp": 0.0, "sp_bruto": 100.0, "sp_liquido": 100.0, "sp_imp": 0.0,
@@ -33,7 +36,7 @@ def _itens():
 
 def test_pacote_estrutura_hash_e_situacao():
     p = gerar_pacote_dados(_resumo(), _itens(), _Conc())
-    assert p["formato"] == "syncdata-conciliacao" and p["versao"] == 1
+    assert p["formato"] == "syncdata-conciliacao" and p["versao"] == 2
     assert p["cliente"]["cnpj"] == "04541288000162"
     assert p["competencia"] == "2026-07" and p["periodo"]["inicio"] == "2026-07-01"
     assert p["resumo"]["gerenciadas"] == 2 and p["resumo"]["erros"] == 0
@@ -44,3 +47,21 @@ def test_pacote_estrutura_hash_e_situacao():
     assert p["itens"][1]["situacao"] == "validada"
     assert p["itens"][1]["validada"]["observacao"] == "conferido"
     assert p["hash"].startswith("sha256:")
+
+
+def test_pacote_item_traz_detalhe_completo_para_importacao():
+    p = gerar_pacote_dados(_resumo(), _itens(), _Conc())
+    item0 = p["itens"][0]
+    assert item0["impostos"] == {"sieg": {"iss": 5.0, "total": 5.0},
+                                  "spdata": {"iss": 5.0, "total": 5.0}}
+    assert item0["detalhe_lancamento"] == "lancado ok"
+    assert item0["detalhe_arquivo"] == "arquivado ok"
+    assert item0["tem_desconto"] is True
+    assert item0["arquivo_pdf"] == "100.pdf"
+    # item sem esses campos no dict de origem (retrocompat de outras chamadas) -> defaults seguros
+    item1 = p["itens"][1]
+    assert item1["impostos"] == {}
+    assert item1["detalhe_lancamento"] == ""
+    assert item1["detalhe_arquivo"] == ""
+    assert item1["tem_desconto"] is False
+    assert item1["arquivo_pdf"] == ""

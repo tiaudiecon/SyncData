@@ -8,7 +8,7 @@ import hashlib
 import json
 
 FORMATO = "syncdata-conciliacao"
-VERSAO = 1
+VERSAO = 2
 
 
 def _situacao(it):
@@ -42,6 +42,13 @@ def _item(it):
         "cancelada": bool(it.get("cancelada")),
         "tipo": ("sp_extra" if it.get("sp_extra") else
                  ("cancelada" if it.get("cancelada") else "sieg")),
+        # v2: detalhe completo por nota, p/ importação (SyncData v2 lê o pacote
+        # sem precisar reabrir o SIEG/SP Data).
+        "impostos": it.get("impostos") or {},
+        "detalhe_lancamento": it.get("detalhe_lancamento") or "",
+        "detalhe_arquivo": it.get("detalhe_arquivo") or "",
+        "tem_desconto": bool(it.get("tem_desconto")),
+        "arquivo_pdf": it.get("arquivo_pdf") or "",
     }
 
 
