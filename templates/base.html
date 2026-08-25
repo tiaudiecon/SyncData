@@ -85,6 +85,11 @@
     // NAV-01: ordenação por clique no cabeçalho (th com data-col = índice da coluna).
     function _valorCelula(g, col) {
       const cel = g[0].cells[col];
+      // chave de ordenação explícita da célula (ex.: Fornecedor tem CNPJ embaixo,
+      // que enganaria a detecção de número) — sempre tratada como texto.
+      if (cel && cel.dataset && cel.dataset.sort !== undefined) {
+        return { num: 0, ehNum: false, txt: cel.dataset.sort };
+      }
       const txt = cel ? cel.textContent.trim() : '';
       const md = txt.match(/^(\d{2})\/(\d{2})\/(\d{4})/);          // datas dd/mm/aaaa
       if (md) return { num: +(md[3] + md[2] + md[1]), ehNum: true, txt: txt };
