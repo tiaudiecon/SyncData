@@ -251,6 +251,15 @@ table.dense tr:hover td{background:var(--creme-soft)}
   transition:border-color var(--t-1) var(--ease)}
 .input:focus{outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(28,43,94,.10)}
 .input::placeholder{color:var(--ink-4)}
+/* campo de busca com botão limpar (Resultado) */
+.busca-wrap{position:relative; flex:0 1 320px; min-width:200px}
+.busca-wrap .input{padding-right:32px}
+.busca-x{position:absolute; right:5px; top:50%; transform:translateY(-50%);
+  width:22px; height:22px; border:none; background:transparent; color:var(--ink-4);
+  cursor:pointer; font-size:13px; line-height:1; border-radius:999px;
+  display:flex; align-items:center; justify-content:center;
+  transition:background var(--t-1) var(--ease), color var(--t-1) var(--ease)}
+.busca-x:hover{background:var(--line-2); color:var(--ink)}
 
 /* ---------- Upload rows ---------- */
 .upload{display:flex; align-items:center; gap:14px; padding:15px 18px; border:1px solid var(--line);

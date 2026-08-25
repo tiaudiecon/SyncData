@@ -59,7 +59,10 @@
 </div>
 
 <div class="toolbar">
-  <input id="busca" class="input" style="max-width:320px" placeholder="Buscar por nº, fornecedor ou valor…" oninput="filtrar()">
+  <div class="busca-wrap">
+    <input id="busca" class="input" placeholder="Buscar por nº, fornecedor ou valor…" oninput="filtrar()">
+    <button type="button" id="buscaLimpar" class="busca-x" onclick="limparBusca()" aria-label="Limpar busca" title="Limpar" hidden>✕</button>
+  </div>
   <div class="chips">
     <button class="chip on" data-f="todas" onclick="setFiltro(this)">Total</button>
     <button class="chip" data-f="gerenciada" onclick="setFiltro(this)">Gerenciadas</button>
@@ -67,6 +70,7 @@
     <button class="chip" data-f="pendencia_sieg" onclick="setFiltro(this)">Divergência de Impostos</button>
     <span class="chip-sep"></span>
     <button class="chip chip-info" data-f="excecao" onclick="setFiltro(this)">Exceções</button>
+    <button class="chip chip-info" data-f="validada" onclick="setFiltro(this)">Validadas</button>
     <button class="chip chip-info" data-f="canceladas" onclick="setFiltro(this)">Canceladas</button>
     <button class="chip chip-info" data-f="sp_sem_sieg" onclick="setFiltro(this)">SP sem SIEG</button>
     <button class="chip chip-info" data-f="sp_duplicada" onclick="setFiltro(this)">Duplicadas SP</button>
@@ -239,6 +243,8 @@
   }
   function filtrar(){
     const raw = (document.getElementById('busca').value || '').trim();
+    const bx = document.getElementById('buscaLimpar');
+    if (bx) bx.hidden = (document.getElementById('busca').value === '');
     const q = raw.toLowerCase();
     const qDig = raw.replace(/\D/g, '');   // só dígitos: aceita 14263, 14263,00 e 14.263,00
     let visiveis = 0;
@@ -255,6 +261,7 @@
         case 'erros': okS = principal && tr.dataset.erro === '1'; break;
         case 'pendencia_sieg': okS = principal && tr.dataset.pend === '1'; break;
         case 'excecao': okS = principal && tr.dataset.exc === '1'; break;
+        case 'validada': okS = principal && tr.dataset.val === '1'; break;
         case 'canceladas': okS = canc; break;
         case 'sp_sem_sieg': okS = v === 'sp_sem_sieg'; break;
         case 'sp_duplicada': okS = v === 'sp_duplicada'; break;
@@ -280,6 +287,12 @@
     ['tSB', 'tSL', 'tSI', 'tPB', 'tPL', 'tPI'].forEach((id, k) => {
       document.getElementById(id).textContent = fmtMoeda(somas[k]);
     });
+  }
+  function limparBusca(){
+    const b = document.getElementById('busca');
+    b.value = '';
+    b.focus();
+    filtrar();
   }
   function numCel(cel){
     // "5.029,00" -> 5029.00 ; "—" -> 0
