@@ -1,12 +1,15 @@
 import os
 import sys
+import json
 import time
+import uuid
 import shutil
 import socket
 import tempfile
 import threading
 import subprocess
 import webbrowser
+import urllib.request
 from pathlib import Path
 
 
@@ -38,6 +41,12 @@ def _diretorio_aplicacao():
 
 os.chdir(_diretorio_aplicacao())
 
+# Token DESTE boot: o `/health` devolve ele e o `_esperar_porta` só aceita o
+# servidor que responder com ele. Precisa estar no ambiente ANTES de importar o
+# app (é ele quem lê a variável).
+_BOOT_TOKEN = uuid.uuid4().hex
+os.environ["SYNCDATA_BOOT_TOKEN"] = _BOOT_TOKEN
+
 import uvicorn
 from app.main import app
 
@@ -51,13 +60,37 @@ def _rodar_servidor(host, port):
     servidor.run()
 
 
-def _esperar_porta(host, port, tentativas=240):
+def porta_livre(host, porta_desejada):
+    """Devolve uma porta REALMENTE livre. Tenta a configurada (8000 é a porta de
+    dev mais comum que existe); se outro processo já a ocupa, pede uma efêmera ao
+    SO (bind na 0). Sem isto o uvicorn morreria no bind — em silêncio, porque
+    roda em thread — e a janela do app abriria contra o serviço alheio.
+    Obs.: nada de SO_REUSEADDR aqui; no Windows ele deixaria o bind passar mesmo
+    com a porta ocupada, que é justamente o que queremos detectar."""
+    for candidata in (porta_desejada, 0):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind((host, candidata))
+            except OSError:
+                continue
+            return s.getsockname()[1]
+    return porta_desejada
+
+
+def _esperar_porta(host, port, token, tentativas=240):
+    """Espera o NOSSO servidor. Não basta alguém aceitar conexão na porta: o
+    `/health` tem que devolver o token deste boot. Assim um serviço alheio
+    escutando ali nunca é confundido com o SyncData."""
+    url = f"http://{host}:{port}/health"
     for _ in range(tentativas):
         try:
-            with socket.create_connection((host, port), timeout=0.5):
+            with urllib.request.urlopen(url, timeout=0.5) as resp:
+                dados = json.loads(resp.read().decode("utf-8"))
+            if token and dados.get("token") == token:
                 return True
-        except OSError:
-            time.sleep(0.25)
+        except Exception:
+            pass
+        time.sleep(0.25)
     return False
 
 
@@ -102,6 +135,17 @@ def _abrir_janela_app(url):
 _TITULO = "Conciliação de Fornecedores — SyncData"
 
 
+def _avisar_erro(msg):
+    """O .exe é windowed (sem console): falha de boot precisa aparecer numa
+    caixa, senão o cliente só vê o ícone piscar e nada acontecer."""
+    print("[boot] " + msg, flush=True)
+    try:
+        import ctypes
+        ctypes.windll.user32.MessageBoxW(0, msg, _TITULO, 0x10)   # MB_ICONERROR
+    except Exception:
+        pass
+
+
 def _janela_pywebview(url):
     """Janela NATIVA via pywebview (WebView2). Bloqueia até o usuário fechar.
     Devolve True se abriu/rodou; False se o backend não está disponível (aí
@@ -120,11 +164,15 @@ def _janela_pywebview(url):
 
 if __name__ == "__main__":
     host = os.getenv("SYNCDATA_HOST", "127.0.0.1")
-    port = int(os.getenv("SYNCDATA_PORT", "8000"))
     abrir_janela = os.getenv("SYNCDATA_ABRIR_NAVEGADOR", "1") != "0"
+    # A porta é escolhida ANTES de subir o uvicorn e a mesma vale para a janela.
+    port = porta_livre(host, int(os.getenv("SYNCDATA_PORT", "8000")))
 
     threading.Thread(target=_rodar_servidor, args=(host, port), daemon=True).start()
-    if not _esperar_porta(host, port):
+    if not _esperar_porta(host, port, _BOOT_TOKEN):
+        _avisar_erro("O SyncData não conseguiu iniciar o servidor local em "
+                     f"{host}:{port}. Feche o programa e tente de novo; se persistir, "
+                     "veja o arquivo 'syncdata.log' ao lado do executável.")
         sys.exit(1)
 
     url = f"http://{host}:{port}"

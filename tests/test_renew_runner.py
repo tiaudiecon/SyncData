@@ -65,3 +65,18 @@ def test_rodar_renew_sem_relatorio_levanta(tmp_path):
         renew_runner.rodar_renew(
             str(tmp_path), comando=[sys.executable, _fake_script(True, False)],
             intervalo=0.02)
+
+
+def test_rodar_renew_estoura_o_tempo_limite(tmp_path, monkeypatch):
+    """Renew travado (diálogo modal invisível/OCR em laço) não pode girar para
+    sempre: mata o processo e vira erro no job."""
+    import time as _time
+    monkeypatch.setenv("SYNCDATA_RENEW_TIMEOUT", "0.5")
+    inicio = _time.monotonic()
+    with pytest.raises(RuntimeError) as exc:
+        renew_runner.rodar_renew(
+            str(tmp_path),
+            comando=[sys.executable, "-c", "import time; time.sleep(60)"],
+            intervalo=0.05)
+    assert "tempo limite" in str(exc.value)
+    assert _time.monotonic() - inicio < 20     # matou, não esperou os 60 s

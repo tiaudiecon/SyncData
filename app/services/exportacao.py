@@ -52,6 +52,18 @@ _COL_DIVERG = 16
 _COL_RECALC_STD = 18                         # "Divergência (recálculo)" no layout padrão
 
 
+def _texto_seguro(v):
+    """Neutraliza injeção de fórmula no .xlsx. O openpyxl grava uma string que
+    começa com '=' como FÓRMULA (data_type 'f'); '+', '-', '@' e TAB também são
+    tratados como fórmula/comando por planilhas na importação. Razão social,
+    nº da NF e justificativa vêm dos arquivos do cliente ou da digitação do
+    operador, e a planilha VIAJA para a contabilidade — o apóstrofo à frente faz
+    o Excel exibir o texto cru. Só mexe em texto; número passa intacto."""
+    if isinstance(v, str) and v and v[0] in "=+-@\t":
+        return "'" + v
+    return v
+
+
 def _cap_componente(parte):
     """'bruto R$ x ≠ R$ y' -> 'Bruto: R$ x ≠ R$ y' (mesma cara da tela)."""
     cabeca, _sep, resto = parte.partition(" ")
@@ -98,11 +110,13 @@ def _situacao_texto(it):
 def _linha_item(it):
     spx = it.get("sp_extra")
     canc = it.get("cancelada")
+    # _texto_seguro nas colunas de TEXTO vindas do banco (fórmula viva no Excel).
     return [
-        it["numero"], it["nome_fornecedor"], it.get("cnpj_fornecedor") or _TRACO,   # CNPJ (item 2)
+        _texto_seguro(it["numero"]), _texto_seguro(it["nome_fornecedor"]),
+        _texto_seguro(it.get("cnpj_fornecedor") or _TRACO),              # CNPJ (item 2)
         "Sim" if it.get("optante_sn") else _TRACO,                       # SN (item 3)
-        _TRACO if spx else it["data_emissao"],
-        it.get("sp_data_lancamento") or "",
+        _TRACO if spx else _texto_seguro(it["data_emissao"]),
+        _texto_seguro(it.get("sp_data_lancamento") or ""),
         _TRACO if spx else it.get("sieg_bruto", 0.0),
         _TRACO if spx else it.get("sieg_liquido", 0.0),
         _TRACO if spx else it.get("sieg_imp", 0.0),
@@ -112,9 +126,9 @@ def _linha_item(it):
         _TRACO if canc else ("OK" if it.get("consta_spdata") else "Faltou"),   # SP Data
         "OK" if it.get("consta_sieg") else "Faltou",                          # SIEG
         _TRACO if (canc or spx) else _ROTULO_ARQ.get(it["status_arquivo"], it["status_arquivo"]),
-        _divergencias(it),
+        _texto_seguro(_divergencias(it)),
         _situacao_texto(it),                                                 # Situação
-        _texto_recalc(it),                                                   # Divergência (recálculo)
+        _texto_seguro(_texto_recalc(it)),                                    # Divergência (recálculo)
     ]
 
 
@@ -228,11 +242,12 @@ def _aba_impostos(ws, itens):
     for off, it in enumerate(itens):
         s = (it.get("impostos") or {}).get("sieg") or {}
         p = (it.get("impostos") or {}).get("spdata") or {}
-        vals = [it["numero"], it["nome_fornecedor"], it.get("cnpj_fornecedor") or _TRACO,
+        vals = [_texto_seguro(it["numero"]), _texto_seguro(it["nome_fornecedor"]),
+                _texto_seguro(it.get("cnpj_fornecedor") or _TRACO),
                 s.get("iss", 0), p.get("iss"), s.get("inss", 0), p.get("inss"),
                 s.get("ir", 0), p.get("ir"), s.get("csrf", 0), p.get("csrf"),
                 s.get("descontos", 0), s.get("base_calculo", 0), s.get("aliquota", 0),
-                s.get("total", 0), p.get("total"), _texto_recalc(it)]
+                s.get("total", 0), p.get("total"), _texto_seguro(_texto_recalc(it))]
         linhas_dados.append(vals)
         r = 2 + off
         pend = bool(it.get("pendencia_sieg"))
@@ -314,7 +329,7 @@ def _escrever_resumo(ws, resumo):
     for r, (rot, val) in enumerate(linhas, start=1):
         if rot:
             ws.cell(r, 1, rot).font = Font(bold=True, color=_NAVY, size=10)
-        cel = ws.cell(r, 2, val); cel.font = _FONTE_DADO
+        cel = ws.cell(r, 2, _texto_seguro(val)); cel.font = _FONTE_DADO
         if isinstance(val, float):
             cel.number_format = _MOEDA
     ws.column_dimensions["A"].width = 26

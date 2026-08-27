@@ -2,7 +2,13 @@
 
 Gera um arquivo JSON com o resultado completo da conferência, para o cliente
 enviar à contabilidade e o fiscal importar (na v2 multi-tenant). É o formato
-nativo do SyncData: autoexplicativo, versionado e com hash de integridade.
+nativo do SyncData: autoexplicativo, versionado e com um CHECKSUM do corpo.
+
+Sobre o `hash`: é um sha256 SEM chave, logo serve para detectar CORRUPÇÃO
+(truncamento no e-mail, transferência incompleta) — NÃO autenticidade. Quem
+editar o corpo recalcula o hash em três linhas de Python, então "hash bate" não
+pode ser lido como "conteúdo confiável" na importação. Autenticidade exigiria
+HMAC com segredo compartilhado ou assinatura.
 """
 import hashlib
 import json
@@ -74,7 +80,8 @@ def gerar_pacote_dados(resumo, itens, conc):
         },
         "itens": [_item(it) for it in itens],
     }
-    # hash de integridade do corpo (detecta adulteração/corrupção no import)
+    # checksum de integridade do corpo: detecta CORRUPÇÃO no import (não
+    # adulteração — sha256 sem chave não prova origem; ver docstring do módulo)
     canonico = json.dumps(corpo, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     corpo_hash = "sha256:" + hashlib.sha256(canonico.encode("utf-8")).hexdigest()
     return {

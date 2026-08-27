@@ -129,6 +129,26 @@ def test_rel02_export_impostos_do_detalhamento():
     assert "IRPJ 1708 (Sieg)" in cab and "PIS/COFINS/CSLL 5952 (Sieg)" in cab
 
 
+def test_texto_do_cliente_nao_vira_formula_viva():
+    # openpyxl grava string começando com '=' como FÓRMULA; a planilha viaja
+    # para a contabilidade, então o texto tem que sair como TEXTO.
+    itens = _itens_ricos()
+    itens[0]["nome_fornecedor"] = "=HYPERLINK(\"http://x\",\"clique\")"
+    itens[1]["nome_fornecedor"] = "+1+1"
+    itens[2]["detalhe_lancamento"] = "@SUM(A1:A9)"
+    wb = openpyxl.load_workbook(io.BytesIO(gerar_xlsx(_resumo(), itens)))
+    for aba in ("Total", "Impostos"):
+        ws = wb[aba]
+        for row in ws.iter_rows():
+            for cel in row:
+                if isinstance(cel.value, str):
+                    assert cel.data_type != "f", (aba, cel.coordinate, cel.value)
+                    assert not cel.value.startswith(("=", "+", "@")), cel.value
+    total = [c.value for c in wb["Total"]["B"] if isinstance(c.value, str)]
+    assert "'=HYPERLINK(\"http://x\",\"clique\")" in total
+    assert "'+1+1" in total
+
+
 def test_item_com_divergencia_e_exportado_na_aba_conciliacao():
     conteudo = gerar_xlsx(_resumo(), _itens())
     wb = openpyxl.load_workbook(io.BytesIO(conteudo))
