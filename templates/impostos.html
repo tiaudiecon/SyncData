@@ -57,7 +57,7 @@
           {%- elif l.diverge -%}<span class="badge b-warn">Divergência</span>
           {%- else -%}<span class="badge b-ok">OK</span>{%- endif -%}
           {% if l.pendencia %} <span class="badge b-warn" title="Impostos do SIEG divergem da alíquota base — analisar">Div. Impostos</span>{% endif %}
-          {% if l.arquivo_pdf %} <button type="button" class="btn-mini" onclick="event.stopPropagation(); verPdf({{ l.id }}, '{{ l.numero }}')" title="Ver PDF da nota">PDF</button>{% endif %}
+          {% if l.arquivo_pdf %} <button type="button" class="btn-mini" data-nf="{{ l.numero }}" onclick="event.stopPropagation(); verPdf({{ l.id }}, this.dataset.nf)" title="Ver PDF da nota">PDF</button>{% endif %}
         </td>
       </tr>
       <tr class="linha-det"><td></td><td colspan="5">
@@ -82,7 +82,7 @@
             {% if l.data_lancamento %}<div class="det-x"><span class="det-k">Lançam. (SP Data)</span><span class="mono">{{ l.data_lancamento }}</span></div>{% endif %}
             {% if l.fornecedor_sp %}<div class="det-x"><span class="det-k">Fornecedor (SP Data)</span><span>{{ l.fornecedor_sp }}</span></div>{% endif %}
             {% if l.arquivo_pdf %}<div class="det-x" style="margin-top:8px">
-              <button type="button" class="btn-mini" onclick="event.stopPropagation(); verPdf({{ l.id }}, '{{ l.numero }}')">Ver PDF</button>
+              <button type="button" class="btn-mini" data-nf="{{ l.numero }}" onclick="event.stopPropagation(); verPdf({{ l.id }}, this.dataset.nf)">Ver PDF</button>
               <a class="btn-mini" href="/pdf/{{ l.id }}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Abrir</a>
             </div>{% endif %}
           </div>

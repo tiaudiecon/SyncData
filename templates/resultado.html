@@ -143,7 +143,7 @@
         <td>{% if i.cancelada or i.sp_extra %}<span class="mut">—</span>{% else %}{{ status(i.status_arquivo) }}{% endif %}</td>
         <td class="center">
           {% if i.arquivo_pdf %}
-            <button type="button" class="btn-mini btn-pdf" onclick="event.stopPropagation(); verPdf({{ i.id }}, '{{ i.numero }}')">Ver</button>
+            <button type="button" class="btn-mini btn-pdf" data-nf="{{ i.numero }}" onclick="event.stopPropagation(); verPdf({{ i.id }}, this.dataset.nf)">Ver</button>
             <a class="btn-mini btn-pdf" href="/pdf/{{ i.id }}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Abrir</a>
           {% else %}<span class="mut">—</span>{% endif %}
         </td>
