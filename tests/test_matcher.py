@@ -206,6 +206,28 @@ def test_con02_sp_sem_sieg():
     assert r.qt_sp_sem_sieg == 1
 
 
+def test_con03_sp_nota_zero_aparece_no_confronto_inverso():
+    # Lançamento do SpData com NOTA=0 (sem número, mas com CNPJ e valor) não está no
+    # SIEG -> tem que APARECER em "SP Data sem SIEG", não sumir de todas as telas.
+    r = conciliar([nota(numero="100")], [],
+                  [lanc(numero="100"),
+                   lanc(numero="0", cnpj="54017315000170", bruto=970.0, liquido=970.0)],
+                  [reg()])
+    achou = [sp for sp in r.sp_sem_sieg if sp.cnpj == "54017315000170"]
+    assert len(achou) == 1 and achou[0].numero == "0"
+    assert r.qt_sp_sem_sieg == 1
+
+
+def test_linha_de_rodape_sem_cnpj_nao_aparece():
+    # A linha de rodapé do relatório do SpData (sem CNPJ, sem número, valor 0) é
+    # lixo e NÃO pode aparecer no confronto inverso.
+    r = conciliar([nota(numero="100")], [],
+                  [lanc(numero="100"),
+                   lanc(numero="", cnpj="", bruto=0.0, liquido=0.0)],
+                  [reg()])
+    assert all(sp.cnpj for sp in r.sp_sem_sieg)   # nada sem CNPJ entra
+
+
 def test_con04_duplicidade_no_sp_data():
     # duas notas 100 do mesmo CNPJ no SP Data -> duplicidade (ambas sinalizadas)
     r = conciliar([nota(numero="100")], [], [lanc(numero="100"), lanc(numero="100")], [reg()])

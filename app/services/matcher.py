@@ -184,7 +184,7 @@ def conciliar(autorizadas, canceladas, spdata, renew):
 
     def _consta_no_sieg(sp):
         for n in idx_sieg.get(sp.cnpj, []):
-            if n.numero_norm == sp.numero_norm:
+            if sp.numero_norm and n.numero_norm == sp.numero_norm:
                 return True                               # número exato = mesma nota
             # composto por sufixo: exige o valor bater (guarda contra coincidência de
             # dígitos finais, ex.: SpData nº "7" × Sieg nº "1234567").
@@ -193,8 +193,13 @@ def conciliar(autorizadas, canceladas, spdata, renew):
                 return True
         return False
 
+    # Um lançamento é "real" quando tem CNPJ — inclui os SEM número de nota (NOTA=0
+    # ou em branco), que também precisam aparecer se não constam do SIEG. A guarda é
+    # por CNPJ (e não por número) para não sumir com a nota 0; a linha de rodapé do
+    # relatório do SpData (sem CNPJ) fica de fora. Sem número, _consta_no_sieg nunca
+    # casa, então o lançamento cai aqui — que é o comportamento desejado.
     res.sp_sem_sieg = [sp for sp in spdata
-                       if sp.numero_norm and not _consta_no_sieg(sp)]
+                       if sp.cnpj and not _consta_no_sieg(sp)]
 
     # CON-04: duplicidades no SP Data — mesmo CNPJ + número aparecendo >1 vez.
     grupos = {}
