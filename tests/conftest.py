@@ -19,10 +19,10 @@ def client():
     yield c
     # limpa as tabelas entre os testes (mesmo banco, isolamento por linhas)
     from app.models import (Config, Conciliacao, ConciliacaoItem, TabelaAliquota,
-                            ExcecaoFornecedor, ValidacaoImposto)
+                            ExcecaoFornecedor, ValidacaoImposto, AceiteDivergencia)
     db = SessionLocal()
     for modelo in (ConciliacaoItem, Conciliacao, Config, TabelaAliquota,
-                   ExcecaoFornecedor, ValidacaoImposto):
+                   ExcecaoFornecedor, ValidacaoImposto, AceiteDivergencia):
         db.query(modelo).delete()
     db.commit()
     db.close()

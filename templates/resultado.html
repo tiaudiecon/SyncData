@@ -71,6 +71,7 @@
     <span class="chip-sep"></span>
     <button class="chip chip-info" data-f="excecao" onclick="setFiltro(this)">Exceções</button>
     <button class="chip chip-info" data-f="validada" onclick="setFiltro(this)">Validadas</button>
+    <button class="chip chip-info" data-f="aceita" onclick="setFiltro(this)">Aceitas</button>
     <button class="chip chip-info" data-f="canceladas" onclick="setFiltro(this)">Canceladas</button>
     <button class="chip chip-info" data-f="sp_sem_sieg" onclick="setFiltro(this)">SP sem SIEG</button>
     <button class="chip chip-info" data-f="sp_duplicada" onclick="setFiltro(this)">Duplicadas SP</button>
@@ -115,7 +116,7 @@
       <tr class="linha-resumo{% if i.cancelada %} linha-cancelada{% elif i.sp_extra %} linha-spextra{% endif %}"
           data-v="{{ i.veredito }}" data-cancelada="{{ '1' if i.cancelada else '0' }}"
           data-pend="{{ '1' if i.pendencia_sieg else '0' }}" data-exc="{{ '1' if i.excecao else '0' }}"
-          data-erro="{{ '1' if i.tem_erro else '0' }}" data-ger="{{ '1' if i.eh_gerenciada else '0' }}" data-val="{{ '1' if i.validada else '0' }}"
+          data-erro="{{ '1' if i.tem_erro else '0' }}" data-ger="{{ '1' if i.eh_gerenciada else '0' }}" data-val="{{ '1' if i.validada else '0' }}" data-aceita="{{ '1' if i.aceita else '0' }}"
           data-busca="{{ (i.numero ~ ' ' ~ i.nome_fornecedor)|lower }}"
           data-valores="{{ (i.sieg_bruto*100)|round|int }} {{ (i.sieg_liquido*100)|round|int }} {{ (i.sieg_imp*100)|round|int }}{% if i.sp_bruto is not none %} {{ (i.sp_bruto*100)|round|int }}{% endif %}{% if i.sp_liquido is not none %} {{ (i.sp_liquido*100)|round|int }}{% endif %}{% if i.sp_imp is not none %} {{ (i.sp_imp*100)|round|int }}{% endif %}"
           {% if exp %}onclick="toggleDet(this)"{% endif %}>
@@ -135,6 +136,7 @@
           {%- if i.pendencia_sieg %} <span class="badge selo-sis b-warn" title="Impostos do SIEG divergem da alíquota base — analisar">Div. Impostos</span>{% endif -%}
           {%- if i.excecao %} <span class="badge selo-sis b-info" title="Fornecedor marcado como exceção: {{ i.excecao_obs }}">Exceção</span>{% endif -%}
           {%- if i.validada %} <span class="badge selo-sis b-info" title="Validada manualmente (nesta competência): {{ i.validada_obs }}">Validada</span>{% endif -%}
+          {%- if i.aceita %} <span class="badge selo-sis b-roxo" title="Divergência de valor/arquivo aceita (nesta competência): {{ i.aceita_obs }}">Aceita</span>{% endif -%}
           {%- if i.veredito == 'sp_duplicada' %} <span class="badge selo-sis b-warn">Duplicada no SP Data</span>{% endif -%}
           {%- endif -%}
         </td>
@@ -174,6 +176,35 @@
             {% if i.detalhe_arquivo %}
             <div class="det-dv-tit">Arquivo</div>
             {% for parte in i.detalhe_arquivo.split('; ') %}<div class="det-dv-item">{{ parte|rotular_dv }}</div>{% endfor %}
+            {% endif %}
+          </div>
+          {% endif %}
+          {# tratativa Aceita: divergência de VALOR/ARQUIVO (ressalva/pendente) #}
+          {% if i.veredito in ('ressalva', 'pendente') or i.aceita %}
+          <div class="det-extra det-aceite{% if i.aceita %} det-exc{% endif %}">
+            <div class="det-extra-tit">Divergência de valor / arquivo</div>
+            {% if i.aceita %}
+            <div class="det-exc-obs">Divergência <strong>aceita</strong> manualmente (só nesta competência) — {{ i.aceita_obs }}
+              <form method="post" action="/aceites/desfazer" style="display:inline">
+                <input type="hidden" name="cnpj" value="{{ i.cnpj_norm }}">
+                <input type="hidden" name="numero" value="{{ i.numero_norm }}">
+                <input type="hidden" name="competencia" value="{{ resumo.competencia_raw }}">
+                <input type="hidden" name="conciliacao_id" value="{{ c.id }}">
+                <button type="submit" class="det-desfazer">desfazer</button>
+              </form></div>
+            {% else %}
+            <form method="post" action="/aceites/marcar" class="det-exc-form">
+              <input type="hidden" name="cnpj" value="{{ i.cnpj_norm }}">
+              <input type="hidden" name="numero" value="{{ i.numero_norm }}">
+              <input type="hidden" name="nome" value="{{ i.nome_fornecedor }}">
+              <input type="hidden" name="competencia" value="{{ resumo.competencia_raw }}">
+              <input type="hidden" name="conciliacao_id" value="{{ c.id }}">
+              <input type="text" name="observacao" class="input exc-obs" placeholder="Justificativa" required>
+              <div class="det-exc-botoes">
+                <button type="submit" class="btn-mini b-roxo-btn"
+                        title="O valor Sieg×SPData (ou o arquivo) diverge, mas está correto — vai p/ Gerenciadas (só nesta competência)">Aceitar divergência</button>
+              </div>
+            </form>
             {% endif %}
           </div>
           {% endif %}
@@ -262,6 +293,7 @@
         case 'pendencia_sieg': okS = principal && tr.dataset.pend === '1'; break;
         case 'excecao': okS = principal && tr.dataset.exc === '1'; break;
         case 'validada': okS = principal && tr.dataset.val === '1'; break;
+        case 'aceita': okS = principal && tr.dataset.aceita === '1'; break;
         case 'canceladas': okS = canc; break;
         case 'sp_sem_sieg': okS = v === 'sp_sem_sieg'; break;
         case 'sp_duplicada': okS = v === 'sp_duplicada'; break;

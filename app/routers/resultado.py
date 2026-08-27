@@ -17,6 +17,7 @@ from app.services.formatacao import largura_numeros, pad_numero, registrar_filtr
 from app.services import aliquotas as serv_aliquotas
 from app.services import excecoes as serv_excecoes
 from app.services import validacoes as serv_validacoes
+from app.services import aceites as serv_aceites
 from app.services.recalculo import pendencia_sieg
 from app.services.normalizacao import so_digitos
 import json
@@ -59,10 +60,11 @@ def _par(s, p, chave):
     return {"sieg": sv, "sp": pv, "delta": delta}
 
 
-def montar_resumo_e_itens(conc, tabelas=None, excecoes=None, validacoes=None):
+def montar_resumo_e_itens(conc, tabelas=None, excecoes=None, validacoes=None, aceites=None):
     tabelas = tabelas or []
     excecoes = excecoes or {}     # {cnpj_norm: obs} — exceção por CNPJ (todas as competências)
     validacoes = validacoes or {}  # {(cnpj_norm, numero_norm): obs} — validada só nesta competência
+    aceites = aceites or {}        # {(cnpj_norm, numero_norm): obs} — divergência de valor/arquivo aceita (só nesta competência)
     resumo = {
         "cnpj": conc.cnpj, "data_hora": formatar_dt(conc.data_hora),
         "competencia": formatar_competencia(conc.competencia),
@@ -96,11 +98,16 @@ def montar_resumo_e_itens(conc, tabelas=None, excecoes=None, validacoes=None):
         is_validada = _obs_val is not None
         pend_aberta = pend and not is_excecao and not is_validada   # divergência ainda em aberto
         principal = i.veredito not in ("cancelada", *_SP_EXTRA)
-        # buckets (item 1): Gerenciadas x Erros. Validada e Exceção resolvem a
-        # divergência de imposto -> a nota conta como Gerenciada (a exceção também
-        # continua aparecendo no filtro informativo Exceções).
-        eh_gerenciada = principal and (i.veredito == "gerenciada") and not pend_aberta
-        tem_erro = principal and ((i.veredito in ("ressalva", "pendente")) or pend_aberta)
+        # Aceite: divergência de VALOR/ARQUIVO (ressalva/pendente) aceita manualmente
+        # (só nesta competência) -> limpa o erro de lançamento/arquivo. Ortogonal ao imposto.
+        _obs_ace = (aceites.get((cnpj_norm, numero_norm))
+                    if i.veredito in ("ressalva", "pendente") else None)
+        is_aceita = _obs_ace is not None
+        erro_lanc_aberto = (i.veredito in ("ressalva", "pendente")) and not is_aceita
+        # buckets (item 1): Gerenciadas x Erros. Validada/Exceção resolvem o imposto;
+        # Aceite resolve valor/arquivo. Nota sem nenhum erro em aberto -> Gerenciada.
+        tem_erro = principal and (erro_lanc_aberto or pend_aberta)
+        eh_gerenciada = principal and not tem_erro
         p_sp = imp.get("spdata")   # None se a nota não foi lançada no SP Data
         itens.append({
             "id": i.id,
@@ -126,6 +133,7 @@ def montar_resumo_e_itens(conc, tabelas=None, excecoes=None, validacoes=None):
             "pendencia_sieg": pend_aberta,     # CON-05 (exceção/validada não contam)
             "excecao": is_excecao, "excecao_obs": _obs_exc or "",   # item 6
             "validada": is_validada, "validada_obs": _obs_val or "",   # item 1
+            "aceita": is_aceita, "aceita_obs": _obs_ace or "",   # tratativa Aceita (valor/arquivo)
             "cnpj_norm": cnpj_norm, "numero_norm": numero_norm,
             # item 3: presença em cada sistema (SP Data × SIEG).
             # sp_extra (SP sem SIEG / duplicada) EXISTE no SP Data -> consta_spdata.
@@ -156,16 +164,18 @@ def montar_resumo_e_itens(conc, tabelas=None, excecoes=None, validacoes=None):
     resumo["qt_divergencia"] = sum(1 for it in prin if it["pendencia_sieg"])
     resumo["qt_excecoes"] = sum(1 for it in prin if it["excecao"])
     resumo["qt_validadas"] = sum(1 for it in prin if it["validada"])
+    resumo["qt_aceitas"] = sum(1 for it in prin if it["aceita"])
     resumo["qt_ressalva"] = sum(1 for it in prin if it["veredito"] == "ressalva")
     resumo["qt_falta_lancar"] = sum(1 for it in prin if it["veredito"] == "pendente")
     return resumo, itens
 
 
 def _resumo_itens(db, conc):
-    """Monta resumo+itens com as alíquotas, exceções e validações da competência."""
+    """Monta resumo+itens com alíquotas, exceções, validações e aceites da competência."""
     return montar_resumo_e_itens(
         conc, serv_aliquotas.listar(db), serv_excecoes.mapa_cnpjs(db),
-        serv_validacoes.mapa(db, conc.competencia))
+        serv_validacoes.mapa(db, conc.competencia),
+        serv_aceites.mapa(db, conc.competencia))
 
 
 @router.get("/resultado/{conciliacao_id}")

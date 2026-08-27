@@ -32,3 +32,4 @@ Thumbs.db
 
 # Scratch do subagent-driven
 .superpowers/
+.claude/

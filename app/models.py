@@ -112,3 +112,21 @@ class ValidacaoImposto(Base):
     nome = Column(String, nullable=True)
     observacao = Column(String, nullable=False, default="")
     criado_em = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class AceiteDivergencia(Base):
+    """Divergência de VALOR (Sieg×SPData) ou de ARQUIVO aceita manualmente: o
+    operador confirma que a nota está correta apesar de não bater (veredito
+    ressalva/pendente), com justificativa. Vale SÓ para a competência — chave
+    competência+CNPJ+número (como a ValidacaoImposto). Ortogonal ao imposto:
+    limpa o erro de lançamento/arquivo, não o de imposto."""
+    __tablename__ = "aceite_divergencia"
+    __table_args__ = (UniqueConstraint("competencia", "cnpj", "numero",
+                                       name="uq_aceite_comp_cnpj_num"),)
+    id = Column(Integer, primary_key=True)
+    competencia = Column(String, nullable=False, index=True)   # "aaaa-mm"
+    cnpj = Column(String, nullable=False)      # só dígitos
+    numero = Column(String, nullable=False)    # só dígitos (número da nota)
+    nome = Column(String, nullable=True)
+    observacao = Column(String, nullable=False, default="")
+    criado_em = Column(DateTime, default=lambda: datetime.now(timezone.utc))
