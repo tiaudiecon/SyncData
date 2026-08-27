@@ -21,6 +21,9 @@ _FILL_ALERT = (PatternFill("solid", fgColor="FFF6E0DA"), Font(color=_VERMELHO, s
 _FILL_NEUTRO = (None, Font(color=_CINZA, size=10))
 # item 1: gerenciamento manual (Validada/Exceção) em azul
 _FILL_INFO = (PatternFill("solid", fgColor="FFE1E8F5"), Font(color=_AZUL, size=10))
+# tratativa "Aceita" (divergência de valor/arquivo aceita) em roxo
+_ROXO = "FF6A3FB0"
+_FILL_ROXO = (PatternFill("solid", fgColor="FFECE4F7"), Font(color=_ROXO, size=10))
 
 _FONTE_CAB = Font(bold=True, color=_BRANCO, size=11)
 _FILL_CAB = PatternFill("solid", fgColor=_NAVY)
@@ -93,6 +96,8 @@ def _estilo_por_texto(txt):
         return _FILL_ALERT
     if t in ("Validada", "Exceção"):          # item 1: gerenciamento manual = azul
         return _FILL_INFO
+    if t == "Aceita":                          # tratativa Aceita (valor/arquivo) = roxo
+        return _FILL_ROXO
     if t in (_TRACO, "Cancelada"):
         return _FILL_NEUTRO
     return None
@@ -104,6 +109,8 @@ def _situacao_texto(it):
         return "Validada"
     if it.get("excecao"):
         return "Exceção"
+    if it.get("aceita"):
+        return "Aceita"
     return _SITUACAO.get(it["veredito"], it["veredito"].capitalize())
 
 
@@ -231,6 +238,9 @@ def _texto_recalc(it):
     if it.get("validada"):
         obs = it.get("validada_obs") or ""
         return ("VALIDADA: " + obs + (" · " + txt if txt else "")).strip()
+    if it.get("aceita"):
+        obs = it.get("aceita_obs") or ""
+        return ("ACEITA: " + obs + (" · " + txt if txt else "")).strip()
     return txt or "—"
 
 
@@ -321,6 +331,7 @@ def _escrever_resumo(ws, resumo):
         ("Erros", resumo.get("qt_erros", 0)),
         ("Divergência de impostos", resumo.get("qt_divergencia", 0)),
         ("Validadas (manual)", resumo.get("qt_validadas", 0)),
+        ("Aceitas (manual)", resumo.get("qt_aceitas", 0)),
         ("Exceções (manual)", resumo.get("qt_excecoes", 0)),
         ("Canceladas (informativo)", resumo.get("qt_canceladas", 0)),
         ("SP Data sem SIEG", resumo.get("qt_sp_sem_sieg", 0)),
@@ -354,6 +365,7 @@ def gerar_xlsx(resumo: dict, itens: list) -> bytes:
         ("Erros", [i for i in prin if i.get("tem_erro")]),
         ("Divergência Impostos", [i for i in prin if i.get("pendencia_sieg")]),
         ("Validadas", [i for i in prin if i.get("validada")]),
+        ("Aceitas", [i for i in prin if i.get("aceita")]),
         ("Exceções", [i for i in prin if i.get("excecao")]),
         ("Canceladas", [i for i in itens if i.get("cancelada")]),
         ("SP sem SIEG", [i for i in itens if i["veredito"] == "sp_sem_sieg"]),

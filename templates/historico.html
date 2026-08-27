@@ -8,12 +8,15 @@
   </div>
 </div>
 
+{% if ok %}<div class="ok-box">{{ {'editado':'Conciliação atualizada.', 'excluido':'Conciliação excluída.'}.get(ok, 'Operação concluída.') }}</div>{% endif %}
+{% if erro %}<div class="erro-box">{{ {'competencia':'Competência inválida (use mês/ano).', 'inexistente':'Conciliação não encontrada.'}.get(erro, 'Não foi possível concluir.') }}</div>{% endif %}
+
 <div class="table-scroll">
   <table class="dense">
     <thead>
       <tr>
         <th>Competência</th><th>Conferência</th><th>Quando</th><th class="right">Notas</th><th class="right">Gerenciadas</th>
-        <th class="right">Faltou lançar</th><th class="right">Faltou arquivar</th><th></th>
+        <th class="right">Faltou lançar</th><th class="right">Faltou arquivar</th><th>Ações</th>
       </tr>
     </thead>
     <tbody>
@@ -26,7 +29,26 @@
         <td class="mono right">{{ l.gerenciadas }}</td>
         <td class="mono right">{{ l.falta_lancar }}</td>
         <td class="mono right">{{ l.falta_arquivar }}</td>
-        <td class="right"><a class="btn btn-ghost btn-lg" style="height:30px; padding:0 12px; font-size:12px" href="/resultado/{{ l.id }}">Abrir</a></td>
+        <td style="white-space:nowrap">
+          <a class="btn btn-ghost" style="height:28px; padding:0 10px; font-size:12px; display:inline-flex" href="/resultado/{{ l.id }}">Abrir</a>
+          <details style="display:inline-block">
+            <summary class="btn btn-ghost" style="height:28px; padding:0 10px; font-size:12px; display:inline-flex" role="button">Editar</summary>
+            <form method="post" action="/historico/{{ l.id }}/editar" style="display:flex; gap:8px; align-items:end; margin-top:8px">
+              <div class="field" style="margin:0"><label>Competência</label>
+                <input class="input" type="month" name="competencia" value="{{ l.competencia_raw }}"></div>
+              <div class="field" style="margin:0"><label>Início</label>
+                <input class="input" type="date" name="periodo_inicio" value="{{ l.periodo_inicio_raw }}"></div>
+              <div class="field" style="margin:0"><label>Fim</label>
+                <input class="input" type="date" name="periodo_fim" value="{{ l.periodo_fim_raw }}"></div>
+              <button class="btn btn-accent" style="height:28px; padding:0 12px; font-size:12px" type="submit">Salvar</button>
+            </form>
+          </details>
+          <form method="post" action="/historico/{{ l.id }}/excluir" style="display:inline"
+                data-comp="{{ l.competencia or l.quando }}"
+                onsubmit="return confirm('Excluir a conciliação ' + this.dataset.comp + ' e todos os itens dela? Esta ação não pode ser desfeita.');">
+            <button class="btn btn-ghost" style="height:28px; padding:0 10px; font-size:12px; color:var(--alert)" type="submit">Excluir</button>
+          </form>
+        </td>
       </tr>
     {% else %}
       <tr><td colspan="8" class="empty">Nenhuma conciliação ainda. Vá em <strong>Conciliar</strong> para começar.</td></tr>

@@ -149,6 +149,23 @@ def test_texto_do_cliente_nao_vira_formula_viva():
     assert "'+1+1" in total
 
 
+def test_aceitas_no_resumo_situacao_e_guia():
+    # A tratativa "Aceita" tem que aparecer no relatório igual às demais:
+    # contagem no Resumo, "Aceita" na Situação e uma guia própria.
+    itens = _itens_ricos()
+    itens[2].update({"aceita": True, "aceita_obs": "valor confere na origem",
+                     "eh_gerenciada": True, "tem_erro": False})   # a ressalva vira aceita
+    resumo = _resumo(); resumo["qt_aceitas"] = 1
+    wb = openpyxl.load_workbook(io.BytesIO(gerar_xlsx(resumo, itens)))
+    assert "Aceitas" in wb.sheetnames                                   # guia própria
+    res = {str(row[0].value): row[1].value for row in wb["Resumo"].iter_rows() if row[0].value}
+    assert res.get("Aceitas (manual)") == 1                             # no resumo
+    total_vals = [c.value for row in wb["Total"].iter_rows() for c in row]
+    assert "Aceita" in total_vals                                       # situação na aba Total
+    aceitas_vals = [c.value for row in wb["Aceitas"].iter_rows() for c in row]
+    assert "FORNEC C" in aceitas_vals                                   # a nota aceita está na guia
+
+
 def test_item_com_divergencia_e_exportado_na_aba_conciliacao():
     conteudo = gerar_xlsx(_resumo(), _itens())
     wb = openpyxl.load_workbook(io.BytesIO(conteudo))
