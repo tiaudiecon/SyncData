@@ -24,6 +24,9 @@ _FILL_INFO = (PatternFill("solid", fgColor="FFE1E8F5"), Font(color=_AZUL, size=1
 # tratativa "Aceita" (divergência de valor/arquivo aceita) em roxo
 _ROXO = "FF6A3FB0"
 _FILL_ROXO = (PatternFill("solid", fgColor="FFECE4F7"), Font(color=_ROXO, size=10))
+# tratativa "Vinculada" (nota vinculada a outro lançamento) em teal
+_TEAL = "FF0E7C86"
+_FILL_TEAL = (PatternFill("solid", fgColor="FFDCF0EE"), Font(color=_TEAL, size=10))
 
 _FONTE_CAB = Font(bold=True, color=_BRANCO, size=11)
 _FILL_CAB = PatternFill("solid", fgColor=_NAVY)
@@ -98,6 +101,8 @@ def _estilo_por_texto(txt):
         return _FILL_INFO
     if t == "Aceita":                          # tratativa Aceita (valor/arquivo) = roxo
         return _FILL_ROXO
+    if t == "Vinculada":                       # tratativa Vinculada (nota ligada a outra) = teal
+        return _FILL_TEAL
     if t in (_TRACO, "Cancelada"):
         return _FILL_NEUTRO
     return None
@@ -111,6 +116,8 @@ def _situacao_texto(it):
         return "Exceção"
     if it.get("aceita"):
         return "Aceita"
+    if it.get("vinculada"):
+        return "Vinculada"
     return _SITUACAO.get(it["veredito"], it["veredito"].capitalize())
 
 
@@ -241,6 +248,9 @@ def _texto_recalc(it):
     if it.get("aceita"):
         obs = it.get("aceita_obs") or ""
         return ("ACEITA: " + obs + (" · " + txt if txt else "")).strip()
+    if it.get("vinculada"):
+        obs = it.get("vinculo_obs") or ""
+        return ("VINCULADA: " + obs + (" · " + txt if txt else "")).strip()
     return txt or "—"
 
 
@@ -332,6 +342,7 @@ def _escrever_resumo(ws, resumo):
         ("Divergência de impostos", resumo.get("qt_divergencia", 0)),
         ("Validadas (manual)", resumo.get("qt_validadas", 0)),
         ("Aceitas (manual)", resumo.get("qt_aceitas", 0)),
+        ("Vinculadas (manual)", resumo.get("qt_vinculadas", 0)),
         ("Exceções (manual)", resumo.get("qt_excecoes", 0)),
         ("Canceladas (informativo)", resumo.get("qt_canceladas", 0)),
         ("SP Data sem SIEG", resumo.get("qt_sp_sem_sieg", 0)),
@@ -366,6 +377,7 @@ def gerar_xlsx(resumo: dict, itens: list) -> bytes:
         ("Divergência Impostos", [i for i in prin if i.get("pendencia_sieg")]),
         ("Validadas", [i for i in prin if i.get("validada")]),
         ("Aceitas", [i for i in prin if i.get("aceita")]),
+        ("Vinculadas", [i for i in prin if i.get("vinculada")]),
         ("Exceções", [i for i in prin if i.get("excecao")]),
         ("Canceladas", [i for i in itens if i.get("cancelada")]),
         ("SP sem SIEG", [i for i in itens if i["veredito"] == "sp_sem_sieg"]),
