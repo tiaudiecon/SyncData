@@ -72,6 +72,7 @@
     <button class="chip chip-info" data-f="excecao" onclick="setFiltro(this)">Exceções</button>
     <button class="chip chip-info" data-f="validada" onclick="setFiltro(this)">Validadas</button>
     <button class="chip chip-info" data-f="aceita" onclick="setFiltro(this)">Aceitas</button>
+    <button class="chip chip-info" data-f="vinculada" onclick="setFiltro(this)">Vinculadas</button>
     <button class="chip chip-info" data-f="canceladas" onclick="setFiltro(this)">Canceladas</button>
     <button class="chip chip-info" data-f="sp_sem_sieg" onclick="setFiltro(this)">SP sem SIEG</button>
     <button class="chip chip-info" data-f="sp_duplicada" onclick="setFiltro(this)">Duplicadas SP</button>
@@ -116,7 +117,7 @@
       <tr class="linha-resumo{% if i.cancelada %} linha-cancelada{% elif i.sp_extra %} linha-spextra{% endif %}"
           data-v="{{ i.veredito }}" data-cancelada="{{ '1' if i.cancelada else '0' }}"
           data-pend="{{ '1' if i.pendencia_sieg else '0' }}" data-exc="{{ '1' if i.excecao else '0' }}"
-          data-erro="{{ '1' if i.tem_erro else '0' }}" data-ger="{{ '1' if i.eh_gerenciada else '0' }}" data-val="{{ '1' if i.validada else '0' }}" data-aceita="{{ '1' if i.aceita else '0' }}"
+          data-erro="{{ '1' if i.tem_erro else '0' }}" data-ger="{{ '1' if i.eh_gerenciada else '0' }}" data-val="{{ '1' if i.validada else '0' }}" data-aceita="{{ '1' if i.aceita else '0' }}" data-vinculada="{{ '1' if i.vinculada else '0' }}"
           data-busca="{{ (i.numero ~ ' ' ~ i.nome_fornecedor)|lower }}"
           data-valores="{{ (i.sieg_bruto*100)|round|int }} {{ (i.sieg_liquido*100)|round|int }} {{ (i.sieg_imp*100)|round|int }}{% if i.sp_bruto is not none %} {{ (i.sp_bruto*100)|round|int }}{% endif %}{% if i.sp_liquido is not none %} {{ (i.sp_liquido*100)|round|int }}{% endif %}{% if i.sp_imp is not none %} {{ (i.sp_imp*100)|round|int }}{% endif %}"
           {% if exp %}onclick="toggleDet(this)"{% endif %}>
@@ -137,6 +138,7 @@
           {%- if i.excecao %} <span class="badge selo-sis b-info" title="Fornecedor marcado como exceção: {{ i.excecao_obs }}">Exceção</span>{% endif -%}
           {%- if i.validada %} <span class="badge selo-sis b-info" title="Validada manualmente (nesta competência): {{ i.validada_obs }}">Validada</span>{% endif -%}
           {%- if i.aceita %} <span class="badge selo-sis b-roxo" title="Divergência de valor/arquivo aceita (nesta competência): {{ i.aceita_obs }}">Aceita</span>{% endif -%}
+          {%- if i.vinculada %} <span class="badge selo-sis b-teal" title="Vinculada manualmente ao lançamento do SpData: {{ i.vinculo_obs }}">Vinculada</span>{% endif -%}
           {%- if i.veredito == 'sp_duplicada' %} <span class="badge selo-sis b-warn">Duplicada no SP Data</span>{% endif -%}
           {%- endif -%}
         </td>
@@ -205,6 +207,69 @@
                         title="O valor Sieg×SPData (ou o arquivo) diverge, mas está correto — vai p/ Gerenciadas (só nesta competência)">Aceitar divergência</button>
               </div>
             </form>
+            {% endif %}
+          </div>
+          {% endif %}
+          {# tratativa Vinculada: liga a NOTA (faltou lançar) a um lançamento "SP sem SIEG" #}
+          {% if i.vinculada or i.status_lancamento == 'falta' %}
+          {% set candidatos = itens|selectattr('veredito', 'equalto', 'sp_sem_sieg')|rejectattr('vinculado')|selectattr('cnpj_norm', 'equalto', i.cnpj_norm)|list %}
+          {% set todos = itens|selectattr('veredito', 'equalto', 'sp_sem_sieg')|rejectattr('vinculado')|list %}
+          <div class="det-extra det-vinculo{% if i.vinculada %} det-exc{% endif %}">
+            <div class="det-extra-tit">Vínculo manual de lançamento</div>
+            {% if i.vinculada %}
+            <div class="det-exc-obs">Vinculada <strong>manualmente</strong> ao lançamento do SpData (só nesta competência) — {{ i.vinculo_obs }}
+              <form method="post" action="/vinculos/desfazer" style="display:inline">
+                <input type="hidden" name="cnpj" value="{{ i.cnpj_norm }}">
+                <input type="hidden" name="numero" value="{{ i.numero_norm }}">
+                <input type="hidden" name="competencia" value="{{ resumo.competencia_raw }}">
+                <input type="hidden" name="conciliacao_id" value="{{ c.id }}">
+                <button type="submit" class="det-desfazer">desfazer vínculo</button>
+              </form></div>
+            {% elif todos %}
+            <form method="post" action="/vinculos/marcar" class="det-exc-form" onsubmit="return vincSubmit(this)">
+              <input type="hidden" name="cnpj" value="{{ i.cnpj_norm }}">
+              <input type="hidden" name="numero" value="{{ i.numero_norm }}">
+              <input type="hidden" name="nome" value="{{ i.nome_fornecedor }}">
+              <input type="hidden" name="competencia" value="{{ resumo.competencia_raw }}">
+              <input type="hidden" name="conciliacao_id" value="{{ c.id }}">
+              <input type="hidden" class="alvo-sp_cnpj" name="sp_cnpj">
+              <input type="hidden" class="alvo-sp_numero" name="sp_numero">
+              <input type="hidden" class="alvo-sp_valor" name="sp_valor">
+              {% if candidatos %}
+              <select class="input sel-vinculo-alvo" onchange="vincEscolher(this)">
+                <option value="" selected>Selecione o lançamento…</option>
+                {% for o in candidatos %}
+                <option value="{{ o.cnpj_norm }}|{{ o.numero }}|{{ o.sp_bruto }}">nº {{ o.numero }} · {{ o.sp_bruto|num_br }} · {{ o.nome_fornecedor }}</option>
+                {% endfor %}
+              </select>
+              {% if todos|length > candidatos|length %}
+              <details class="det-vinculo-todas">
+                <summary>ver todas ({{ todos|length }})</summary>
+                <select class="input sel-vinculo-alvo" onchange="vincEscolher(this)">
+                  <option value="" selected>Selecione o lançamento…</option>
+                  {% for o in todos %}
+                  <option value="{{ o.cnpj_norm }}|{{ o.numero }}|{{ o.sp_bruto }}">nº {{ o.numero }} · {{ o.sp_bruto|num_br }} · {{ o.nome_fornecedor }}{% if o.cnpj_norm != i.cnpj_norm %} · {{ o.cnpj_norm }}{% endif %}</option>
+                  {% endfor %}
+                </select>
+              </details>
+              {% endif %}
+              {% else %}
+              <div class="mut" style="margin-bottom:2px">Nenhum lançamento "SP sem SIEG" do mesmo CNPJ — veja abaixo:</div>
+              <select class="input sel-vinculo-alvo" onchange="vincEscolher(this)">
+                <option value="" selected>Selecione o lançamento…</option>
+                {% for o in todos %}
+                <option value="{{ o.cnpj_norm }}|{{ o.numero }}|{{ o.sp_bruto }}">nº {{ o.numero }} · {{ o.sp_bruto|num_br }} · {{ o.nome_fornecedor }} · {{ o.cnpj_norm }}</option>
+                {% endfor %}
+              </select>
+              {% endif %}
+              <input type="text" name="observacao" class="input exc-obs" placeholder="Justificativa" required>
+              <div class="det-exc-botoes">
+                <button type="submit" class="btn-mini b-teal-btn"
+                        title="Liga esta nota (faltou lançar) a um lançamento do SP Data sem NF correspondente — recalcula o status">Vincular</button>
+              </div>
+            </form>
+            {% else %}
+            <div class="mut">Nenhum lançamento "SP sem SIEG" disponível para vincular.</div>
             {% endif %}
           </div>
           {% endif %}
@@ -294,6 +359,7 @@
         case 'excecao': okS = principal && tr.dataset.exc === '1'; break;
         case 'validada': okS = principal && tr.dataset.val === '1'; break;
         case 'aceita': okS = principal && tr.dataset.aceita === '1'; break;
+        case 'vinculada': okS = principal && tr.dataset.vinculada === '1'; break;
         case 'canceladas': okS = canc; break;
         case 'sp_sem_sieg': okS = v === 'sp_sem_sieg'; break;
         case 'sp_duplicada': okS = v === 'sp_duplicada'; break;
@@ -336,6 +402,23 @@
   }
   function fmtMoeda(v){
     return v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  // Vínculo manual: o seletor (mesmo CNPJ, ou "ver todas") entrega "cnpj|numero|valor"
+  // num único value — aqui a gente separa isso nos 3 hidden fields que a rota espera.
+  function vincEscolher(sel){
+    const form = sel.closest('form');
+    const p = (sel.value || '').split('|');
+    if (p.length < 3) return;
+    form.querySelector('.alvo-sp_cnpj').value = p[0];
+    form.querySelector('.alvo-sp_numero').value = p[1];
+    form.querySelector('.alvo-sp_valor').value = p[2];
+  }
+  function vincSubmit(form){
+    if (!form.querySelector('.alvo-sp_cnpj').value) {
+      alert('Selecione um lançamento para vincular.');
+      return false;
+    }
+    return true;
   }
   function verPdf(id, numero){
     document.getElementById('pdfTitulo').textContent = 'NF ' + numero;

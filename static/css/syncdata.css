@@ -11,6 +11,7 @@
   --ok:#1A6E4A; --ok-bg:#E4F1EA; --warn:#B0791E; --warn-bg:#F8EED7;
   --alert:#A8331C; --alert-bg:#F6E0DA; --info:#2E5BAE; --info-bg:#E1E8F5;
   --roxo:#6A3FB0; --roxo-bg:#ECE4F7;   /* tratativa "Aceita" (divergência de valor/arquivo) */
+  --teal:#0E7C86; --teal-bg:#DCF0EE;   /* tratativa "Vinculada" */
   --r-sm:4px; --r-md:6px; --r-lg:10px; --r-pill:999px;
   --ease:cubic-bezier(.2,.7,.2,1); --t-1:120ms; --t-2:200ms;
 }
@@ -153,6 +154,7 @@ table.dense thead th{vertical-align:bottom}
 .b-neutral::before{display:none}
 .b-info{background:var(--info-bg); color:var(--info)}   /* item 6: exceção */
 .b-roxo{background:var(--roxo-bg); color:var(--roxo)}   /* tratativa Aceita */
+.b-teal{background:var(--teal-bg); color:var(--teal)}   /* tratativa Vinculada */
 
 /* ---------- Panels ---------- */
 .panel{background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r-lg); overflow:hidden; margin-bottom:18px}
@@ -318,6 +320,8 @@ table.dense tr:hover td{background:var(--creme-soft)}
 .btn-mini.b-info-btn:hover{background:var(--info-bg); border-color:var(--info); color:var(--info)}
 .btn-mini.b-roxo-btn{border-color:var(--roxo); color:var(--roxo)}
 .btn-mini.b-roxo-btn:hover{background:var(--roxo-bg); border-color:var(--roxo); color:var(--roxo)}
+.btn-mini.b-teal-btn{border-color:var(--teal); color:var(--teal)}
+.btn-mini.b-teal-btn:hover{background:var(--teal-bg); border-color:var(--teal); color:var(--teal)}
 .det-desfazer{border:none; background:none; color:var(--info); text-decoration:underline;
   cursor:pointer; font:inherit; font-size:11px; margin-left:6px; padding:0}
 /* bloco de validada reusa o azul do det-exc (mesmo tom de gerenciamento manual) */
