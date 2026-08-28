@@ -71,6 +71,25 @@ def test_vinculo_valores_divergem_vira_ressalva(client):
     db.close()
 
 
+def test_pacote_dados_traz_vinculo_e_contagem(client):  # client garante schema
+    from app.services import pacote_dados
+
+    db = SessionLocal(); serv_al.garantir_padrao(db)
+    conc = _conc_nota_e_orfao(db)
+    serv.salvar(db, "2026-07", "54017315000170", "300", "FORN",
+                "54017315000170", "0", 970.0, "num errado")
+    resumo, itens = montar_resumo_e_itens(conc, serv_al.listar(db), None, None, None,
+                                          serv.mapa(db, "2026-07"))
+    pacote = pacote_dados.gerar_pacote_dados(resumo, itens, conc)
+    nota = next(i for i in pacote["itens"] if i["numero"] == "300")
+    assert nota["vinculo"] == {
+        "sp_cnpj": "54017315000170", "sp_numero": "0", "sp_valor": 970.0,
+        "observacao": "num errado",
+    }
+    assert pacote["resumo"]["vinculadas"] == 1
+    db.close()
+
+
 def test_http_seletor_usa_numero_norm_mesmo_com_padding_na_tela(client):
     """Regressão do bug crítico da revisão de código (commit b197229):
     o <option value="cnpj|numero|valor"> do seletor de vínculo usava

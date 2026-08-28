@@ -45,6 +45,9 @@ def _item(it):
         "excecao": ({"observacao": it.get("excecao_obs") or ""} if it.get("excecao") else None),
         "validada": ({"observacao": it.get("validada_obs") or ""} if it.get("validada") else None),
         "aceita": ({"observacao": it.get("aceita_obs") or ""} if it.get("aceita") else None),
+        "vinculo": ({"sp_cnpj": it.get("vinculo_sp_cnpj"), "sp_numero": it.get("vinculo_sp_numero"),
+                     "sp_valor": it.get("vinculo_sp_valor"), "observacao": it.get("vinculo_obs") or ""}
+                    if it.get("vinculada") else None),
         "optante_sn": bool(it.get("optante_sn")),
         "cancelada": bool(it.get("cancelada")),
         "tipo": ("sp_extra" if it.get("sp_extra") else
@@ -74,6 +77,7 @@ def gerar_pacote_dados(resumo, itens, conc):
             "excecoes": resumo.get("qt_excecoes", 0),
             "validadas": resumo.get("qt_validadas", 0),
             "aceitas": resumo.get("qt_aceitas", 0),
+            "vinculadas": resumo.get("qt_vinculadas", 0),
             "canceladas": resumo.get("qt_canceladas", 0),
             "sp_sem_sieg": resumo.get("qt_sp_sem_sieg", 0),
             "sp_duplicadas": resumo.get("qt_sp_duplicadas", 0),
