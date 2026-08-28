@@ -19,7 +19,9 @@ from app.services import excecoes as serv_excecoes
 from app.services import validacoes as serv_validacoes
 from app.services import aceites as serv_aceites
 from app.services.recalculo import pendencia_sieg
-from app.services.normalizacao import so_digitos
+from app.services.normalizacao import so_digitos, valores_batem
+from app.services import vinculos as serv_vinculos
+from collections import defaultdict
 import json
 registrar_filtros(templates)
 _XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -60,11 +62,13 @@ def _par(s, p, chave):
     return {"sieg": sv, "sp": pv, "delta": delta}
 
 
-def montar_resumo_e_itens(conc, tabelas=None, excecoes=None, validacoes=None, aceites=None):
+def montar_resumo_e_itens(conc, tabelas=None, excecoes=None, validacoes=None, aceites=None,
+                          vinculos=None):
     tabelas = tabelas or []
     excecoes = excecoes or {}     # {cnpj_norm: obs} — exceção por CNPJ (todas as competências)
     validacoes = validacoes or {}  # {(cnpj_norm, numero_norm): obs} — validada só nesta competência
     aceites = aceites or {}        # {(cnpj_norm, numero_norm): obs} — divergência de valor/arquivo aceita (só nesta competência)
+    vinculos = vinculos or {}      # {(cnpj_norm, numero_norm) da NOTA: {sp_cnpj, sp_numero, sp_valor, obs}}
     resumo = {
         "cnpj": conc.cnpj, "data_hora": formatar_dt(conc.data_hora),
         "competencia": formatar_competencia(conc.competencia),
@@ -73,7 +77,6 @@ def montar_resumo_e_itens(conc, tabelas=None, excecoes=None, validacoes=None, ac
         "total_universo": conc.total_universo, "valor_total": conc.valor_total,
         "qt_canceladas": conc.qt_canceladas,
         "qt_falta_arquivar": conc.qt_falta_arquivar,
-        "qt_sp_sem_sieg": sum(1 for i in conc.itens if i.veredito == "sp_sem_sieg"),
         "qt_sp_duplicadas": sum(1 for i in conc.itens if i.veredito == "sp_duplicada"),
     }
     largura = largura_numeros([i.numero for i in conc.itens])
@@ -156,8 +159,50 @@ def montar_resumo_e_itens(conc, tabelas=None, excecoes=None, validacoes=None, ac
             # Conciliações antigas não têm esse campo -> cai no CNPJ do fornecedor.
             "cnpj_fornecedor_sp": _fmt_cnpj((p_sp or {}).get("cnpj") or i.cnpj_fornecedor),
             "pendencia_itens": pend_itens,
+            # Vínculo manual (item-NOTA vinculado / órfão sp_sem_sieg consumido)
+            "vinculada": False, "vinculo_obs": "",
+            "vinculo_sp_cnpj": "", "vinculo_sp_numero": "", "vinculo_sp_valor": None,
+            "vinculado": False,
         })
-    # contagens em tempo de exibição (refletem exceção/validada atuais) — item 1
+    # Vínculo manual (pós-passo): liga uma NOTA em erro a um órfão "sp_sem_sieg"
+    # (mesmo CNPJ/número/valor do lançamento SP escolhido), compara os valores
+    # persistidos e recalcula o erro da NOTA. Roda ANTES de contar os buckets
+    # (Gerenciadas/Erros) para que a NOTA vinculada já reflita o novo status.
+    orfaos_idx = defaultdict(list)
+    for it in itens:
+        if it["veredito"] == "sp_sem_sieg":
+            chave = (it["cnpj_norm"], it["numero_norm"], round(it["sp_bruto"] or 0.0, 2))
+            orfaos_idx[chave].append(it)
+    for (cnpj_norm, numero_norm), v in vinculos.items():
+        nota = next((it for it in itens if it["principal"]
+                    and it["cnpj_norm"] == cnpj_norm and it["numero_norm"] == numero_norm), None)
+        if nota is None:
+            continue
+        chave_orf = (v["sp_cnpj"], v["sp_numero"], round(v["sp_valor"] or 0.0, 2))
+        orf = next((o for o in orfaos_idx.get(chave_orf, []) if not o.get("vinculado")), None)
+        if orf is None:
+            continue
+        divergs = []
+        if not valores_batem(nota["sieg_bruto"], orf["sp_bruto"]):
+            divergs.append(f"bruto {nota['sieg_bruto']}≠{orf['sp_bruto']}")
+        if not valores_batem(nota["sieg_liquido"], orf["sp_liquido"]):
+            divergs.append(f"líquido {nota['sieg_liquido']}≠{orf['sp_liquido']}")
+        if not valores_batem(nota["sieg_imp"], orf["sp_imp"]):
+            divergs.append(f"impostos {nota['sieg_imp']}≠{orf['sp_imp']}")
+        status = "diverg" if divergs else "ok"
+        nota["status_lancamento"] = status
+        nota["detalhe_lancamento"] = "; ".join(divergs)
+        nota["vinculada"] = True
+        nota["vinculo_obs"] = v["obs"]
+        nota["vinculo_sp_cnpj"] = v["sp_cnpj"]
+        nota["vinculo_sp_numero"] = v["sp_numero"]
+        nota["vinculo_sp_valor"] = v["sp_valor"]
+        erro_lanc_aberto = (status == "diverg") and not nota["aceita"]
+        nota["tem_erro"] = nota["principal"] and (erro_lanc_aberto or nota["pendencia_sieg"])
+        nota["eh_gerenciada"] = nota["principal"] and not nota["tem_erro"]
+        orf["vinculado"] = True
+
+    # contagens em tempo de exibição (refletem exceção/validada/vínculo atuais) — item 1
     prin = [it for it in itens if it["principal"]]
     resumo["qt_gerenciadas"] = sum(1 for it in prin if it["eh_gerenciada"])
     resumo["qt_erros"] = sum(1 for it in prin if it["tem_erro"])
@@ -167,15 +212,19 @@ def montar_resumo_e_itens(conc, tabelas=None, excecoes=None, validacoes=None, ac
     resumo["qt_aceitas"] = sum(1 for it in prin if it["aceita"])
     resumo["qt_ressalva"] = sum(1 for it in prin if it["veredito"] == "ressalva")
     resumo["qt_falta_lancar"] = sum(1 for it in prin if it["veredito"] == "pendente")
+    resumo["qt_sp_sem_sieg"] = sum(1 for it in itens
+                                   if it["veredito"] == "sp_sem_sieg" and not it.get("vinculado"))
+    resumo["qt_vinculadas"] = sum(1 for it in prin if it.get("vinculada"))
     return resumo, itens
 
 
 def _resumo_itens(db, conc):
-    """Monta resumo+itens com alíquotas, exceções, validações e aceites da competência."""
+    """Monta resumo+itens com alíquotas, exceções, validações, aceites e vínculos da competência."""
     return montar_resumo_e_itens(
         conc, serv_aliquotas.listar(db), serv_excecoes.mapa_cnpjs(db),
         serv_validacoes.mapa(db, conc.competencia),
-        serv_aceites.mapa(db, conc.competencia))
+        serv_aceites.mapa(db, conc.competencia),
+        serv_vinculos.mapa(db, conc.competencia))
 
 
 @router.get("/resultado/{conciliacao_id}")
