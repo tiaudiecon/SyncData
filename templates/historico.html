@@ -30,23 +30,15 @@
         <td class="mono right">{{ l.falta_lancar }}</td>
         <td class="mono right">{{ l.falta_arquivar }}</td>
         <td style="white-space:nowrap">
-          <a class="btn btn-ghost" style="height:28px; padding:0 10px; font-size:12px; display:inline-flex" href="/resultado/{{ l.id }}">Abrir</a>
-          <details style="display:inline-block">
-            <summary class="btn btn-ghost" style="height:28px; padding:0 10px; font-size:12px; display:inline-flex" role="button">Editar</summary>
-            <form method="post" action="/historico/{{ l.id }}/editar" style="display:flex; gap:8px; align-items:end; margin-top:8px">
-              <div class="field" style="margin:0"><label>Competência</label>
-                <input class="input" type="month" name="competencia" value="{{ l.competencia_raw }}"></div>
-              <div class="field" style="margin:0"><label>Início</label>
-                <input class="input" type="date" name="periodo_inicio" value="{{ l.periodo_inicio_raw }}"></div>
-              <div class="field" style="margin:0"><label>Fim</label>
-                <input class="input" type="date" name="periodo_fim" value="{{ l.periodo_fim_raw }}"></div>
-              <button class="btn btn-accent" style="height:28px; padding:0 12px; font-size:12px" type="submit">Salvar</button>
-            </form>
-          </details>
+          <a class="btn btn-ghost btn-acao" href="/resultado/{{ l.id }}">Abrir</a>
+          <button type="button" class="btn btn-ghost btn-acao"
+                  data-id="{{ l.id }}" data-comp="{{ l.competencia_raw }}"
+                  data-ini="{{ l.periodo_inicio_raw }}" data-fim="{{ l.periodo_fim_raw }}"
+                  onclick="abrirEditar(this)">Editar</button>
           <form method="post" action="/historico/{{ l.id }}/excluir" style="display:inline"
                 data-comp="{{ l.competencia or l.quando }}"
                 onsubmit="return confirm('Excluir a conciliação ' + this.dataset.comp + ' e todos os itens dela? Esta ação não pode ser desfeita.');">
-            <button class="btn btn-ghost" style="height:28px; padding:0 10px; font-size:12px; color:var(--alert)" type="submit">Excluir</button>
+            <button class="btn btn-ghost btn-acao" style="color:var(--alert)" type="submit">Excluir</button>
           </form>
         </td>
       </tr>
@@ -56,4 +48,36 @@
     </tbody>
   </table>
 </div>
+
+{# Modal de edição — compartilhado, populado por JS ao clicar em "Editar" #}
+<div id="mdEditar" class="modal-back" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="mdTit">
+    <div class="modal-tit" id="mdTit">Editar conciliação</div>
+    <div class="modal-sub">Ajuste a competência e o período da conferência.</div>
+    <form id="mdForm" method="post">
+      <div class="field"><label>Competência</label>
+        <input class="input" type="month" name="competencia" id="mdComp"></div>
+      <div class="field"><label>Início da conferência</label>
+        <input class="input" type="date" name="periodo_inicio" id="mdIni"></div>
+      <div class="field"><label>Fim da conferência</label>
+        <input class="input" type="date" name="periodo_fim" id="mdFim"></div>
+      <div class="modal-acoes">
+        <button type="button" class="btn btn-ghost" onclick="fecharEditar()">Cancelar</button>
+        <button type="submit" class="btn btn-accent">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+  function abrirEditar(b){
+    document.getElementById('mdForm').action = '/historico/' + b.dataset.id + '/editar';
+    document.getElementById('mdComp').value = b.dataset.comp || '';
+    document.getElementById('mdIni').value  = b.dataset.ini  || '';
+    document.getElementById('mdFim').value  = b.dataset.fim  || '';
+    document.getElementById('mdEditar').hidden = false;
+  }
+  function fecharEditar(){ document.getElementById('mdEditar').hidden = true; }
+  document.getElementById('mdEditar').addEventListener('click', function(e){ if (e.target === this) fecharEditar(); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') fecharEditar(); });
+</script>
 {% endblock %}
