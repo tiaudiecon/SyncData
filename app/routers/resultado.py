@@ -197,6 +197,12 @@ def montar_resumo_e_itens(conc, tabelas=None, excecoes=None, validacoes=None, ac
         nota["vinculo_sp_cnpj"] = v["sp_cnpj"]
         nota["vinculo_sp_numero"] = v["sp_numero"]
         nota["vinculo_sp_valor"] = v["sp_valor"]
+        # Traz os valores do lançamento vinculado para as colunas do SPData (o
+        # lançamento agora EXISTE, via vínculo): bruto/líquido/impostos + consta.
+        nota["sp_bruto"] = orf["sp_bruto"]
+        nota["sp_liquido"] = orf["sp_liquido"]
+        nota["sp_imp"] = orf["sp_imp"]
+        nota["consta_spdata"] = True
         # O vínculo só resolve o lado do LANÇAMENTO; o lado do ARQUIVO (PDF)
         # pode continuar em aberto (falta/diverg) -- precisa entrar no recálculo
         # senão uma nota sem PDF arquivado seria promovida a Gerenciada. Aceite

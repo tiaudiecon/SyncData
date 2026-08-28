@@ -52,6 +52,9 @@ def test_vinculo_valores_batem_vira_gerenciada_e_tira_orfao(client):  # client g
     assert nota["vinculada"] and nota["eh_gerenciada"] and not nota["tem_erro"]
     assert resumo["qt_vinculadas"] == 1
     assert resumo["qt_sp_sem_sieg"] == 0            # o órfão foi consumido
+    # colunas do SPData passam a mostrar os valores do lançamento vinculado
+    assert nota["sp_bruto"] == 970.0 and nota["sp_liquido"] == 970.0 and nota["sp_imp"] == 0.0
+    assert nota["consta_spdata"] is True
     db.close()
 
 
@@ -68,6 +71,8 @@ def test_vinculo_valores_divergem_vira_ressalva(client):
     nota = next(i for i in itens if i["numero"] == "300")
     assert nota["vinculada"] and nota["tem_erro"]          # Ressalva (diverge)
     assert nota["status_lancamento"] == "diverg"
+    # regra da divergência: colunas do SPData mostram o valor (divergente) do vínculo
+    assert nota["sp_bruto"] == 900.0 and nota["consta_spdata"] is True
     db.close()
 
 
