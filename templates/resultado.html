@@ -117,7 +117,7 @@
       <tr class="linha-resumo{% if i.cancelada %} linha-cancelada{% elif i.sp_extra %} linha-spextra{% endif %}"
           data-v="{{ i.veredito }}" data-cancelada="{{ '1' if i.cancelada else '0' }}"
           data-pend="{{ '1' if i.pendencia_sieg else '0' }}" data-exc="{{ '1' if i.excecao else '0' }}"
-          data-erro="{{ '1' if i.tem_erro else '0' }}" data-ger="{{ '1' if i.eh_gerenciada else '0' }}" data-val="{{ '1' if i.validada else '0' }}" data-aceita="{{ '1' if i.aceita else '0' }}" data-vinculada="{{ '1' if i.vinculada else '0' }}"
+          data-erro="{{ '1' if i.tem_erro else '0' }}" data-ger="{{ '1' if i.eh_gerenciada else '0' }}" data-val="{{ '1' if i.validada else '0' }}" data-aceita="{{ '1' if i.aceita else '0' }}" data-vinculada="{{ '1' if i.vinculada else '0' }}" data-vinculado="{{ '1' if i.vinculado else '0' }}"
           data-busca="{{ (i.numero ~ ' ' ~ i.nome_fornecedor)|lower }}"
           data-valores="{{ (i.sieg_bruto*100)|round|int }} {{ (i.sieg_liquido*100)|round|int }} {{ (i.sieg_imp*100)|round|int }}{% if i.sp_bruto is not none %} {{ (i.sp_bruto*100)|round|int }}{% endif %}{% if i.sp_liquido is not none %} {{ (i.sp_liquido*100)|round|int }}{% endif %}{% if i.sp_imp is not none %} {{ (i.sp_imp*100)|round|int }}{% endif %}"
           {% if exp %}onclick="toggleDet(this)"{% endif %}>
@@ -361,7 +361,7 @@
         case 'aceita': okS = principal && tr.dataset.aceita === '1'; break;
         case 'vinculada': okS = principal && tr.dataset.vinculada === '1'; break;
         case 'canceladas': okS = canc; break;
-        case 'sp_sem_sieg': okS = v === 'sp_sem_sieg'; break;
+        case 'sp_sem_sieg': okS = v === 'sp_sem_sieg' && tr.dataset.vinculado !== '1'; break;   // órfão consumido por vínculo sai da lista
         case 'sp_duplicada': okS = v === 'sp_duplicada'; break;
         default: okS = principal;
       }

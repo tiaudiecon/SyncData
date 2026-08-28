@@ -380,7 +380,7 @@ def gerar_xlsx(resumo: dict, itens: list) -> bytes:
         ("Vinculadas", [i for i in prin if i.get("vinculada")]),
         ("Exceções", [i for i in prin if i.get("excecao")]),
         ("Canceladas", [i for i in itens if i.get("cancelada")]),
-        ("SP sem SIEG", [i for i in itens if i["veredito"] == "sp_sem_sieg"]),
+        ("SP sem SIEG", [i for i in itens if i["veredito"] == "sp_sem_sieg" and not i.get("vinculado")]),
         ("Duplicadas SP", [i for i in itens if i["veredito"] == "sp_duplicada"]),
     ]
     for nome, subset in categorias:

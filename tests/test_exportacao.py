@@ -106,6 +106,23 @@ def test_confronto_inverso_em_aba_propria():
     assert "999" in inv
 
 
+def test_orfao_vinculado_sai_da_guia_sp_sem_sieg():
+    # Órfão consumido por vínculo (vinculado=True) NÃO aparece na guia "SP sem SIEG";
+    # o não-consumido continua aparecendo.
+    base = {"data_emissao": "05/07/2026", "valor_bruto": 0.0, "valor_liquido": 0.0,
+            "status_lancamento": "", "status_arquivo": "", "detalhe_lancamento": "",
+            "detalhe_arquivo": "", "veredito": "sp_sem_sieg", "sp_extra": True}
+    itens = _itens() + [
+        {**base, "numero": "901", "nome_fornecedor": "ORFAO LIVRE",
+         "sp_bruto": 50.0, "sp_liquido": 50.0, "vinculado": False},
+        {**base, "numero": "902", "nome_fornecedor": "ORFAO USADO",
+         "sp_bruto": 70.0, "sp_liquido": 70.0, "vinculado": True},
+    ]
+    wb = openpyxl.load_workbook(io.BytesIO(gerar_xlsx(_resumo(), itens)))
+    aba = [str(c.value) for c in wb["SP sem SIEG"]["A"] if c.value is not None]
+    assert "901" in aba and "902" not in aba          # consumido some da guia
+
+
 def test_impostos_marca_recalculo():
     # item 2: a aba Impostos marca a linha divergente do recálculo.
     itens = _itens_ricos()
