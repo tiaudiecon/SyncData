@@ -239,7 +239,7 @@
               <select class="input sel-vinculo-alvo" onchange="vincEscolher(this)">
                 <option value="" selected>Selecione o lançamento…</option>
                 {% for o in candidatos %}
-                <option value="{{ o.cnpj_norm }}|{{ o.numero }}|{{ o.sp_bruto }}">nº {{ o.numero }} · {{ o.sp_bruto|num_br }} · {{ o.nome_fornecedor }}</option>
+                <option value="{{ o.cnpj_norm }}|{{ o.numero_norm }}|{{ o.sp_bruto }}">nº {{ o.numero }} · {{ o.sp_bruto|num_br }} · {{ o.nome_fornecedor }}</option>
                 {% endfor %}
               </select>
               {% if todos|length > candidatos|length %}
@@ -248,7 +248,7 @@
                 <select class="input sel-vinculo-alvo" onchange="vincEscolher(this)">
                   <option value="" selected>Selecione o lançamento…</option>
                   {% for o in todos %}
-                  <option value="{{ o.cnpj_norm }}|{{ o.numero }}|{{ o.sp_bruto }}">nº {{ o.numero }} · {{ o.sp_bruto|num_br }} · {{ o.nome_fornecedor }}{% if o.cnpj_norm != i.cnpj_norm %} · {{ o.cnpj_norm }}{% endif %}</option>
+                  <option value="{{ o.cnpj_norm }}|{{ o.numero_norm }}|{{ o.sp_bruto }}">nº {{ o.numero }} · {{ o.sp_bruto|num_br }} · {{ o.nome_fornecedor }}{% if o.cnpj_norm != i.cnpj_norm %} · {{ o.cnpj_norm }}{% endif %}</option>
                   {% endfor %}
                 </select>
               </details>
@@ -258,7 +258,7 @@
               <select class="input sel-vinculo-alvo" onchange="vincEscolher(this)">
                 <option value="" selected>Selecione o lançamento…</option>
                 {% for o in todos %}
-                <option value="{{ o.cnpj_norm }}|{{ o.numero }}|{{ o.sp_bruto }}">nº {{ o.numero }} · {{ o.sp_bruto|num_br }} · {{ o.nome_fornecedor }} · {{ o.cnpj_norm }}</option>
+                <option value="{{ o.cnpj_norm }}|{{ o.numero_norm }}|{{ o.sp_bruto }}">nº {{ o.numero }} · {{ o.sp_bruto|num_br }} · {{ o.nome_fornecedor }} · {{ o.cnpj_norm }}</option>
                 {% endfor %}
               </select>
               {% endif %}
@@ -408,7 +408,13 @@
   function vincEscolher(sel){
     const form = sel.closest('form');
     const p = (sel.value || '').split('|');
-    if (p.length < 3) return;
+    if (p.length < 3) {
+      // placeholder reselecionado -- limpa o alvo anterior p/ não submeter algo obsoleto
+      form.querySelector('.alvo-sp_cnpj').value = '';
+      form.querySelector('.alvo-sp_numero').value = '';
+      form.querySelector('.alvo-sp_valor').value = '';
+      return;
+    }
     form.querySelector('.alvo-sp_cnpj').value = p[0];
     form.querySelector('.alvo-sp_numero').value = p[1];
     form.querySelector('.alvo-sp_valor').value = p[2];
