@@ -71,6 +71,46 @@ def test_vinculo_valores_divergem_vira_ressalva(client):
     db.close()
 
 
+def test_vinculo_bate_no_lancamento_mas_arquivo_falta_continua_com_erro(client):
+    """Finding 1 da revisão final: a NOTA está 'falta' tanto no lançamento quanto
+    no arquivo (veredito 'pendente', PDF nunca arquivado). Um vínculo manual
+    resolve o lado do LANÇAMENTO (bate com o órfão sp_sem_sieg) mas NÃO tem
+    nenhum efeito sobre o arquivo -- a nota não pode virar Gerenciada com o PDF
+    ainda em falta (isso destravaria a exportação fiscal indevidamente, já que
+    templates/resultado.html usa qt_erros == 0 como gate). Antes do fix, o
+    recálculo pós-vínculo olhava só `status` (lançamento) e ignorava
+    `status_arquivo` -> nota virava eh_gerenciada=True/tem_erro=False (BUG).
+    Depois do fix, tem_erro deve permanecer True."""
+    db = SessionLocal(); serv_al.garantir_padrao(db)
+    conc = Conciliacao(cnpj="11", competencia="2026-07",
+                       periodo_inicio="2026-07-01", periodo_fim="2026-07-31")
+    db.add(conc); db.flush()
+    db.add(ConciliacaoItem(conciliacao_id=conc.id, numero="300",
+        cnpj_fornecedor="54017315000170", nome_fornecedor="FORN", data_emissao="03/07/2026",
+        valor_bruto=970.0, valor_liquido=970.0, imp_sieg=0.0,
+        status_lancamento="falta", status_arquivo="falta", veredito="pendente", cancelada=False))
+    db.add(ConciliacaoItem(conciliacao_id=conc.id, numero="0",
+        cnpj_fornecedor="54017315000170", nome_fornecedor="FORN", data_emissao="",
+        valor_bruto=0.0, valor_liquido=0.0, sp_valor_bruto=970.0, sp_valor_liquido=970.0,
+        imp_spdata=0.0, status_lancamento="", status_arquivo="", veredito="sp_sem_sieg",
+        cancelada=False))
+    db.commit(); db.refresh(conc)
+
+    serv.salvar(db, "2026-07", "54017315000170", "300", "FORN",
+                "54017315000170", "0", 970.0, "lançamento achado, mas PDF nunca foi arquivado")
+    resumo, itens = montar_resumo_e_itens(conc, serv_al.listar(db), None, None, None,
+                                          serv.mapa(db, "2026-07"))
+    nota = next(i for i in itens if i["numero"] == "300")
+
+    assert nota["vinculada"] is True
+    assert nota["status_lancamento"] == "ok"          # valores batem -> lado do lançamento resolvido
+    assert nota["status_arquivo"] == "falta"          # arquivo continua em falta (vínculo não mexe nisso)
+    assert nota["tem_erro"] is True, "nota sem PDF arquivado não pode ficar sem erro"
+    assert nota["eh_gerenciada"] is False, "nota sem PDF arquivado não pode virar Gerenciada"
+    assert resumo["qt_erros"] >= 1
+    db.close()
+
+
 def test_pacote_dados_traz_vinculo_e_contagem(client):  # client garante schema
     from app.services import pacote_dados
 

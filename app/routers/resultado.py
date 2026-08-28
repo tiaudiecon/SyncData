@@ -183,11 +183,11 @@ def montar_resumo_e_itens(conc, tabelas=None, excecoes=None, validacoes=None, ac
         if orf is None:
             continue
         divergs = []
-        if not valores_batem(nota["sieg_bruto"], orf["sp_bruto"]):
+        if not valores_batem(nota["sieg_bruto"] or 0.0, orf["sp_bruto"] or 0.0):
             divergs.append(f"bruto {nota['sieg_bruto']}≠{orf['sp_bruto']}")
-        if not valores_batem(nota["sieg_liquido"], orf["sp_liquido"]):
+        if not valores_batem(nota["sieg_liquido"] or 0.0, orf["sp_liquido"] or 0.0):
             divergs.append(f"líquido {nota['sieg_liquido']}≠{orf['sp_liquido']}")
-        if not valores_batem(nota["sieg_imp"], orf["sp_imp"]):
+        if not valores_batem(nota["sieg_imp"] or 0.0, orf["sp_imp"] or 0.0):
             divergs.append(f"impostos {nota['sieg_imp']}≠{orf['sp_imp']}")
         status = "diverg" if divergs else "ok"
         nota["status_lancamento"] = status
@@ -197,7 +197,12 @@ def montar_resumo_e_itens(conc, tabelas=None, excecoes=None, validacoes=None, ac
         nota["vinculo_sp_cnpj"] = v["sp_cnpj"]
         nota["vinculo_sp_numero"] = v["sp_numero"]
         nota["vinculo_sp_valor"] = v["sp_valor"]
-        erro_lanc_aberto = (status == "diverg") and not nota["aceita"]
+        # O vínculo só resolve o lado do LANÇAMENTO; o lado do ARQUIVO (PDF)
+        # pode continuar em aberto (falta/diverg) -- precisa entrar no recálculo
+        # senão uma nota sem PDF arquivado seria promovida a Gerenciada. Aceite
+        # cobre valor E arquivo (é a mesma tratativa de ressalva/pendente).
+        arquivo_aberto = nota["status_arquivo"] in ("falta", "diverg")
+        erro_lanc_aberto = ((status == "diverg") or arquivo_aberto) and not nota["aceita"]
         nota["tem_erro"] = nota["principal"] and (erro_lanc_aberto or nota["pendencia_sieg"])
         nota["eh_gerenciada"] = nota["principal"] and not nota["tem_erro"]
         orf["vinculado"] = True
