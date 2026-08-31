@@ -245,24 +245,32 @@
               {% if todos|length > candidatos|length %}
               <details class="det-vinculo-todas">
                 <summary>ver todas ({{ todos|length }})</summary>
-                <input type="text" class="input busca-vinculo" placeholder="Buscar nº, valor ou fornecedor…" oninput="filtrarVinculoTodos(this)">
-                <select class="input sel-vinculo-alvo" onchange="vincEscolher(this)">
-                  <option value="" selected>Selecione o lançamento…</option>
-                  {% for o in todos %}
-                  <option value="{{ o.cnpj_norm }}|{{ o.numero_norm }}|{{ o.sp_bruto }}">nº {{ o.numero }} · {{ o.sp_bruto|num_br }} · {{ o.nome_fornecedor }}{% if o.cnpj_norm != i.cnpj_norm %} · {{ o.cnpj_norm }}{% endif %}</option>
-                  {% endfor %}
-                </select>
+                <div class="combo-vinculo">
+                  <input type="text" class="input combo-busca" autocomplete="off"
+                         placeholder="Buscar nº, valor ou fornecedor…"
+                         oninput="comboFiltrar(this)" onfocus="comboAbrir(this)">
+                  <div class="combo-lista" hidden>
+                    {% for o in todos %}
+                    <button type="button" class="combo-item" onclick="comboEscolher(this)"
+                            data-v="{{ o.cnpj_norm }}|{{ o.numero_norm }}|{{ o.sp_bruto }}">nº {{ o.numero }} · {{ o.sp_bruto|num_br }} · {{ o.nome_fornecedor }}{% if o.cnpj_norm != i.cnpj_norm %} · {{ o.cnpj_norm }}{% endif %}</button>
+                    {% endfor %}
+                  </div>
+                </div>
               </details>
               {% endif %}
               {% else %}
               <div class="mut" style="margin-bottom:2px">Nenhum lançamento "SP sem SIEG" do mesmo CNPJ — veja abaixo:</div>
-              <input type="text" class="input busca-vinculo" placeholder="Buscar nº, valor ou fornecedor…" oninput="filtrarVinculoTodos(this)">
-              <select class="input sel-vinculo-alvo" onchange="vincEscolher(this)">
-                <option value="" selected>Selecione o lançamento…</option>
-                {% for o in todos %}
-                <option value="{{ o.cnpj_norm }}|{{ o.numero_norm }}|{{ o.sp_bruto }}">nº {{ o.numero }} · {{ o.sp_bruto|num_br }} · {{ o.nome_fornecedor }} · {{ o.cnpj_norm }}</option>
-                {% endfor %}
-              </select>
+              <div class="combo-vinculo">
+                <input type="text" class="input combo-busca" autocomplete="off"
+                       placeholder="Buscar nº, valor ou fornecedor…"
+                       oninput="comboFiltrar(this)" onfocus="comboAbrir(this)">
+                <div class="combo-lista" hidden>
+                  {% for o in todos %}
+                  <button type="button" class="combo-item" onclick="comboEscolher(this)"
+                          data-v="{{ o.cnpj_norm }}|{{ o.numero_norm }}|{{ o.sp_bruto }}">nº {{ o.numero }} · {{ o.sp_bruto|num_br }} · {{ o.nome_fornecedor }} · {{ o.cnpj_norm }}</button>
+                  {% endfor %}
+                </div>
+              </div>
               {% endif %}
               <input type="text" name="observacao" class="input exc-obs" placeholder="Justificativa" required>
               <div class="det-exc-botoes">
@@ -428,17 +436,45 @@
     }
     return true;
   }
-  function filtrarVinculoTodos(inp){
-    const sel = inp.nextElementSibling;
-    if (!sel || sel.tagName !== 'SELECT') return;
+  function _aplicarFiltroCombo(inp, lista){
     const q = (inp.value || '').toLowerCase().trim();
     const qd = q.replace(/\D/g, '');   // só dígitos: casa "670,00", "670.00", nº
-    for (const op of sel.options){
-      if (op.value === ''){ op.hidden = false; continue; }   // placeholder sempre visível
-      const t = op.textContent.toLowerCase();
-      op.hidden = !(q === '' || t.indexOf(q) >= 0 || (qd !== '' && t.replace(/\D/g, '').indexOf(qd) >= 0));
+    for (const it of lista.querySelectorAll('.combo-item')){
+      const t = it.textContent.toLowerCase();
+      it.hidden = !(q === '' || t.indexOf(q) >= 0 || (qd !== '' && t.replace(/\D/g, '').indexOf(qd) >= 0));
     }
   }
+  function comboAbrir(inp){                 // foco: só abre a lista, sem apagar a escolha
+    const lista = inp.nextElementSibling;
+    if (!lista) return;
+    lista.hidden = false;
+    _aplicarFiltroCombo(inp, lista);
+  }
+  function comboFiltrar(inp){               // digitar: abre, invalida a escolha anterior e filtra
+    const lista = inp.nextElementSibling;
+    if (!lista) return;
+    lista.hidden = false;
+    const form = inp.closest('form');
+    form.querySelector('.alvo-sp_cnpj').value = '';
+    form.querySelector('.alvo-sp_numero').value = '';
+    form.querySelector('.alvo-sp_valor').value = '';
+    _aplicarFiltroCombo(inp, lista);
+  }
+  function comboEscolher(btn){              // clique no item: fixa o alvo e mostra no campo
+    const lista = btn.parentElement;
+    const inp = lista.previousElementSibling;
+    const form = btn.closest('form');
+    const p = (btn.dataset.v || '').split('|');
+    form.querySelector('.alvo-sp_cnpj').value = p[0] || '';
+    form.querySelector('.alvo-sp_numero').value = p[1] || '';
+    form.querySelector('.alvo-sp_valor').value = p[2] || '';
+    inp.value = btn.textContent.trim();
+    lista.hidden = true;
+  }
+  document.addEventListener('click', function(e){   // fecha a lista ao clicar fora
+    if (e.target.closest('.combo-vinculo')) return;
+    document.querySelectorAll('.combo-lista').forEach(function(l){ l.hidden = true; });
+  });
   function verPdf(id, numero){
     document.getElementById('pdfTitulo').textContent = 'NF ' + numero;
     document.getElementById('pdfFrame').src = '/pdf/' + id;
