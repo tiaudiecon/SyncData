@@ -255,6 +255,7 @@
                             data-v="{{ o.cnpj_norm }}|{{ o.numero_norm }}|{{ o.sp_bruto }}">nº {{ o.numero }} · {{ o.sp_bruto|num_br }} · {{ o.nome_fornecedor }}{% if o.cnpj_norm != i.cnpj_norm %} · {{ o.cnpj_norm }}{% endif %}</button>
                     {% endfor %}
                   </div>
+                  <button type="button" class="combo-x" onclick="comboLimpar(this)" tabindex="-1" title="Limpar busca" hidden>×</button>
                 </div>
               </details>
               {% endif %}
@@ -270,6 +271,7 @@
                           data-v="{{ o.cnpj_norm }}|{{ o.numero_norm }}|{{ o.sp_bruto }}">nº {{ o.numero }} · {{ o.sp_bruto|num_br }} · {{ o.nome_fornecedor }} · {{ o.cnpj_norm }}</button>
                   {% endfor %}
                 </div>
+                <button type="button" class="combo-x" onclick="comboLimpar(this)" tabindex="-1" title="Limpar busca" hidden>×</button>
               </div>
               {% endif %}
               <input type="text" name="observacao" class="input exc-obs" placeholder="Justificativa" required>
@@ -444,6 +446,15 @@
       it.hidden = !(q === '' || t.indexOf(q) >= 0 || (qd !== '' && t.replace(/\D/g, '').indexOf(qd) >= 0));
     }
   }
+  function _mostraX(inp){                    // mostra o "×" só quando há texto
+    const x = inp.closest('.combo-vinculo').querySelector('.combo-x');
+    if (x) x.hidden = (inp.value === '');
+  }
+  function _limparAlvo(form){
+    form.querySelector('.alvo-sp_cnpj').value = '';
+    form.querySelector('.alvo-sp_numero').value = '';
+    form.querySelector('.alvo-sp_valor').value = '';
+  }
   function comboAbrir(inp){                 // foco: só abre a lista, sem apagar a escolha
     const lista = inp.nextElementSibling;
     if (!lista) return;
@@ -454,11 +465,9 @@
     const lista = inp.nextElementSibling;
     if (!lista) return;
     lista.hidden = false;
-    const form = inp.closest('form');
-    form.querySelector('.alvo-sp_cnpj').value = '';
-    form.querySelector('.alvo-sp_numero').value = '';
-    form.querySelector('.alvo-sp_valor').value = '';
+    _limparAlvo(inp.closest('form'));
     _aplicarFiltroCombo(inp, lista);
+    _mostraX(inp);
   }
   function comboEscolher(btn){              // clique no item: fixa o alvo e mostra no campo
     const lista = btn.parentElement;
@@ -470,6 +479,18 @@
     form.querySelector('.alvo-sp_valor').value = p[2] || '';
     inp.value = btn.textContent.trim();
     lista.hidden = true;
+    _mostraX(inp);
+  }
+  function comboLimpar(x){                  // "×": apaga o texto, a escolha e reabre a lista cheia
+    const wrap = x.closest('.combo-vinculo');
+    const inp = wrap.querySelector('.combo-busca');
+    const lista = wrap.querySelector('.combo-lista');
+    inp.value = '';
+    _limparAlvo(x.closest('form'));
+    _aplicarFiltroCombo(inp, lista);
+    lista.hidden = false;
+    x.hidden = true;
+    inp.focus();
   }
   document.addEventListener('click', function(e){   // fecha a lista ao clicar fora
     if (e.target.closest('.combo-vinculo')) return;

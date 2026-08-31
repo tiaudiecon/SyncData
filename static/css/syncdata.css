@@ -123,15 +123,21 @@ table.dense thead th{vertical-align:bottom}
 /* tratativa Vinculada: painel compacto, no mesmo tamanho dos vizinhos (Aceite/Validação) */
 .det-vinculo{max-width:290px}
 .det-vinculo .sel-vinculo-alvo{height:26px; font-size:11px; min-width:190px; max-width:280px; padding:0 6px}
-/* combobox de busca do vínculo: input + lista clicável filtrada logo abaixo */
-.combo-vinculo{position:relative; max-width:290px}
-.combo-vinculo .combo-busca{width:100%; height:26px; font-size:11px; padding:0 8px}
-.combo-lista{position:absolute; top:29px; left:0; right:0; z-index:40; max-height:190px; overflow-y:auto;
-  background:var(--surface-2); border:1px solid var(--line-2); border-radius:var(--r-md);
-  box-shadow:0 10px 28px rgba(21,24,43,.20)}
+/* combobox de busca do vínculo: input (menor que a justificativa) + lista clicável larga */
+.combo-vinculo{position:relative; width:255px; max-width:100%}   /* um pouco menor que a justificativa (280) */
+.combo-vinculo .combo-busca{width:100%; height:26px; font-size:11px; padding:0 26px 0 8px}
+.combo-x{position:absolute; right:2px; top:0; width:22px; height:26px; border:0; background:none;
+  cursor:pointer; color:var(--ink-3); font-size:15px; line-height:24px; text-align:center; padding:0}
+.combo-x:hover{color:var(--burdo)}
+.combo-x[hidden]{display:none}
+/* a lista cresce até o conteúdo (item numa linha só), mais larga que a busca */
+.combo-lista{position:absolute; top:29px; left:0; z-index:40; min-width:100%; width:max-content;
+  max-width:520px; max-height:200px; overflow:auto; background:var(--surface-2);
+  border:1px solid var(--line-2); border-radius:var(--r-md); box-shadow:0 10px 28px rgba(21,24,43,.20)}
 .combo-lista[hidden]{display:none}
-.combo-item{display:block; width:100%; text-align:left; border:0; border-bottom:1px solid var(--line);
-  background:none; cursor:pointer; padding:6px 9px; font-size:11px; color:var(--ink); line-height:1.3}
+.combo-item{display:block; width:100%; text-align:left; white-space:nowrap; border:0;
+  border-bottom:1px solid var(--line); background:none; cursor:pointer; padding:5px 14px 5px 9px;
+  font-size:10.5px; color:var(--ink); line-height:1.35}
 .combo-item:last-child{border-bottom:0}
 .combo-item:hover{background:var(--surface-3); color:var(--burdo)}
 .combo-item[hidden]{display:none}
