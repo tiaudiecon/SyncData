@@ -123,6 +123,7 @@ table.dense thead th{vertical-align:bottom}
 /* tratativa Vinculada: painel compacto, no mesmo tamanho dos vizinhos (Aceite/Validação) */
 .det-vinculo{max-width:290px}
 .det-vinculo .sel-vinculo-alvo{height:26px; font-size:11px; min-width:190px; max-width:280px; padding:0 6px}
+.det-vinculo .busca-vinculo{height:26px; font-size:11px; min-width:190px; max-width:280px; padding:0 8px; margin-bottom:4px}
 .det-vinculo-todas{margin-top:2px}
 .det-vinculo-todas > summary{font-size:11px; color:var(--info); cursor:pointer; margin-bottom:2px}
 .det-vinculo-todas[open] > summary{margin-bottom:4px}

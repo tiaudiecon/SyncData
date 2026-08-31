@@ -245,6 +245,7 @@
               {% if todos|length > candidatos|length %}
               <details class="det-vinculo-todas">
                 <summary>ver todas ({{ todos|length }})</summary>
+                <input type="text" class="input busca-vinculo" placeholder="Buscar nº, valor ou fornecedor…" oninput="filtrarVinculoTodos(this)">
                 <select class="input sel-vinculo-alvo" onchange="vincEscolher(this)">
                   <option value="" selected>Selecione o lançamento…</option>
                   {% for o in todos %}
@@ -255,6 +256,7 @@
               {% endif %}
               {% else %}
               <div class="mut" style="margin-bottom:2px">Nenhum lançamento "SP sem SIEG" do mesmo CNPJ — veja abaixo:</div>
+              <input type="text" class="input busca-vinculo" placeholder="Buscar nº, valor ou fornecedor…" oninput="filtrarVinculoTodos(this)">
               <select class="input sel-vinculo-alvo" onchange="vincEscolher(this)">
                 <option value="" selected>Selecione o lançamento…</option>
                 {% for o in todos %}
@@ -425,6 +427,17 @@
       return false;
     }
     return true;
+  }
+  function filtrarVinculoTodos(inp){
+    const sel = inp.nextElementSibling;
+    if (!sel || sel.tagName !== 'SELECT') return;
+    const q = (inp.value || '').toLowerCase().trim();
+    const qd = q.replace(/\D/g, '');   // só dígitos: casa "670,00", "670.00", nº
+    for (const op of sel.options){
+      if (op.value === ''){ op.hidden = false; continue; }   // placeholder sempre visível
+      const t = op.textContent.toLowerCase();
+      op.hidden = !(q === '' || t.indexOf(q) >= 0 || (qd !== '' && t.replace(/\D/g, '').indexOf(qd) >= 0));
+    }
   }
   function verPdf(id, numero){
     document.getElementById('pdfTitulo').textContent = 'NF ' + numero;
