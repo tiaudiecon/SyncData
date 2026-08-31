@@ -76,6 +76,33 @@ def test_vinculo_valores_divergem_vira_ressalva(client):
     db.close()
 
 
+def test_vinculo_regruda_com_numero_do_orfao_com_padding(client):
+    """No import do dados.json o nº do órfão vem com PADDING ('0000000000000') mas o
+    sp_numero do vínculo é '0' — o vínculo tem que regrudar mesmo assim (senão a
+    conciliação importada parece que nunca foi vinculada)."""
+    db = SessionLocal(); serv_al.garantir_padrao(db)
+    conc = Conciliacao(cnpj="11", competencia="2026-07",
+                       periodo_inicio="2026-07-01", periodo_fim="2026-07-31")
+    db.add(conc); db.flush()
+    db.add(ConciliacaoItem(conciliacao_id=conc.id, numero="0000000000299",   # nota (padded)
+        cnpj_fornecedor="54017315000170", nome_fornecedor="FORN", data_emissao="12/07/2026",
+        valor_bruto=970.0, valor_liquido=970.0, imp_sieg=0.0,
+        status_lancamento="falta", status_arquivo="ok", veredito="pendente", cancelada=False))
+    db.add(ConciliacaoItem(conciliacao_id=conc.id, numero="0000000000000",   # órfão (padded)
+        cnpj_fornecedor="54017315000170", nome_fornecedor="FORN", data_emissao="",
+        valor_bruto=0.0, valor_liquido=0.0, sp_valor_bruto=970.0, sp_valor_liquido=970.0,
+        imp_spdata=0.0, status_lancamento="", status_arquivo="", veredito="sp_sem_sieg", cancelada=False))
+    db.commit(); db.refresh(conc)
+    serv.salvar(db, "2026-07", "54017315000170", "0000000000299", "FORN",
+                "54017315000170", "0", 970.0, "sp_numero curto x orfao padded")
+    resumo, itens = montar_resumo_e_itens(conc, serv_al.listar(db), None, None, None,
+                                          serv.mapa(db, "2026-07"))
+    nota = next(i for i in itens if i["numero_norm"] == "0000000000299")
+    assert nota["vinculada"] and nota["eh_gerenciada"]     # regrudou apesar do padding
+    assert resumo["qt_sp_sem_sieg"] == 0                   # órfão consumido
+    db.close()
+
+
 def test_vinculo_bate_no_lancamento_mas_arquivo_falta_continua_com_erro(client):
     """Finding 1 da revisão final: a NOTA está 'falta' tanto no lançamento quanto
     no arquivo (veredito 'pendente', PDF nunca arquivado). Um vínculo manual

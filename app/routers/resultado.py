@@ -19,7 +19,7 @@ from app.services import excecoes as serv_excecoes
 from app.services import validacoes as serv_validacoes
 from app.services import aceites as serv_aceites
 from app.services.recalculo import pendencia_sieg
-from app.services.normalizacao import so_digitos, valores_batem
+from app.services.normalizacao import so_digitos, valores_batem, normalizar_numero_nf
 from app.services import vinculos as serv_vinculos
 from collections import defaultdict
 import json
@@ -171,14 +171,15 @@ def montar_resumo_e_itens(conc, tabelas=None, excecoes=None, validacoes=None, ac
     orfaos_idx = defaultdict(list)
     for it in itens:
         if it["veredito"] == "sp_sem_sieg":
-            chave = (it["cnpj_norm"], it["numero_norm"], round(it["sp_bruto"] or 0.0, 2))
+            # nº do órfão SEM zeros à esquerda (tolera o padding que vem no import)
+            chave = (it["cnpj_norm"], normalizar_numero_nf(it["numero_norm"]), round(it["sp_bruto"] or 0.0, 2))
             orfaos_idx[chave].append(it)
     for (cnpj_norm, numero_norm), v in vinculos.items():
         nota = next((it for it in itens if it["principal"]
                     and it["cnpj_norm"] == cnpj_norm and it["numero_norm"] == numero_norm), None)
         if nota is None:
             continue
-        chave_orf = (v["sp_cnpj"], v["sp_numero"], round(v["sp_valor"] or 0.0, 2))
+        chave_orf = (v["sp_cnpj"], normalizar_numero_nf(v["sp_numero"]), round(v["sp_valor"] or 0.0, 2))
         orf = next((o for o in orfaos_idx.get(chave_orf, []) if not o.get("vinculado")), None)
         if orf is None:
             continue
