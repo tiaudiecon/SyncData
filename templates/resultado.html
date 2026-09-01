@@ -67,15 +67,20 @@
     <button class="chip on" data-f="todas" onclick="setFiltro(this)">Total</button>
     <button class="chip" data-f="gerenciada" onclick="setFiltro(this)">Gerenciadas</button>
     <button class="chip" data-f="erros" onclick="setFiltro(this)">Erros</button>
-    <button class="chip" data-f="pendencia_sieg" onclick="setFiltro(this)">Divergência de Impostos</button>
     <span class="chip-sep"></span>
-    <button class="chip chip-info" data-f="excecao" onclick="setFiltro(this)">Exceções</button>
-    <button class="chip chip-info" data-f="validada" onclick="setFiltro(this)">Validadas</button>
-    <button class="chip chip-info" data-f="aceita" onclick="setFiltro(this)">Aceitas</button>
-    <button class="chip chip-info" data-f="vinculada" onclick="setFiltro(this)">Vinculadas</button>
     <button class="chip chip-info" data-f="canceladas" onclick="setFiltro(this)">Canceladas</button>
     <button class="chip chip-info" data-f="sp_sem_sieg" onclick="setFiltro(this)">SP sem SIEG</button>
     <button class="chip chip-info" data-f="sp_duplicada" onclick="setFiltro(this)">Duplicadas SP</button>
+  </div>
+  {# item 3 (diretoria): as tags que saíram dos chips continuam filtráveis aqui #}
+  <div class="tag-filtro">
+    <label for="filtroTag">Filtrar por tag:</label>
+    <select id="filtroTag" class="input" onchange="setFiltroTag(this)">
+      <option value="">Todas</option>
+      <option value="pendencia_sieg">Divergência de Impostos</option>
+      <option value="aceita">Aceita</option>
+      <option value="excecao">Exceção</option>
+    </select>
   </div>
   <span class="filtro-total" id="filtroTotal"></span>
 </div>
@@ -117,7 +122,7 @@
       <tr class="linha-resumo{% if i.cancelada %} linha-cancelada{% elif i.sp_extra %} linha-spextra{% endif %}"
           data-v="{{ i.veredito }}" data-cancelada="{{ '1' if i.cancelada else '0' }}"
           data-pend="{{ '1' if i.pendencia_sieg else '0' }}" data-exc="{{ '1' if i.excecao else '0' }}"
-          data-erro="{{ '1' if i.tem_erro else '0' }}" data-ger="{{ '1' if i.eh_gerenciada else '0' }}" data-val="{{ '1' if i.validada else '0' }}" data-aceita="{{ '1' if i.aceita else '0' }}" data-vinculada="{{ '1' if i.vinculada else '0' }}" data-vinculado="{{ '1' if i.vinculado else '0' }}"
+          data-erro="{{ '1' if i.tem_erro else '0' }}" data-ger="{{ '1' if i.eh_gerenciada else '0' }}" data-val="{{ '1' if i.validada else '0' }}" data-aceita="{{ '1' if i.aceita else '0' }}"
           data-busca="{{ (i.numero ~ ' ' ~ i.nome_fornecedor)|lower }}"
           data-valores="{{ (i.sieg_bruto*100)|round|int }} {{ (i.sieg_liquido*100)|round|int }} {{ (i.sieg_imp*100)|round|int }}{% if i.sp_bruto is not none %} {{ (i.sp_bruto*100)|round|int }}{% endif %}{% if i.sp_liquido is not none %} {{ (i.sp_liquido*100)|round|int }}{% endif %}{% if i.sp_imp is not none %} {{ (i.sp_imp*100)|round|int }}{% endif %}"
           {% if exp %}onclick="toggleDet(this)"{% endif %}>
@@ -136,9 +141,7 @@
           {%- else -%}{{ selo('SP Data', sp_estado) }}{{ selo('SIEG', 'ok' if i.consta_sieg else 'falta') }}
           {%- if i.pendencia_sieg %} <span class="badge selo-sis b-warn" title="Impostos do SIEG divergem da alíquota base — analisar">Div. Impostos</span>{% endif -%}
           {%- if i.excecao %} <span class="badge selo-sis b-info" title="Fornecedor marcado como exceção: {{ i.excecao_obs }}">Exceção</span>{% endif -%}
-          {%- if i.validada %} <span class="badge selo-sis b-info" title="Validada manualmente (nesta competência): {{ i.validada_obs }}">Validada</span>{% endif -%}
-          {%- if i.aceita %} <span class="badge selo-sis b-roxo" title="Divergência de valor/arquivo aceita (nesta competência): {{ i.aceita_obs }}">Aceita</span>{% endif -%}
-          {%- if i.vinculada %} <span class="badge selo-sis b-teal" title="Vinculada manualmente ao lançamento do SpData: {{ i.vinculo_obs }}">Vinculada</span>{% endif -%}
+          {%- if i.validada or i.aceita %} <span class="badge selo-sis b-roxo" title="Aceita manualmente (nesta competência): {{ i.validada_obs or i.aceita_obs }}">Aceita</span>{% endif -%}
           {%- if i.veredito == 'sp_duplicada' %} <span class="badge selo-sis b-warn">Duplicada no SP Data</span>{% endif -%}
           {%- endif -%}
         </td>
@@ -210,81 +213,6 @@
             {% endif %}
           </div>
           {% endif %}
-          {# tratativa Vinculada: liga a NOTA (faltou lançar) a um lançamento "SP sem SIEG" #}
-          {% if i.vinculada or i.status_lancamento == 'falta' %}
-          {% set candidatos = itens|selectattr('veredito', 'equalto', 'sp_sem_sieg')|rejectattr('vinculado')|selectattr('cnpj_norm', 'equalto', i.cnpj_norm)|list %}
-          {% set todos = itens|selectattr('veredito', 'equalto', 'sp_sem_sieg')|rejectattr('vinculado')|list %}
-          <div class="det-extra det-vinculo{% if i.vinculada %} det-exc{% endif %}">
-            <div class="det-extra-tit">Vínculo manual de lançamento</div>
-            {% if i.vinculada %}
-            <div class="det-exc-obs">Vinculada <strong>manualmente</strong> ao lançamento do SpData (só nesta competência) — {{ i.vinculo_obs }}
-              <form method="post" action="/vinculos/desfazer" style="display:inline">
-                <input type="hidden" name="cnpj" value="{{ i.cnpj_norm }}">
-                <input type="hidden" name="numero" value="{{ i.numero_norm }}">
-                <input type="hidden" name="competencia" value="{{ resumo.competencia_raw }}">
-                <input type="hidden" name="conciliacao_id" value="{{ c.id }}">
-                <button type="submit" class="det-desfazer">desfazer vínculo</button>
-              </form></div>
-            {% elif todos %}
-            <form method="post" action="/vinculos/marcar" class="det-exc-form" onsubmit="return vincSubmit(this)">
-              <input type="hidden" name="cnpj" value="{{ i.cnpj_norm }}">
-              <input type="hidden" name="numero" value="{{ i.numero_norm }}">
-              <input type="hidden" name="nome" value="{{ i.nome_fornecedor }}">
-              <input type="hidden" name="competencia" value="{{ resumo.competencia_raw }}">
-              <input type="hidden" name="conciliacao_id" value="{{ c.id }}">
-              <input type="hidden" class="alvo-sp_cnpj" name="sp_cnpj">
-              <input type="hidden" class="alvo-sp_numero" name="sp_numero">
-              <input type="hidden" class="alvo-sp_valor" name="sp_valor">
-              {% if candidatos %}
-              <select class="input sel-vinculo-alvo" onchange="vincEscolher(this)">
-                <option value="" selected>Selecione o lançamento…</option>
-                {% for o in candidatos %}
-                <option value="{{ o.cnpj_norm }}|{{ o.numero_norm }}|{{ o.sp_bruto }}">nº {{ o.numero }} · {{ o.sp_bruto|num_br }} · {{ o.nome_fornecedor }}</option>
-                {% endfor %}
-              </select>
-              {% if todos|length > candidatos|length %}
-              <details class="det-vinculo-todas">
-                <summary>ver todas ({{ todos|length }})</summary>
-                <div class="combo-vinculo">
-                  <input type="text" class="input combo-busca" autocomplete="off"
-                         placeholder="Buscar nº, valor ou fornecedor…"
-                         oninput="comboFiltrar(this)" onfocus="comboAbrir(this)">
-                  <div class="combo-lista" hidden>
-                    {% for o in todos %}
-                    <button type="button" class="combo-item" onclick="comboEscolher(this)"
-                            data-v="{{ o.cnpj_norm }}|{{ o.numero_norm }}|{{ o.sp_bruto }}">nº {{ o.numero }} · {{ o.sp_bruto|num_br }} · {{ o.nome_fornecedor }}{% if o.cnpj_norm != i.cnpj_norm %} · {{ o.cnpj_norm }}{% endif %}</button>
-                    {% endfor %}
-                  </div>
-                  <button type="button" class="combo-x" onclick="comboLimpar(this)" tabindex="-1" title="Limpar busca" hidden>×</button>
-                </div>
-              </details>
-              {% endif %}
-              {% else %}
-              <div class="mut" style="margin-bottom:2px">Nenhum lançamento "SP sem SIEG" do mesmo CNPJ — veja abaixo:</div>
-              <div class="combo-vinculo">
-                <input type="text" class="input combo-busca" autocomplete="off"
-                       placeholder="Buscar nº, valor ou fornecedor…"
-                       oninput="comboFiltrar(this)" onfocus="comboAbrir(this)">
-                <div class="combo-lista" hidden>
-                  {% for o in todos %}
-                  <button type="button" class="combo-item" onclick="comboEscolher(this)"
-                          data-v="{{ o.cnpj_norm }}|{{ o.numero_norm }}|{{ o.sp_bruto }}">nº {{ o.numero }} · {{ o.sp_bruto|num_br }} · {{ o.nome_fornecedor }} · {{ o.cnpj_norm }}</button>
-                  {% endfor %}
-                </div>
-                <button type="button" class="combo-x" onclick="comboLimpar(this)" tabindex="-1" title="Limpar busca" hidden>×</button>
-              </div>
-              {% endif %}
-              <input type="text" name="observacao" class="input exc-obs" placeholder="Justificativa" required>
-              <div class="det-exc-botoes">
-                <button type="submit" class="btn-mini b-teal-btn"
-                        title="Liga esta nota (faltou lançar) a um lançamento do SP Data sem NF correspondente — recalcula o status">Vincular</button>
-              </div>
-            </form>
-            {% else %}
-            <div class="mut">Nenhum lançamento "SP sem SIEG" disponível para vincular.</div>
-            {% endif %}
-          </div>
-          {% endif %}
           {% if i.pendencia_sieg or i.excecao or i.validada %}
           <div class="det-extra det-pend{% if i.excecao or i.validada %} det-exc{% endif %}">
             <div class="det-extra-tit">Recálculo (base × alíquota)</div>
@@ -298,7 +226,7 @@
             <div class="det-exc-obs">Fornecedor marcado como <strong>exceção</strong> — {{ i.excecao_obs }}
               <a href="/excecoes">Gerenciar</a></div>
             {% elif i.validada %}
-            <div class="det-exc-obs">Nota <strong>validada</strong> manualmente (só nesta competência) — {{ i.validada_obs }}
+            <div class="det-exc-obs">Nota <strong>aceita</strong> manualmente (só nesta competência) — {{ i.validada_obs }}
               <form method="post" action="/validacoes/desfazer" style="display:inline">
                 <input type="hidden" name="cnpj" value="{{ i.cnpj_norm }}">
                 <input type="hidden" name="numero" value="{{ i.numero_norm }}">
@@ -316,8 +244,8 @@
               <input type="hidden" name="conciliacao_id" value="{{ c.id }}">
               <input type="text" name="observacao" class="input exc-obs" placeholder="Justificativa" required>
               <div class="det-exc-botoes">
-                <button type="submit" class="btn-mini b-info-btn" formaction="/validacoes/marcar"
-                        title="Sem erro de imposto nesta nota — vai p/ Gerenciadas (só nesta competência)">Marcar como validada</button>
+                <button type="submit" class="btn-mini b-roxo-btn" formaction="/validacoes/marcar"
+                        title="Sem erro de imposto nesta nota — vai p/ Gerenciadas (só nesta competência)">Aceitar</button>
                 <button type="submit" class="btn-mini b-info-btn" formaction="/excecoes/marcar"
                         title="Fornecedor dispensado (por CNPJ, todas as competências) — vai p/ Gerenciadas e Exceções">Marcar como exceção</button>
               </div>
@@ -347,7 +275,21 @@
   let filtroStatus = 'todas';
   function setFiltro(btn){
     document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
-    btn.classList.add('on'); filtroStatus = btn.dataset.f; filtrar();
+    btn.classList.add('on'); filtroStatus = btn.dataset.f;
+    document.getElementById('filtroTag').value = '';   // chip e tag são excludentes
+    filtrar();
+  }
+  // item 3 (diretoria): o seletor "Filtrar por tag" reaproveita o mesmo motor de
+  // filtro dos chips. Escolher uma tag desmarca o chip; "Todas" volta ao chip Total.
+  function setFiltroTag(sel){
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+    if (sel.value){
+      filtroStatus = sel.value;
+    } else {
+      filtroStatus = 'todas';
+      document.querySelector('.chip[data-f="todas"]').classList.add('on');
+    }
+    filtrar();
   }
   function filtrar(){
     const raw = (document.getElementById('busca').value || '').trim();
@@ -369,11 +311,10 @@
         case 'erros': okS = principal && tr.dataset.erro === '1'; break;
         case 'pendencia_sieg': okS = principal && tr.dataset.pend === '1'; break;
         case 'excecao': okS = principal && tr.dataset.exc === '1'; break;
-        case 'validada': okS = principal && tr.dataset.val === '1'; break;
-        case 'aceita': okS = principal && tr.dataset.aceita === '1'; break;
-        case 'vinculada': okS = principal && tr.dataset.vinculada === '1'; break;
+        // "Aceita" reúne imposto (antiga validada) e valor/arquivo aceita
+        case 'aceita': okS = principal && (tr.dataset.aceita === '1' || tr.dataset.val === '1'); break;
         case 'canceladas': okS = canc; break;
-        case 'sp_sem_sieg': okS = v === 'sp_sem_sieg' && tr.dataset.vinculado !== '1'; break;   // órfão consumido por vínculo sai da lista
+        case 'sp_sem_sieg': okS = v === 'sp_sem_sieg'; break;
         case 'sp_duplicada': okS = v === 'sp_duplicada'; break;
         default: okS = principal;
       }
@@ -389,10 +330,13 @@
         for (let k = 0; k < 6; k++) somas[k] += numCel(tr.cells[4 + k]);   // colunas de valor
       }
     });
-    // item 4: total de notas do filtro atual
+    // item 4: total de notas do filtro atual (chip ou, se for o caso, a tag escolhida)
     const rot = document.querySelector('.chip.on');
+    const tagSel = document.getElementById('filtroTag');
+    let rotTxt = rot ? rot.textContent.trim()
+                     : (tagSel && tagSel.value ? tagSel.options[tagSel.selectedIndex].text : '');
     document.getElementById('filtroTotal').textContent =
-      visiveis + ' nota' + (visiveis === 1 ? '' : 's') + (rot ? ' · ' + rot.textContent.trim() : '');
+      visiveis + ' nota' + (visiveis === 1 ? '' : 's') + (rotTxt ? ' · ' + rotTxt : '');
     // item 4: totais de cada coluna de valor do filtro
     ['tSB', 'tSL', 'tSI', 'tPB', 'tPL', 'tPI'].forEach((id, k) => {
       document.getElementById(id).textContent = fmtMoeda(somas[k]);
@@ -415,87 +359,6 @@
   function fmtMoeda(v){
     return v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
-  // Vínculo manual: o seletor (mesmo CNPJ, ou "ver todas") entrega "cnpj|numero|valor"
-  // num único value — aqui a gente separa isso nos 3 hidden fields que a rota espera.
-  function vincEscolher(sel){
-    const form = sel.closest('form');
-    const p = (sel.value || '').split('|');
-    if (p.length < 3) {
-      // placeholder reselecionado -- limpa o alvo anterior p/ não submeter algo obsoleto
-      form.querySelector('.alvo-sp_cnpj').value = '';
-      form.querySelector('.alvo-sp_numero').value = '';
-      form.querySelector('.alvo-sp_valor').value = '';
-      return;
-    }
-    form.querySelector('.alvo-sp_cnpj').value = p[0];
-    form.querySelector('.alvo-sp_numero').value = p[1];
-    form.querySelector('.alvo-sp_valor').value = p[2];
-  }
-  function vincSubmit(form){
-    if (!form.querySelector('.alvo-sp_cnpj').value) {
-      alert('Selecione um lançamento para vincular.');
-      return false;
-    }
-    return true;
-  }
-  function _aplicarFiltroCombo(inp, lista){
-    const q = (inp.value || '').toLowerCase().trim();
-    const qd = q.replace(/\D/g, '');   // só dígitos: casa "670,00", "670.00", nº
-    for (const it of lista.querySelectorAll('.combo-item')){
-      const t = it.textContent.toLowerCase();
-      it.hidden = !(q === '' || t.indexOf(q) >= 0 || (qd !== '' && t.replace(/\D/g, '').indexOf(qd) >= 0));
-    }
-  }
-  function _mostraX(inp){                    // mostra o "×" só quando há texto
-    const x = inp.closest('.combo-vinculo').querySelector('.combo-x');
-    if (x) x.hidden = (inp.value === '');
-  }
-  function _limparAlvo(form){
-    form.querySelector('.alvo-sp_cnpj').value = '';
-    form.querySelector('.alvo-sp_numero').value = '';
-    form.querySelector('.alvo-sp_valor').value = '';
-  }
-  function comboAbrir(inp){                 // foco: só abre a lista, sem apagar a escolha
-    const lista = inp.nextElementSibling;
-    if (!lista) return;
-    lista.hidden = false;
-    _aplicarFiltroCombo(inp, lista);
-  }
-  function comboFiltrar(inp){               // digitar: abre, invalida a escolha anterior e filtra
-    const lista = inp.nextElementSibling;
-    if (!lista) return;
-    lista.hidden = false;
-    _limparAlvo(inp.closest('form'));
-    _aplicarFiltroCombo(inp, lista);
-    _mostraX(inp);
-  }
-  function comboEscolher(btn){              // clique no item: fixa o alvo e mostra no campo
-    const lista = btn.parentElement;
-    const inp = lista.previousElementSibling;
-    const form = btn.closest('form');
-    const p = (btn.dataset.v || '').split('|');
-    form.querySelector('.alvo-sp_cnpj').value = p[0] || '';
-    form.querySelector('.alvo-sp_numero').value = p[1] || '';
-    form.querySelector('.alvo-sp_valor').value = p[2] || '';
-    inp.value = btn.textContent.trim();
-    lista.hidden = true;
-    _mostraX(inp);
-  }
-  function comboLimpar(x){                  // "×": apaga o texto, a escolha e reabre a lista cheia
-    const wrap = x.closest('.combo-vinculo');
-    const inp = wrap.querySelector('.combo-busca');
-    const lista = wrap.querySelector('.combo-lista');
-    inp.value = '';
-    _limparAlvo(x.closest('form'));
-    _aplicarFiltroCombo(inp, lista);
-    lista.hidden = false;
-    x.hidden = true;
-    inp.focus();
-  }
-  document.addEventListener('click', function(e){   // fecha a lista ao clicar fora
-    if (e.target.closest('.combo-vinculo')) return;
-    document.querySelectorAll('.combo-lista').forEach(function(l){ l.hidden = true; });
-  });
   function verPdf(id, numero){
     document.getElementById('pdfTitulo').textContent = 'NF ' + numero;
     document.getElementById('pdfFrame').src = '/pdf/' + id;

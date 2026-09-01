@@ -106,23 +106,6 @@ def test_confronto_inverso_em_aba_propria():
     assert "999" in inv
 
 
-def test_orfao_vinculado_sai_da_guia_sp_sem_sieg():
-    # Órfão consumido por vínculo (vinculado=True) NÃO aparece na guia "SP sem SIEG";
-    # o não-consumido continua aparecendo.
-    base = {"data_emissao": "05/07/2026", "valor_bruto": 0.0, "valor_liquido": 0.0,
-            "status_lancamento": "", "status_arquivo": "", "detalhe_lancamento": "",
-            "detalhe_arquivo": "", "veredito": "sp_sem_sieg", "sp_extra": True}
-    itens = _itens() + [
-        {**base, "numero": "901", "nome_fornecedor": "ORFAO LIVRE",
-         "sp_bruto": 50.0, "sp_liquido": 50.0, "vinculado": False},
-        {**base, "numero": "902", "nome_fornecedor": "ORFAO USADO",
-         "sp_bruto": 70.0, "sp_liquido": 70.0, "vinculado": True},
-    ]
-    wb = openpyxl.load_workbook(io.BytesIO(gerar_xlsx(_resumo(), itens)))
-    aba = [str(c.value) for c in wb["SP sem SIEG"]["A"] if c.value is not None]
-    assert "901" in aba and "902" not in aba          # consumido some da guia
-
-
 def test_impostos_marca_recalculo():
     # item 2: a aba Impostos marca a linha divergente do recálculo.
     itens = _itens_ricos()
@@ -183,21 +166,24 @@ def test_aceitas_no_resumo_situacao_e_guia():
     assert "FORNEC C" in aceitas_vals                                   # a nota aceita está na guia
 
 
-def test_vinculadas_no_resumo_situacao_e_guia():
-    # A tratativa "Vinculada" tem que aparecer no relatório igual às demais:
-    # contagem no Resumo, "Vinculada" na Situação e uma guia própria.
+def test_validada_de_imposto_aparece_como_aceita():
+    # A tratativa de imposto (interna "validada") foi renomeada p/ "Aceita":
+    # conta junto de "Aceitas (manual)", situação "Aceita" e entra na guia Aceitas.
     itens = _itens_ricos()
-    itens[2].update({"vinculada": True, "vinculo_obs": "vinculada à nota 999",
-                     "eh_gerenciada": True, "tem_erro": False})   # a ressalva vira vinculada
-    resumo = _resumo(); resumo["qt_vinculadas"] = 1
+    itens[2].update({"validada": True, "validada_obs": "imposto confere na origem",
+                     "eh_gerenciada": True, "tem_erro": False})   # a ressalva vira aceita (imposto)
+    resumo = _resumo(); resumo["qt_validadas"] = 1
     wb = openpyxl.load_workbook(io.BytesIO(gerar_xlsx(resumo, itens)))
-    assert "Vinculadas" in wb.sheetnames                                # guia própria
+    assert "Aceitas" in wb.sheetnames                                   # guia única "Aceitas"
+    assert "Validadas" not in wb.sheetnames                             # não existe mais guia separada
     res = {str(row[0].value): row[1].value for row in wb["Resumo"].iter_rows() if row[0].value}
-    assert res.get("Vinculadas (manual)") == 1                          # no resumo
+    assert res.get("Aceitas (manual)") == 1                             # somada em Aceitas
+    assert "Validadas (manual)" not in res                              # sem linha separada
     total_vals = [c.value for row in wb["Total"].iter_rows() for c in row]
-    assert "Vinculada" in total_vals                                    # situação na aba Total
-    vinculadas_vals = [c.value for row in wb["Vinculadas"].iter_rows() for c in row]
-    assert "FORNEC C" in vinculadas_vals                                # a nota vinculada está na guia
+    assert "Aceita" in total_vals                                       # situação na aba Total
+    assert "Validada" not in total_vals
+    aceitas_vals = [c.value for row in wb["Aceitas"].iter_rows() for c in row]
+    assert "FORNEC C" in aceitas_vals                                   # a nota está na guia Aceitas
 
 
 def test_item_com_divergencia_e_exportado_na_aba_conciliacao():

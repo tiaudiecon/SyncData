@@ -132,20 +132,3 @@ class AceiteDivergencia(Base):
     criado_em = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
-class Vinculo(Base):
-    """Vínculo manual: liga uma nota do Sieg em erro ('faltou lançar') a um
-    lançamento da lista 'SP sem SIEG' (número da NF errado/0). Guarda a identidade
-    do lançamento-alvo (sp_*). Vale só na competência (como a Validação/Aceite)."""
-    __tablename__ = "vinculo_lancamento"
-    __table_args__ = (UniqueConstraint("competencia", "cnpj", "numero",
-                                       name="uq_vinculo_comp_cnpj_num"),)
-    id = Column(Integer, primary_key=True)
-    competencia = Column(String, nullable=False, index=True)
-    cnpj = Column(String, nullable=False)          # CNPJ da NOTA do Sieg
-    numero = Column(String, nullable=False)        # número da NOTA do Sieg
-    sp_cnpj = Column(String, nullable=False)       # CNPJ do lançamento SP escolhido
-    sp_numero = Column(String, nullable=False, default="")   # número no SpData (pode ser "0"/"")
-    sp_valor = Column(Float, nullable=False, default=0.0)    # bruto do SpData (desempate)
-    nome = Column(String)
-    observacao = Column(String, nullable=False, default="")
-    criado_em = Column(DateTime, default=lambda: datetime.now(timezone.utc))

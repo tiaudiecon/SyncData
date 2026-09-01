@@ -10,8 +10,7 @@
   --surface:#FBF8F1; --surface-2:#FFFFFF; --surface-3:#F4F0E5;
   --ok:#1A6E4A; --ok-bg:#E4F1EA; --warn:#B0791E; --warn-bg:#F8EED7;
   --alert:#A8331C; --alert-bg:#F6E0DA; --info:#2E5BAE; --info-bg:#E1E8F5;
-  --roxo:#6A3FB0; --roxo-bg:#ECE4F7;   /* tratativa "Aceita" (divergência de valor/arquivo) */
-  --teal:#0E7C86; --teal-bg:#DCF0EE;   /* tratativa "Vinculada" */
+  --roxo:#6A3FB0; --roxo-bg:#ECE4F7;   /* tratativa "Aceita" (imposto ou valor/arquivo) */
   --r-sm:4px; --r-md:6px; --r-lg:10px; --r-pill:999px;
   --ease:cubic-bezier(.2,.7,.2,1); --t-1:120ms; --t-2:200ms;
 }
@@ -120,30 +119,6 @@ table.dense thead th{vertical-align:bottom}
 .det-exc-form{display:flex; flex-direction:column; gap:6px; margin-top:9px; align-items:flex-start}
 .det-exc-form .exc-obs{height:26px; font-size:11px; min-width:190px; max-width:280px; padding:0 8px}
 .det-exc-botoes{display:flex; gap:6px; flex-wrap:wrap}   /* item 1: botões juntos, abaixo */
-/* tratativa Vinculada: painel compacto, no mesmo tamanho dos vizinhos (Aceite/Validação) */
-.det-vinculo{max-width:290px}
-.det-vinculo .sel-vinculo-alvo{height:26px; font-size:11px; min-width:190px; max-width:280px; padding:0 6px}
-/* combobox de busca do vínculo: input (menor que a justificativa) + lista clicável larga */
-.combo-vinculo{position:relative; width:255px; max-width:100%}   /* um pouco menor que a justificativa (280) */
-.combo-vinculo .combo-busca{width:100%; height:26px; font-size:11px; padding:0 26px 0 8px}
-.combo-x{position:absolute; right:2px; top:0; width:22px; height:26px; border:0; background:none;
-  cursor:pointer; color:var(--ink-3); font-size:15px; line-height:24px; text-align:center; padding:0}
-.combo-x:hover{color:var(--burdo)}
-.combo-x[hidden]{display:none}
-/* a lista cresce até o conteúdo (item numa linha só), mais larga que a busca */
-.combo-lista{position:absolute; top:29px; left:0; z-index:40; min-width:100%; width:max-content;
-  max-width:520px; max-height:200px; overflow:auto; background:var(--surface-2);
-  border:1px solid var(--line-2); border-radius:var(--r-md); box-shadow:0 10px 28px rgba(21,24,43,.20)}
-.combo-lista[hidden]{display:none}
-.combo-item{display:block; width:100%; text-align:left; white-space:nowrap; border:0;
-  border-bottom:1px solid var(--line); background:none; cursor:pointer; padding:5px 14px 5px 9px;
-  font-size:10.5px; color:var(--ink); line-height:1.35}
-.combo-item:last-child{border-bottom:0}
-.combo-item:hover{background:var(--surface-3); color:var(--burdo)}
-.combo-item[hidden]{display:none}
-.det-vinculo-todas{margin-top:2px}
-.det-vinculo-todas > summary{font-size:11px; color:var(--info); cursor:pointer; margin-bottom:2px}
-.det-vinculo-todas[open] > summary{margin-bottom:4px}
 
 /* ---------- Page head ---------- */
 .page-head{display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
@@ -178,7 +153,6 @@ table.dense thead th{vertical-align:bottom}
 .b-neutral::before{display:none}
 .b-info{background:var(--info-bg); color:var(--info)}   /* item 6: exceção */
 .b-roxo{background:var(--roxo-bg); color:var(--roxo)}   /* tratativa Aceita */
-.b-teal{background:var(--teal-bg); color:var(--teal)}   /* tratativa Vinculada */
 
 /* ---------- Panels ---------- */
 .panel{background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r-lg); overflow:hidden; margin-bottom:18px}
@@ -349,16 +323,21 @@ table.dense tr:hover td{background:var(--creme-soft)}
 .chip.chip-info{color:var(--ink-3); border-color:var(--line-2); border-style:dashed}
 .chip.chip-info:hover{border-color:var(--ink-3); color:var(--ink-2)}
 .chip.chip-info.on{background:var(--ink-3); color:#fff; border-color:var(--ink-3); border-style:solid}
-/* item 1: botões azuis (gerenciamento manual: validada/exceção) + desfazer */
+/* item 3 (diretoria): seletor "Filtrar por tag" p/ as tags que saíram dos chips */
+.tag-filtro{display:flex; align-items:center; gap:6px}
+.tag-filtro label{font-size:12px; color:var(--ink-3); font-weight:600; white-space:nowrap}
+.tag-filtro select{height:32px; font-size:12.5px; padding:0 26px 0 10px; min-width:150px;
+  border:1px solid var(--line-2); border-radius:999px; background:var(--surface-2); color:var(--ink-2);
+  font-weight:600; cursor:pointer}
+.tag-filtro select:hover{border-color:var(--ink-3)}
+/* item 1: botão azul (exceção de fornecedor) + Aceitar (roxo) + desfazer */
 .btn-mini.b-info-btn{border-color:var(--info); color:var(--info)}
 .btn-mini.b-info-btn:hover{background:var(--info-bg); border-color:var(--info); color:var(--info)}
 .btn-mini.b-roxo-btn{border-color:var(--roxo); color:var(--roxo)}
 .btn-mini.b-roxo-btn:hover{background:var(--roxo-bg); border-color:var(--roxo); color:var(--roxo)}
-.btn-mini.b-teal-btn{border-color:var(--teal); color:var(--teal)}
-.btn-mini.b-teal-btn:hover{background:var(--teal-bg); border-color:var(--teal); color:var(--teal)}
 .det-desfazer{border:none; background:none; color:var(--info); text-decoration:underline;
   cursor:pointer; font:inherit; font-size:11px; margin-left:6px; padding:0}
-/* bloco de validada reusa o azul do det-exc (mesmo tom de gerenciamento manual) */
+/* bloco de aceita (imposto) reusa o realce do det-exc */
 .det-pend.det-exc .det-exc-obs strong{color:var(--info)}
 .chip-desc{display:inline-block; font-size:10px; font-weight:700; color:var(--burdo);
   background:var(--burdo-100); padding:1px 6px; border-radius:999px; vertical-align:middle}

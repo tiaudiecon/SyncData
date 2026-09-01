@@ -19,14 +19,11 @@ _FILL_OK = (PatternFill("solid", fgColor="FFE4F1EA"), Font(color=_VERDE, size=10
 _FILL_WARN = (PatternFill("solid", fgColor="FFF8EED7"), Font(color=_AMARELO, size=10))
 _FILL_ALERT = (PatternFill("solid", fgColor="FFF6E0DA"), Font(color=_VERMELHO, size=10))
 _FILL_NEUTRO = (None, Font(color=_CINZA, size=10))
-# item 1: gerenciamento manual (Validada/Exceção) em azul
+# exceção de fornecedor (por CNPJ) em azul
 _FILL_INFO = (PatternFill("solid", fgColor="FFE1E8F5"), Font(color=_AZUL, size=10))
-# tratativa "Aceita" (divergência de valor/arquivo aceita) em roxo
+# tratativa "Aceita" (imposto ou divergência de valor/arquivo aceita) em roxo
 _ROXO = "FF6A3FB0"
 _FILL_ROXO = (PatternFill("solid", fgColor="FFECE4F7"), Font(color=_ROXO, size=10))
-# tratativa "Vinculada" (nota vinculada a outro lançamento) em teal
-_TEAL = "FF0E7C86"
-_FILL_TEAL = (PatternFill("solid", fgColor="FFDCF0EE"), Font(color=_TEAL, size=10))
 
 _FONTE_CAB = Font(bold=True, color=_BRANCO, size=11)
 _FILL_CAB = PatternFill("solid", fgColor=_NAVY)
@@ -97,12 +94,10 @@ def _estilo_por_texto(txt):
     if t in ("Faltou", "Não encontrada", "Faltou lançar",
              "SP Data sem SIEG", "Duplicada no SP Data"):
         return _FILL_ALERT
-    if t in ("Validada", "Exceção"):          # item 1: gerenciamento manual = azul
+    if t == "Exceção":                         # exceção de fornecedor (por CNPJ) = azul
         return _FILL_INFO
-    if t == "Aceita":                          # tratativa Aceita (valor/arquivo) = roxo
+    if t == "Aceita":                          # tratativa Aceita (imposto ou valor/arquivo) = roxo
         return _FILL_ROXO
-    if t == "Vinculada":                       # tratativa Vinculada (nota ligada a outra) = teal
-        return _FILL_TEAL
     if t in (_TRACO, "Cancelada"):
         return _FILL_NEUTRO
     return None
@@ -110,14 +105,12 @@ def _estilo_por_texto(txt):
 
 def _situacao_texto(it):
     """Situação legível, com o gerenciamento manual (item 1)."""
-    if it.get("validada"):
-        return "Validada"
     if it.get("excecao"):
         return "Exceção"
-    if it.get("aceita"):
+    # "Aceita" cobre tanto o imposto (antiga "Validada") quanto a divergência
+    # de valor/arquivo aceita manualmente.
+    if it.get("validada") or it.get("aceita"):
         return "Aceita"
-    if it.get("vinculada"):
-        return "Vinculada"
     return _SITUACAO.get(it["veredito"], it["veredito"].capitalize())
 
 
@@ -244,13 +237,10 @@ def _texto_recalc(it):
         return ("EXCEÇÃO: " + obs + (" · " + txt if txt else "")).strip()
     if it.get("validada"):
         obs = it.get("validada_obs") or ""
-        return ("VALIDADA: " + obs + (" · " + txt if txt else "")).strip()
+        return ("ACEITA: " + obs + (" · " + txt if txt else "")).strip()
     if it.get("aceita"):
         obs = it.get("aceita_obs") or ""
         return ("ACEITA: " + obs + (" · " + txt if txt else "")).strip()
-    if it.get("vinculada"):
-        obs = it.get("vinculo_obs") or ""
-        return ("VINCULADA: " + obs + (" · " + txt if txt else "")).strip()
     return txt or "—"
 
 
@@ -340,9 +330,7 @@ def _escrever_resumo(ws, resumo):
         ("Gerenciadas", resumo.get("qt_gerenciadas", 0)),
         ("Erros", resumo.get("qt_erros", 0)),
         ("Divergência de impostos", resumo.get("qt_divergencia", 0)),
-        ("Validadas (manual)", resumo.get("qt_validadas", 0)),
-        ("Aceitas (manual)", resumo.get("qt_aceitas", 0)),
-        ("Vinculadas (manual)", resumo.get("qt_vinculadas", 0)),
+        ("Aceitas (manual)", resumo.get("qt_aceitas", 0) + resumo.get("qt_validadas", 0)),
         ("Exceções (manual)", resumo.get("qt_excecoes", 0)),
         ("Canceladas (informativo)", resumo.get("qt_canceladas", 0)),
         ("SP Data sem SIEG", resumo.get("qt_sp_sem_sieg", 0)),
@@ -370,17 +358,15 @@ def gerar_xlsx(resumo: dict, itens: list) -> bytes:
     _escrever_aba(ws1, prin)
 
     # Uma aba por filtro da tela (só as que têm notas) — item 1: Erros no lugar de
-    # Ressalva/Pendentes; Validadas listadas à parte (contam como Gerenciadas).
+    # Ressalva/Pendentes; Aceitas reúne imposto (antiga "Validada") e valor/arquivo.
     categorias = [
         ("Gerenciadas", [i for i in prin if i.get("eh_gerenciada")]),
         ("Erros", [i for i in prin if i.get("tem_erro")]),
         ("Divergência Impostos", [i for i in prin if i.get("pendencia_sieg")]),
-        ("Validadas", [i for i in prin if i.get("validada")]),
-        ("Aceitas", [i for i in prin if i.get("aceita")]),
-        ("Vinculadas", [i for i in prin if i.get("vinculada")]),
+        ("Aceitas", [i for i in prin if i.get("validada") or i.get("aceita")]),
         ("Exceções", [i for i in prin if i.get("excecao")]),
         ("Canceladas", [i for i in itens if i.get("cancelada")]),
-        ("SP sem SIEG", [i for i in itens if i["veredito"] == "sp_sem_sieg" and not i.get("vinculado")]),
+        ("SP sem SIEG", [i for i in itens if i["veredito"] == "sp_sem_sieg"]),
         ("Duplicadas SP", [i for i in itens if i["veredito"] == "sp_duplicada"]),
     ]
     for nome, subset in categorias:
