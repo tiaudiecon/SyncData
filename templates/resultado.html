@@ -59,30 +59,48 @@
 </div>
 
 <div class="toolbar">
-  <div class="busca-wrap">
-    <input id="busca" class="input" placeholder="Buscar por nº, fornecedor ou valor…" oninput="filtrar()">
-    <button type="button" id="buscaLimpar" class="busca-x" onclick="limparBusca()" aria-label="Limpar busca" title="Limpar" hidden>✕</button>
+  {# Bloco "Relatório" (esquerda): busca + filtros principais Total/Gerenciadas/Erros #}
+  <div class="filtro-bloco">
+    <div class="filtro-bloco-tit">Relatório</div>
+    <div class="filtro-bloco-corpo">
+      <div class="busca-wrap">
+        <input id="busca" class="input" placeholder="Buscar por nº, fornecedor ou valor…" oninput="filtrar()">
+        <button type="button" id="buscaLimpar" class="busca-x" onclick="limparBusca()" aria-label="Limpar busca" title="Limpar" hidden>✕</button>
+      </div>
+      <div class="chips">
+        <button class="chip on" data-f="todas" onclick="setFiltro(this)">Total</button>
+        <button class="chip" data-f="gerenciada" onclick="setFiltro(this)">Gerenciadas</button>
+        <button class="chip" data-f="erros" onclick="setFiltro(this)">Erros</button>
+      </div>
+    </div>
   </div>
-  <div class="chips">
-    <button class="chip on" data-f="todas" onclick="setFiltro(this)">Total</button>
-    <button class="chip" data-f="gerenciada" onclick="setFiltro(this)">Gerenciadas</button>
-    <button class="chip" data-f="erros" onclick="setFiltro(this)">Erros</button>
-    <span class="chip-sep"></span>
-    <button class="chip chip-info" data-f="canceladas" onclick="setFiltro(this)">Canceladas</button>
-    <button class="chip chip-info" data-f="sp_sem_sieg" onclick="setFiltro(this)">SP sem SIEG</button>
-    <button class="chip chip-info" data-f="sp_duplicada" onclick="setFiltro(this)">Duplicadas SP</button>
+  {# Lado direito (empurrado): "Informativos" + "Filtrar por tag" (item 3 da diretoria),
+     cada um com seu título acima, no mesmo estilo do "Relatório". O contador
+     "N notas · filtro" fecha a linha dos chips no canto direito. #}
+  <div class="filtro-direita">
+    <div class="filtro-bloco">
+      <div class="filtro-bloco-tit">Informativos</div>
+      <div class="filtro-bloco-corpo">
+        <div class="chips">
+          <button class="chip chip-info" data-f="canceladas" onclick="setFiltro(this)">Canceladas</button>
+          <button class="chip chip-info" data-f="sp_sem_sieg" onclick="setFiltro(this)">SP sem SIEG</button>
+          <button class="chip chip-info" data-f="sp_duplicada" onclick="setFiltro(this)">Duplicadas SP</button>
+        </div>
+      </div>
+    </div>
+    <div class="filtro-bloco tag-filtro">
+      <label for="filtroTag" class="filtro-bloco-tit">Filtrar por tag</label>
+      <div class="filtro-bloco-corpo">
+        <select id="filtroTag" class="input" onchange="setFiltroTag(this)">
+          <option value="">Todas</option>
+          <option value="pendencia_sieg">Divergência de Impostos</option>
+          <option value="aceita">Aceita</option>
+          <option value="excecao">Exceção</option>
+        </select>
+      </div>
+    </div>
+    <span class="filtro-total" id="filtroTotal"></span>
   </div>
-  {# item 3 (diretoria): as tags que saíram dos chips continuam filtráveis aqui #}
-  <div class="tag-filtro">
-    <label for="filtroTag">Filtrar por tag:</label>
-    <select id="filtroTag" class="input" onchange="setFiltroTag(this)">
-      <option value="">Todas</option>
-      <option value="pendencia_sieg">Divergência de Impostos</option>
-      <option value="aceita">Aceita</option>
-      <option value="excecao">Exceção</option>
-    </select>
-  </div>
-  <span class="filtro-total" id="filtroTotal"></span>
 </div>
 
 <div class="table-scroll">
