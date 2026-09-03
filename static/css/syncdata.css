@@ -61,7 +61,7 @@ a{color:inherit}
 .main{flex:1; padding:28px 40px; overflow-y:auto; width:100%}
 .wrap{max-width:1080px; margin:0 auto; width:100%}
 /* telas de tabela larga (Resultado, Impostos) aproveitam mais largura */
-.wrap-wide{max-width:1620px}
+.wrap-wide{max-width:1620px; container-type:inline-size; container-name:tela}
 /* nessas telas, fonte e padding menores p/ caber mais colunas.
    Só nos filhos DIRETOS (a mini-tabela do detalhe é aninhada e tem estilo próprio). */
 .wrap-wide table.dense{font-size:11.5px}
@@ -227,8 +227,8 @@ tr.linha-cancelada, tr.linha-spextra{cursor:default}
 .det-dv-tit{font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; margin-top:8px}
 .det-dv-item{font-size:11.5px; font-family:'JetBrains Mono',monospace; padding:1px 0}
 /* item 4: total de notas do filtro atual */
-.filtro-total{margin-left:auto; font-size:12px; color:var(--ink-3); font-weight:600; white-space:nowrap;
-  padding:0 0 8px 6px}   /* ancorado à direita; 8px alinha à base dos chips */
+.filtro-total{font-size:12px; color:var(--ink-3); font-weight:600; white-space:nowrap;
+  padding:0 0 8px 6px}   /* inline no fim da linha dos filtros (previsivel, nunca quebra sozinho) */
 /* NAV-01: ordenação por clique no cabeçalho */
 th.ord{cursor:pointer; user-select:none}
 th.ord:hover{color:var(--navy)}
@@ -254,7 +254,7 @@ table.dense tr:hover td{background:var(--creme-soft)}
 .input:focus{outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(28,43,94,.10)}
 .input::placeholder{color:var(--ink-4)}
 /* campo de busca com botão limpar (Resultado) */
-.busca-wrap{position:relative; flex:0 1 320px; min-width:200px}
+.busca-wrap{position:relative; flex:0 1 230px; min-width:160px}   /* menor p/ caber tudo em 1 linha */
 .busca-wrap .input{padding-right:32px}
 .busca-x{position:absolute; right:5px; top:50%; transform:translateY(-50%);
   width:22px; height:22px; border:none; background:transparent; color:var(--ink-4);
@@ -320,7 +320,16 @@ table.dense tr:hover td{background:var(--creme-soft)}
   text-transform:uppercase; color:var(--ink-3); white-space:nowrap; line-height:1.2}   /* centrado no grupo */
 .filtro-bloco-corpo{display:flex; align-items:center; gap:10px; flex-wrap:nowrap}   /* busca+chips sempre na mesma linha */
 .filtro-bloco .chips{flex-wrap:nowrap}   /* quem desce, quando falta espaço, é o grupo da direita inteiro */
-.filtro-bloco.sep-grupo{margin-left:40px}   /* separa "Informativos" do "Relatórios" (sem buraco central) */
+.filtro-bloco.sep-grupo{margin-left:22px}   /* separa "Informativos" do "Relatórios" */
+/* fallback (telas estreitas <=1330px): nao coube tudo em 1 linha -> "Filtrar por tag"
+   desce p/ baixo da busca; o contador fica na 1a linha com os demais filtros */
+/* fallback por LARGURA DA TOOLBAR (independe da barra lateral estar recolhida/expandida):
+   se a toolbar fica estreita, "Filtrar por tag" desce p/ baixo da busca e o contador
+   (order menor) permanece na 1a linha com os demais filtros */
+@container tela (max-width: 1180px){
+  .toolbar .filtro-bloco.tag-filtro{order:2}
+  .toolbar .filtro-total{order:1}
+}
 .chips{display:flex; gap:6px; flex-wrap:wrap}
 .chip{border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink-2);
   padding:6px 13px; border-radius:999px; font-size:12.5px; font-weight:600; cursor:pointer}
