@@ -181,7 +181,7 @@ table.dense thead th{vertical-align:bottom}
 .wrap-wide .kpi .lbl{margin-bottom:1px; font-size:8.5px}
 .wrap-wide .kpi .val{font-size:15px}
 .wrap-wide .toolbar{margin-bottom:8px}
-.wrap-wide .toolbar .input{height:32px}
+.wrap-wide .toolbar .busca-wrap .input{height:32px}
 /* controle de fonte da tabela (Resultado) — A- / A+ p/ monitores maiores */
 .fonte-ctrl{display:inline-flex; align-items:center; gap:1px; border:1px solid var(--line-2);
   border-radius:var(--r-md); padding:2px; background:var(--surface-2)}
@@ -332,7 +332,7 @@ table.dense tr:hover td{background:var(--creme-soft)}
 }
 .chips{display:flex; gap:6px; flex-wrap:wrap}
 .chip{border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink-2);
-  padding:6px 13px; border-radius:999px; font-size:12.5px; font-weight:600; cursor:pointer}
+  padding:6px 13px; border-radius:999px; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer}
 .chip:hover{border-color:var(--ink-3)}
 .chip.on{background:var(--navy); color:var(--creme); border-color:var(--navy)}
 /* item 1: subfiltros informativos (Exceções/Canceladas/SP sem SIEG/Duplicadas) — cor diferente */
@@ -340,7 +340,7 @@ table.dense tr:hover td{background:var(--creme-soft)}
 .chip.chip-info:hover{border-color:var(--ink-3); color:var(--ink-2)}
 .chip.chip-info.on{background:var(--ink-3); color:#fff; border-color:var(--ink-3); border-style:solid}
 /* item 3 (diretoria): seletor "Filtrar por tag" p/ as tags que saíram dos chips */
-.tag-filtro select{height:32px; font-size:12.5px; padding:0 26px 0 10px; min-width:150px;
+.tag-filtro select{height:29px; font-size:12.5px; padding:0 26px 0 10px; min-width:150px;
   border:1px solid var(--line-2); border-radius:999px; background:var(--surface-2); color:var(--ink-2);
   font-weight:600; cursor:pointer}
 .tag-filtro select:hover{border-color:var(--ink-3)}
