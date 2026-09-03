@@ -59,14 +59,15 @@
 </div>
 
 <div class="toolbar">
-  {# Bloco "Relatório" (esquerda): busca + filtros principais Total/Gerenciadas/Erros #}
+  {# Busca (sem título, alinhada à linha dos chips) + bloco "Relatórios", cujo título fica
+     centralizado SÓ sobre Total/Gerenciadas/Erros #}
+  <div class="busca-wrap">
+    <input id="busca" class="input" placeholder="Buscar por nº, fornecedor ou valor…" oninput="filtrar()">
+    <button type="button" id="buscaLimpar" class="busca-x" onclick="limparBusca()" aria-label="Limpar busca" title="Limpar" hidden>✕</button>
+  </div>
   <div class="filtro-bloco">
-    <div class="filtro-bloco-tit">Relatório</div>
+    <div class="filtro-bloco-tit">Relatórios</div>
     <div class="filtro-bloco-corpo">
-      <div class="busca-wrap">
-        <input id="busca" class="input" placeholder="Buscar por nº, fornecedor ou valor…" oninput="filtrar()">
-        <button type="button" id="buscaLimpar" class="busca-x" onclick="limparBusca()" aria-label="Limpar busca" title="Limpar" hidden>✕</button>
-      </div>
       <div class="chips">
         <button class="chip on" data-f="todas" onclick="setFiltro(this)">Total</button>
         <button class="chip" data-f="gerenciada" onclick="setFiltro(this)">Gerenciadas</button>
