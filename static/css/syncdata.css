@@ -227,8 +227,8 @@ tr.linha-cancelada, tr.linha-spextra{cursor:default}
 .det-dv-tit{font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; margin-top:8px}
 .det-dv-item{font-size:11.5px; font-family:'JetBrains Mono',monospace; padding:1px 0}
 /* item 4: total de notas do filtro atual */
-.filtro-total{font-size:12px; color:var(--ink-3); font-weight:600; white-space:nowrap;
-  padding:0 0 8px 6px}   /* fecha a linha dos chips no canto direito (8px centraliza c/ os 32px) */
+.filtro-total{margin-left:auto; font-size:12px; color:var(--ink-3); font-weight:600; white-space:nowrap;
+  padding:0 0 8px 6px}   /* ancorado à direita; 8px alinha à base dos chips */
 /* NAV-01: ordenação por clique no cabeçalho */
 th.ord{cursor:pointer; user-select:none}
 th.ord:hover{color:var(--navy)}
@@ -313,15 +313,14 @@ table.dense tr:hover td{background:var(--creme-soft)}
 }
 
 .toolbar{display:flex; align-items:flex-end; gap:14px; margin:0 0 16px; flex-wrap:wrap}
-/* toolbar em grupos titulados (título acima, controles abaixo): "Relatório" à esquerda;
-   "Informativos" + "Filtrar por tag" empurrados à direita (.filtro-direita) */
+/* toolbar em grupos titulados (título centralizado acima, controles abaixo):
+   Relatórios | Informativos | Filtrar por tag, próximos; só o contador ancora à direita */
 .filtro-bloco{display:flex; flex-direction:column; gap:6px}
 .filtro-bloco-tit{display:block; text-align:center; font-size:11px; font-weight:700; letter-spacing:.06em;
   text-transform:uppercase; color:var(--ink-3); white-space:nowrap; line-height:1.2}   /* centrado no grupo */
 .filtro-bloco-corpo{display:flex; align-items:center; gap:10px; flex-wrap:nowrap}   /* busca+chips sempre na mesma linha */
 .filtro-bloco .chips{flex-wrap:nowrap}   /* quem desce, quando falta espaço, é o grupo da direita inteiro */
-.filtro-direita{margin-left:auto; display:flex; align-items:flex-end; gap:24px; flex-wrap:wrap;
-  justify-content:flex-end}   /* fica à direita mesmo quando quebra de linha */
+.filtro-bloco.sep-grupo{margin-left:40px}   /* separa "Informativos" do "Relatórios" (sem buraco central) */
 .chips{display:flex; gap:6px; flex-wrap:wrap}
 .chip{border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink-2);
   padding:6px 13px; border-radius:999px; font-size:12.5px; font-weight:600; cursor:pointer}

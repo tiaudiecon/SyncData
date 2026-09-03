@@ -75,33 +75,30 @@
       </div>
     </div>
   </div>
-  {# Lado direito (empurrado): "Informativos" + "Filtrar por tag" (item 3 da diretoria),
-     cada um com seu título acima, no mesmo estilo do "Relatório". O contador
-     "N notas · filtro" fecha a linha dos chips no canto direito. #}
-  <div class="filtro-direita">
-    <div class="filtro-bloco">
-      <div class="filtro-bloco-tit">Informativos</div>
-      <div class="filtro-bloco-corpo">
-        <div class="chips">
-          <button class="chip chip-info" data-f="canceladas" onclick="setFiltro(this)">Canceladas</button>
-          <button class="chip chip-info" data-f="sp_sem_sieg" onclick="setFiltro(this)">SP sem SIEG</button>
-          <button class="chip chip-info" data-f="sp_duplicada" onclick="setFiltro(this)">Duplicadas SP</button>
-        </div>
+  {# "Informativos" + "Filtrar por tag": separados do "Relatórios" por um espaço modesto
+     (sep-grupo), não empurrados à extremidade. Só o contador ancora à direita. #}
+  <div class="filtro-bloco sep-grupo">
+    <div class="filtro-bloco-tit">Informativos</div>
+    <div class="filtro-bloco-corpo">
+      <div class="chips">
+        <button class="chip chip-info" data-f="canceladas" onclick="setFiltro(this)">Canceladas</button>
+        <button class="chip chip-info" data-f="sp_sem_sieg" onclick="setFiltro(this)">SP sem SIEG</button>
+        <button class="chip chip-info" data-f="sp_duplicada" onclick="setFiltro(this)">Duplicadas SP</button>
       </div>
     </div>
-    <div class="filtro-bloco tag-filtro">
-      <label for="filtroTag" class="filtro-bloco-tit">Filtrar por tag</label>
-      <div class="filtro-bloco-corpo">
-        <select id="filtroTag" class="input" onchange="setFiltroTag(this)">
-          <option value="">Todas</option>
-          <option value="pendencia_sieg">Divergência de Impostos</option>
-          <option value="aceita">Aceita</option>
-          <option value="excecao">Exceção</option>
-        </select>
-      </div>
-    </div>
-    <span class="filtro-total" id="filtroTotal"></span>
   </div>
+  <div class="filtro-bloco tag-filtro">
+    <label for="filtroTag" class="filtro-bloco-tit">Filtrar por tag</label>
+    <div class="filtro-bloco-corpo">
+      <select id="filtroTag" class="input" onchange="setFiltroTag(this)">
+        <option value="">Todas</option>
+        <option value="pendencia_sieg">Divergência de Impostos</option>
+        <option value="aceita">Aceita</option>
+        <option value="excecao">Exceção</option>
+      </select>
+    </div>
+  </div>
+  <span class="filtro-total" id="filtroTotal"></span>
 </div>
 
 <div class="table-scroll">
